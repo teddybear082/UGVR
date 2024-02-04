@@ -5,7 +5,7 @@ IN DEVELOPMENT, NOT CURRENTLY WORKING.
 
 # CREDITS
 
--Decais for inventing a way to easily inject XR Origin into camera for Godot 4 3D games
+-Decacis for inventing a way to easily inject XR Origin into camera for Godot 4 3D games
 
 -Godot XR Tools team - going to be heavily leveraging scripts from Godot XR Tools
 
