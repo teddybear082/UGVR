@@ -17,16 +17,26 @@ radius = 0.2
 
 [node name="XRPointer" type="Node3D"]
 script = ExtResource("1_d06nd")
+show_laser = 2
+laser_length = 1
 
 [node name="RayCast" type="RayCast3D" parent="."]
+target_position = Vector3(0, 0, -10)
+collision_mask = 5242880
 
 [node name="Laser" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
+cast_shadow = 0
 mesh = SubResource("BoxMesh_1rrqi")
 
 [node name="Target" type="MeshInstance3D" parent="."]
+visible = false
+cast_shadow = 0
 mesh = SubResource("SphereMesh_eev7t")
 
 [node name="SuppressArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 4194304
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SuppressArea"]
 shape = SubResource("SphereShape3D_rwtpp")
