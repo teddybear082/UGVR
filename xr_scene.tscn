@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3 uid="uid://e4ctdupwya3a"]
+
+[ext_resource type="Script" path="res://xr_scene.gd" id="1_fmh2y"]
+[ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_pointer.tscn" id="2_l282w"]
+
+[node name="XrScene" type="Node3D"]
+script = ExtResource("1_fmh2y")
+
+[node name="XROrigin3D" type="XROrigin3D" parent="."]
+current = true
+
+[node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
+
+[node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
+tracker = &"left_hand"
+pose = &"aim"
+
+[node name="XRPointer" parent="XROrigin3D/XRController3D" instance=ExtResource("2_l282w")]
+
+[node name="XRController3D2" type="XRController3D" parent="XROrigin3D"]
+tracker = &"right_hand"
+pose = &"aim"
+
+[node name="XRPointer" parent="XROrigin3D/XRController3D2" instance=ExtResource("2_l282w")]

@@ -13,3 +13,12 @@ config_version=5
 config/name="UGVR"
 config/features=PackedStringArray("4.2", "Forward Plus")
 config/icon="res://icon.svg"
+
+[display]
+
+window/vsync/vsync_mode=0
+
+[xr]
+
+openxr/enabled=true
+shaders/enabled=true

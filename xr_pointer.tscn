@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3 uid="uid://i1hto5hirreh"]
+
+[ext_resource type="Script" path="res://xr_pointer.gd" id="1_d06nd"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1rrqi"]
+size = Vector3(0.002, 0.002, 10)
+subdivide_depth = 20
+
+[sub_resource type="SphereMesh" id="SphereMesh_eev7t"]
+radius = 0.05
+height = 0.1
+radial_segments = 16
+rings = 8
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_rwtpp"]
+radius = 0.2
+
+[node name="XRPointer" type="Node3D"]
+script = ExtResource("1_d06nd")
+
+[node name="RayCast" type="RayCast3D" parent="."]
+
+[node name="Laser" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_1rrqi")
+
+[node name="Target" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_eev7t")
+
+[node name="SuppressArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SuppressArea"]
+shape = SubResource("SphereShape3D_rwtpp")
