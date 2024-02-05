@@ -1,5 +1,3 @@
-extends Node
-
 class_name XRToolsPointerEvent
 
 ## Types of pointer events
