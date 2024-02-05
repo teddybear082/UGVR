@@ -6,6 +6,7 @@ var xr_interface: XRInterface
 @onready var xr_camera_3d : XRCamera3D = $XROrigin3D/XRCamera3D
 @onready var xr_main_viewport2d_in_3d : Node3D = $XROrigin3D/XRCamera3D/XRMainViewport2Din3D
 
+
 func _ready() -> void:
 	set_process(false)
 	
@@ -64,7 +65,7 @@ func _eval_tree_new() -> void:
 		active_camera.add_child(remote_t)
 	
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
-	# If so cold cycle through group of possible cameras and remove.
+	# If so could cycle through group of possible cameras and remove.
 	
 	# Get active menu scene / UI
 	var active_gui = get_viewport().gui_get_focus_owner()
