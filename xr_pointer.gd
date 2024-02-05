@@ -1,6 +1,4 @@
 ## Credit to XR Tools Function Pointer Script
-class_name XRToolsFunctionPointer
-
 extends Node3D
 ## Signal emitted when this object points at another object
 signal pointing_event(event)
@@ -85,7 +83,8 @@ const SUPPRESS_MASK := 0b0000_0000_0100_0000_0000_0000_0000_0000
 ## Suppress mask
 @export_flags_3d_physics var suppress_mask : int = SUPPRESS_MASK: set = set_suppress_mask
 
-
+## Hack for Using XRToolsPointerEvent without custom classes
+@onready var XRToolsPointerEvent = preload("res://xr_pointer_event.gd").new()
 ## Current target node
 var target : Node3D = null
 

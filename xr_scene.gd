@@ -70,10 +70,10 @@ func _eval_tree_new() -> void:
 	# Get active menu scene / UI
 	var active_gui = get_viewport().gui_get_focus_owner()
 	print(active_gui)
-	if active_gui != null:
-		var viewport_gui = active_gui.duplicate()
-		viewport_gui.get_parent().remove_child(viewport_gui)
+	#if active_gui != null:
+		#var viewport_gui = active_gui.duplicate()
+		#viewport_gui.get_parent().remove_child(viewport_gui)
 		#xr_main_viewport2d_in_3d.set_viewport_size(active_gui.get_size())
-		xr_main_viewport2d_in_3d.get_node("Viewport").add_child(viewport_gui)
+		#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(viewport_gui)
 	
 	 

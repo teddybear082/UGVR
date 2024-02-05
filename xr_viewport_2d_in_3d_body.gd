@@ -9,6 +9,8 @@ signal pointer_event(event)
 ## Viewport size
 @export var viewport_size = Vector2(100.0, 100.0)
 
+## Hack to allow use of XRToolsPointerEvent without using custom class
+@onready var XRToolsPointerEvent = preload("res://xr_pointer_event.gd").new()
 
 # Current mouse mask
 var _mouse_mask := 0
@@ -53,14 +55,14 @@ func global_to_viewport(p_at : Vector3) -> Vector2:
 
 
 # Pointer event handler
-func _on_pointer_event(event : XRToolsPointerEvent) -> void:
+func _on_pointer_event(event) -> void:
 	# Ignore if we have no viewport
 	if not is_instance_valid(_viewport):
 		return
 
 	# Get the pointer and event type
-	var pointer := event.pointer
-	var type := event.event_type
+	var pointer = event.pointer
+	var type = event.event_type
 
 	# Get the touch-index [0..]
 	var index : int = _touches.get(pointer, -1)
@@ -110,7 +112,7 @@ func _on_pointer_event(event : XRToolsPointerEvent) -> void:
 
 	# If the current mouse isn't pressed then consider switching to a new one
 	if not _presses.has(_mouse):
-		if type == XRToolsPointerEvent.Type.PRESSED and pointer is XRToolsFunctionPointer:
+		if type == XRToolsPointerEvent.Type.PRESSED and pointer.has_method("is_xr_class"):
 			# Switch to pressed laser-pointer
 			_mouse = pointer
 		elif type == XRToolsPointerEvent.Type.EXITED and pointer == _mouse:

@@ -202,7 +202,7 @@ func connect_scene_signal(which : String, callback : Callable, flags : int = 0):
 
 
 # Handle pointer event from screen-body
-func _on_pointer_event(event : XRToolsPointerEvent) -> void:
+func _on_pointer_event(event) -> void:
 	pointer_event.emit(event)
 
 
