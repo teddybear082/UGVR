@@ -1,7 +1,7 @@
 extends Node3D
 
 ## Credit to XR Tools Function Pointer Script
-
+class_name XRToolsFunctionPointer
 ## Signal emitted when this object points at another object
 signal pointing_event(event)
 
