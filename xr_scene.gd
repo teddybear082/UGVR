@@ -68,12 +68,19 @@ func _eval_tree_new() -> void:
 	# If so could cycle through group of possible cameras and remove.
 	
 	# Get active menu scene / UI
-	var active_gui = get_viewport().gui_get_focus_owner()
-	print(active_gui)
+	#var active_gui = get_viewport().gui_get_focus_owner()
+	# In TPS demo, this returns the play button essentially. Maybe check up scene tree until node is no longer a Control, and use last one found as UI to display?
+	#print(active_gui)
 	#if active_gui != null:
 		#var viewport_gui = active_gui.duplicate()
 		#viewport_gui.get_parent().remove_child(viewport_gui)
 		#xr_main_viewport2d_in_3d.set_viewport_size(active_gui.get_size())
 		#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(viewport_gui)
 	
-	 
+	# Get all UI nodes, assume relevant UI node will have an owner
+	var potential_ui_nodes : Array = get_node("/root").find_children("*", "Control", true, false)
+	var ui_node_final_candidates : Array = []
+	for ui_node in potential_ui_nodes:
+		if ui_node.is_class("Container") or ui_node.is_class("ColorRect") or ui_node.is_class("Panel") or ui_node.get_class() == "Control":
+			ui_node_final_candidates.append(ui_node)
+	print(ui_node_final_candidates)
