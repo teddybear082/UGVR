@@ -3,8 +3,9 @@ extends Node3D
 var xr_interface: XRInterface
 
 @onready var xr_origin_3d : XROrigin3D = $XROrigin3D
-@onready var xr_camera_3d : XRCamera3D = $XROrigin3D/XRCamera3D
-@onready var xr_main_viewport2d_in_3d : Node3D = $XROrigin3D/XRCamera3D/XRMainViewport2Din3D
+@onready var xr_camera_3d : XRCamera3D = xr_origin_3d.get_node("XRCamera3D")
+@onready var xr_main_viewport2d_in_3d : Node3D = xr_camera_3d.get_node("XRMainViewport2Din3D")
+@onready var xr_main_viewport2d_in_3d_subviewport : SubViewport = xr_main_viewport2d_in_3d.get_node("Viewport")
 
 var active_ui_node
 
@@ -17,6 +18,15 @@ func _ready() -> void:
 
 		# Turn off v-sync!
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		
+		# Set viewport2din3d to correct size
+		var vp_size : Vector2 = xr_interface.get_render_target_size()
+		xr_main_viewport2d_in_3d.set_viewport_size = vp_size
+		
+		# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport
+		# Right now have subviewport set to not handle input which is a change from default, need to think more about this
+		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
+		xr_main_viewport2d_in_3d._update_render()
 
 		# Change our main viewport to output to the HMD
 		get_viewport().use_xr = true
@@ -79,26 +89,35 @@ func _eval_tree_new() -> void:
 		#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(viewport_gui)
 	
 	# Get all UI nodes that have the potential to be a top level menu
-	var potential_ui_nodes : Array = get_node("/root").find_children("*", "Control", true, false)
-	var ui_node_final_candidates : Array = []
-	for ui_node in potential_ui_nodes:
-		if ui_node.is_class("Container") or ui_node.is_class("ColorRect") or ui_node.is_class("Panel") or ui_node.get_class() == "Control":
-			# Check if we've found ui_node  before by determining if its in our custom group, if not add it to group
-			if not ui_node.is_in_group("possible_xr_uis"):
-				ui_node.add_to_group("possible_xr_uis")
-				ui_node_final_candidates.append(ui_node)
-	#print(ui_node_final_candidates)
-	# Assume first one found that is visible is our UI? Find children will search recursively so best candidates are likely near top of list if not the top?
-	for ui_node in ui_node_final_candidates:
-		if ui_node.is_visible_in_tree():
-			if active_ui_node != ui_node:
-				active_ui_node = ui_node
-				print(active_ui_node)
-				break
-	if active_ui_node != null:
-		var new_viewport_ui_node = active_ui_node.duplicate()
-		print(new_viewport_ui_node)
-		print(new_viewport_ui_node.get_tree_string_pretty())
-		xr_main_viewport2d_in_3d.get_node("Viewport").add_child(new_viewport_ui_node)
-		xr_main_viewport2d_in_3d._update_render()
-		set_process(false)
+	#var potential_ui_nodes : Array = get_node("/root").find_children("*", "Control", true, false)
+	#var ui_node_final_candidates : Array = []
+	#for ui_node in potential_ui_nodes:
+		#if ui_node.is_class("Container") or ui_node.is_class("ColorRect") or ui_node.is_class("Panel") or ui_node.get_class() == "Control":
+			## Check if we've found ui_node  before by determining if its in our custom group, if not add it to group
+			#if not ui_node.is_in_group("possible_xr_uis"):
+				#ui_node.add_to_group("possible_xr_uis")
+				#ui_node_final_candidates.append(ui_node)
+	##print(ui_node_final_candidates)
+	## Assume first one found that is visible is our UI? Find children will search recursively so best candidates are likely near top of list if not the top?
+	#for ui_node in ui_node_final_candidates:
+		#if ui_node.is_visible_in_tree():
+			#if active_ui_node != ui_node:
+				#active_ui_node = ui_node
+				#print(active_ui_node)
+				#break
+	#if active_ui_node != null:
+		#var new_viewport_ui_node = active_ui_node.duplicate()
+		#print(new_viewport_ui_node)
+		#print(new_viewport_ui_node.get_tree_string_pretty())
+		#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(new_viewport_ui_node)
+		#xr_main_viewport2d_in_3d._update_render()
+		#set_process(false)
+
+	# Possible replacement to allow code to continue to run
+	#for ui_node in ui_node_final_candidates:
+		#if ui_node.is_visible_in_tree():
+			#if active_ui_node != ui_node:
+				#new_viewport_ui_node = ui_node.duplicate()
+				#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(new_viewport_ui_node)
+				#xr_main_viewport2d_in_3d._update_render()
+				#active_ui_node = new_viewport_ui_node
