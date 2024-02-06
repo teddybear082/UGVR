@@ -6,6 +6,7 @@ var xr_interface: XRInterface
 @onready var xr_camera_3d : XRCamera3D = $XROrigin3D/XRCamera3D
 @onready var xr_main_viewport2d_in_3d : Node3D = $XROrigin3D/XRCamera3D/XRMainViewport2Din3D
 
+var active_ui_node
 
 func _ready() -> void:
 	set_process(false)
@@ -77,10 +78,27 @@ func _eval_tree_new() -> void:
 		#xr_main_viewport2d_in_3d.set_viewport_size(active_gui.get_size())
 		#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(viewport_gui)
 	
-	# Get all UI nodes, assume relevant UI node will have an owner
+	# Get all UI nodes that have the potential to be a top level menu
 	var potential_ui_nodes : Array = get_node("/root").find_children("*", "Control", true, false)
 	var ui_node_final_candidates : Array = []
 	for ui_node in potential_ui_nodes:
 		if ui_node.is_class("Container") or ui_node.is_class("ColorRect") or ui_node.is_class("Panel") or ui_node.get_class() == "Control":
-			ui_node_final_candidates.append(ui_node)
-	print(ui_node_final_candidates)
+			# Check if we've found ui_node  before by determining if its in our custom group, if not add it to group
+			if not ui_node.is_in_group("possible_xr_uis"):
+				ui_node.add_to_group("possible_xr_uis")
+				ui_node_final_candidates.append(ui_node)
+	#print(ui_node_final_candidates)
+	# Assume first one found that is visible is our UI? Find children will search recursively so best candidates are likely near top of list if not the top?
+	for ui_node in ui_node_final_candidates:
+		if ui_node.is_visible_in_tree():
+			if active_ui_node != ui_node:
+				active_ui_node = ui_node
+				print(active_ui_node)
+				break
+	if active_ui_node != null:
+		var new_viewport_ui_node = active_ui_node.duplicate()
+		print(new_viewport_ui_node)
+		print(new_viewport_ui_node.get_tree_string_pretty())
+		xr_main_viewport2d_in_3d.get_node("Viewport").add_child(new_viewport_ui_node)
+		xr_main_viewport2d_in_3d._update_render()
+		set_process(false)
