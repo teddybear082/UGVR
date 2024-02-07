@@ -63,17 +63,41 @@ func _eval_tree() -> void:
 
 # Possible alternative version, constantly checks for current camera 3D, will have to determine later which works best
 func _eval_tree_new() -> void:
+	# Ensure Vsync stays OFF!
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	
+	# Try automatically overwriting game options to set max FPS at 144
+	Engine.set_max_fps(144)
+	
 	# Get active camera3D
 	var active_camera : Camera3D = get_viewport().get_camera_3d()
 	
 	# Check if we've found active_camera before by determining if its in our custom group, if not add it to group and add remote transform
-	if not active_camera.is_in_group("possible_xr_cameras"):
-		active_camera.add_to_group("possible_xr_cameras")
-		var remote_t : RemoteTransform3D = RemoteTransform3D.new()
-		remote_t.update_rotation = false
-		remote_t.update_scale = false
-		remote_t.remote_path = xr_origin_3d.get_path()
-		active_camera.add_child(remote_t)
+	if active_camera:
+		if not active_camera.is_in_group("possible_xr_cameras"):
+			active_camera.add_to_group("possible_xr_cameras")
+			var remote_t : RemoteTransform3D = RemoteTransform3D.new()
+			remote_t.update_rotation = false
+			remote_t.update_scale = false
+			remote_t.remote_path = xr_origin_3d.get_path()
+			active_camera.add_child(remote_t)
+	
+	# fallback
+	if not active_camera:
+		var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
+		print(cameras)
+		for camera in cameras:
+			if camera != xr_camera_3d:
+				set_process(false)
+			
+				var remote_t : RemoteTransform3D = RemoteTransform3D.new()
+				
+				remote_t.update_rotation = false
+				remote_t.update_scale = false
+				
+				remote_t.remote_path = xr_origin_3d.get_path()
+				
+				camera.add_child(remote_t)
 	
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
 	# If so could cycle through group of possible cameras and remove.
