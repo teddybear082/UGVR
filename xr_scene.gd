@@ -75,6 +75,7 @@ func _eval_tree_new() -> void:
 	# Check if we've found active_camera before by determining if its in our custom group, if not add it to group and add remote transform
 	if active_camera:
 		if not active_camera.is_in_group("possible_xr_cameras"):
+			print("New active camera found")
 			active_camera.add_to_group("possible_xr_cameras")
 			var remote_t : RemoteTransform3D = RemoteTransform3D.new()
 			remote_t.update_rotation = false
@@ -84,20 +85,22 @@ func _eval_tree_new() -> void:
 	
 	# fallback
 	if not active_camera:
+		print("No active cameras found, reverting to fallback search of cameras")
 		var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
 		print(cameras)
 		for camera in cameras:
 			if camera != xr_camera_3d:
-				set_process(false)
-			
-				var remote_t : RemoteTransform3D = RemoteTransform3D.new()
+				#set_process(false)
+				if camera.is_current() and not camera.is_in_group("possible_xr_cameras"):
+					camera.add_to_group("possible_xr_cameras")
+					var remote_t : RemoteTransform3D = RemoteTransform3D.new()
 				
-				remote_t.update_rotation = false
-				remote_t.update_scale = false
+					remote_t.update_rotation = false
+					remote_t.update_scale = false
 				
-				remote_t.remote_path = xr_origin_3d.get_path()
+					remote_t.remote_path = xr_origin_3d.get_path()
 				
-				camera.add_child(remote_t)
+					camera.add_child(remote_t)
 	
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
 	# If so could cycle through group of possible cameras and remove.
