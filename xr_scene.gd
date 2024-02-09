@@ -26,10 +26,10 @@ func _ready() -> void:
 		
 		# Set viewport2din3d to correct size
 		var vp_size : Vector2 = xr_interface.get_render_target_size()
+		print("Viewport size: ", vp_size)
 		xr_main_viewport2d_in_3d.set_viewport_size = vp_size
 		
-		# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport
-		# Do we still need these lines after Julian's code below?
+		# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport, this allows 2D UI to appear in VR
 		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
 		xr_main_viewport2d_in_3d._update_render()
 
@@ -37,8 +37,11 @@ func _ready() -> void:
 		get_viewport().use_xr = true
 		get_viewport().gui_embed_subwindows = false
 		print("xr viewport ", get_viewport())
+		
+		# Enable input calculations on main viewport 2D UI with Viewport2Din3D node
 		print("static body viewport before rewrite ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
+		print("static body viewport after rewrite ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 		set_process(true)
 	else:
 		print("OpenXR not initialized, please check if your headset is connected")
@@ -82,6 +85,7 @@ func _eval_tree_new() -> void:
 				#set_process(false)
 				if camera.is_current() and not camera.is_in_group("possible_xr_cameras"):
 					camera.add_to_group("possible_xr_cameras")
+					print("final camera selected: ", camera)
 					var remote_t : RemoteTransform3D = RemoteTransform3D.new()
 				
 					remote_t.update_rotation = false
