@@ -5,14 +5,20 @@
 
 extends Node3D
 
-var xr_interface: XRInterface
-
 @onready var xr_origin_3d : XROrigin3D = $XROrigin3D
 @onready var xr_camera_3d : XRCamera3D = xr_origin_3d.get_node("XRCamera3D")
 @onready var xr_main_viewport2d_in_3d : Node3D = xr_camera_3d.get_node("XRMainViewport2Din3D")
 @onready var xr_main_viewport2d_in_3d_subviewport : SubViewport = xr_main_viewport2d_in_3d.get_node("Viewport")
+@onready var xr_left_controller : XRController3D = xr_origin_3d.get_node("XRController3D")
+@onready var xr_right_controller : XRController3D = xr_origin_3d.get_node("XRController3D2")
 
-var active_ui_node
+var primary_action_map : Dictionary
+var secondary_action_map : Dictionary
+var xr_interface: XRInterface
+
+
+#var active_ui_node
+
 
 func _ready() -> void:
 	set_process(false)
@@ -42,17 +48,18 @@ func _ready() -> void:
 		print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
 		print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+
+		map_xr_controllers_to_action_map()
+		
 		set_process(true)
 	else:
 		print("OpenXR not initialized, please check if your headset is connected")
 
 
 func _process(_delta : float) -> void:
-	#if Engine.get_process_frames() % 30 == 0:
 	if Engine.get_process_frames() % 90 == 0:
-		#_eval_tree()
 		_eval_tree_new()
-
+	
 # Possible alternative version, constantly checks for current camera 3D, will have to determine later which works best
 func _eval_tree_new() -> void:
 	# Ensure Vsync stays OFF!
@@ -142,3 +149,116 @@ func _eval_tree_new() -> void:
 				#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(new_viewport_ui_node)
 				#xr_main_viewport2d_in_3d._update_render()
 				#active_ui_node = new_viewport_ui_node
+
+func map_xr_controllers_to_action_map():
+	print("mapping controls")
+	print(xr_left_controller)
+	print(xr_right_controller)
+	var flat_screen_actions = InputMap.get_actions()
+	for action in flat_screen_actions:
+		var action_events = InputMap.action_get_events(action)
+		print("Action: ", action, " Events: ", action_events)
+		for event in action_events:
+			if event is InputEventJoypadButton:
+				print(event)
+	xr_left_controller.connect("button_pressed", Callable(self, "handle_secondary_xr_inputs"))
+	xr_right_controller.connect("button_pressed", Callable(self,"handle_primary_xr_inputs"))
+	xr_left_controller.connect("button_released", Callable(self,"handle_secondary_xr_release"))
+	xr_right_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
+	xr_left_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
+	xr_right_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
+	xr_left_controller.connect("input_vector2_changed", Callable(self, "handle_secondary_xr_vector2"))
+	xr_right_controller.connect("input_vector2_changed", Callable(self, "handle_primary_xr_vector2"))
+	
+	
+	primary_action_map = {
+		"grip_click":JOY_BUTTON_RIGHT_SHOULDER,
+		"primary_click":JOY_BUTTON_RIGHT_STICK,
+		"ax_button":JOY_BUTTON_A,
+		"by_button":JOY_BUTTON_X
+	}
+	secondary_action_map = {
+		"grip_click":JOY_BUTTON_LEFT_SHOULDER,
+		"primary_click":JOY_BUTTON_LEFT_STICK,
+		"ax_button":JOY_BUTTON_B,
+		"by_button":JOY_BUTTON_Y
+	}
+	
+	
+
+func handle_primary_xr_inputs(button):
+	if primary_action_map.has(button):
+		var event = InputEventJoypadButton.new()
+		event.button_index = primary_action_map[button]
+		event.pressed = true
+		Input.parse_input_event(event)
+	#print("pressed button",button)
+	#if button == "ax_button":
+		#print("detected ax button press")
+		#var ax_event = InputEventJoypadButton.new()
+		#ax_event.button_index = 0
+		#ax_event.pressed = true
+		#Input.parse_input_event(ax_event)
+		# If there was action mapping, which may be a good alternative option to allow someday, this is how it would work:
+		#Input.action_press(&"jump")
+	#if button == "by_button":
+		#print("detected by button press")
+		#var by_event = InputEventJoypadButton.new()
+		#by_event.button_index = JOY_BUTTON_B
+		#by_event.pressed = true
+		#Input.parse_input_event(by_event)
+		#Input.action_press(&"shoot")
+
+func handle_primary_xr_release(button):
+	if primary_action_map.has(button):
+		var event = InputEventJoypadButton.new()
+		event.button_index = primary_action_map[button]
+		event.pressed = false
+		Input.parse_input_event(event)
+	#print("released button", button)
+	#if button == "ax_button":
+		# If there was action mapping, which may be a good alternative option to allow someday, this is how it would work:
+		#Input.action_release(&"jump")
+		#var ax_event = InputEventJoypadButton.new()
+		#ax_event.button_index = 0
+		#ax_event.pressed = false
+		#Input.parse_input_event(ax_event)
+	
+	#if button == "by_button":
+		#Input.action_release(&"shoot")
+		#var by_event = InputEventJoypadButton.new()
+		#by_event.button_index = JoyButton.JOY_BUTTON_B
+		#by_event.pressed = false
+		#Input.parse_input_event(by_event)
+
+
+func handle_secondary_xr_inputs(button):
+	if secondary_action_map.has(button):
+		var event = InputEventJoypadButton.new()
+		event.button_index = secondary_action_map[button]
+		event.pressed = true
+		Input.parse_input_event(event)
+	
+	
+func handle_secondary_xr_release(button):
+	if secondary_action_map.has(button):
+		var event = InputEventJoypadButton.new()
+		event.button_index = secondary_action_map[button]
+		event.pressed = false
+		Input.parse_input_event(event)
+
+func handle_primary_xr_float(button, value):
+	print(button)
+	print(value)
+
+func handle_secondary_xr_float(button, value):
+	print(button)
+	print(value)
+	
+func handle_primary_xr_vector2(button, value):
+	print(button)
+	print(value)
+	
+func handle_secondary_xr_vector2(button, value):
+	print(button)
+	print(value)
