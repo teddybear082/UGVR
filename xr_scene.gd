@@ -1,3 +1,8 @@
+# This is the main VR Scene that is injected into the 3D game.
+# The method for this was developed by Decacis (creator of Badaboom on AppLab)
+# Then JulianTodd (creator of TunnelVR on AppLab/Sidequest) developed a way to allow VR pointers to be used in the game's 2D UI
+# Along with the code in injector.gd developed by Decacis, these form the core parts of injecting VR into a Godot 3D game
+
 extends Node3D
 
 var xr_interface: XRInterface
@@ -24,11 +29,11 @@ func _ready() -> void:
 		xr_main_viewport2d_in_3d.set_viewport_size = vp_size
 		
 		# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport
-		# Right now have subviewport set to not handle input which is a change from default, need to think more about this
+		# Do we still need these lines after Julian's code below?
 		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
 		xr_main_viewport2d_in_3d._update_render()
 
-		# Change our main viewport to output to the HMD - CODE BY JULIANTODD AND DECACIS
+		# Change our main viewport to output to the HMD
 		get_viewport().use_xr = true
 		get_viewport().gui_embed_subwindows = false
 		print("xr viewport ", get_viewport())
@@ -44,24 +49,6 @@ func _process(_delta : float) -> void:
 	if Engine.get_process_frames() % 90 == 0:
 		#_eval_tree()
 		_eval_tree_new()
-
-# Original decacis version, checks for Cameras once in scene tree
-func _eval_tree() -> void:
-	#print(Settings.CONFIG_FILE_PATH)
-	var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
-	
-	for camera in cameras:
-		if camera != xr_camera_3d:
-			set_process(false)
-		
-			var remote_t : RemoteTransform3D = RemoteTransform3D.new()
-			
-			remote_t.update_rotation = false
-			remote_t.update_scale = false
-			
-			remote_t.remote_path = xr_origin_3d.get_path()
-			
-			camera.add_child(remote_t)
 
 # Possible alternative version, constantly checks for current camera 3D, will have to determine later which works best
 func _eval_tree_new() -> void:
