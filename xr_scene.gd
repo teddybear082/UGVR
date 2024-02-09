@@ -28,10 +28,12 @@ func _ready() -> void:
 		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
 		xr_main_viewport2d_in_3d._update_render()
 
-		# Change our main viewport to output to the HMD
+		# Change our main viewport to output to the HMD - CODE BY JULIANTODD AND DECACIS
 		get_viewport().use_xr = true
 		get_viewport().gui_embed_subwindows = false
-		
+		print("xr viewport ", get_viewport())
+		print("static body viewport before rewrite ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
 		set_process(true)
 	else:
 		print("OpenXR not initialized, please check if your headset is connected")
