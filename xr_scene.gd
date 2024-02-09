@@ -39,9 +39,9 @@ func _ready() -> void:
 		print("xr viewport ", get_viewport())
 		
 		# Enable input calculations on main viewport 2D UI with Viewport2Din3D node
-		print("static body viewport before rewrite ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+		print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
-		print("static body viewport after rewrite ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+		print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 		set_process(true)
 	else:
 		print("OpenXR not initialized, please check if your headset is connected")
@@ -69,6 +69,7 @@ func _eval_tree_new() -> void:
 		if not active_camera.is_in_group("possible_xr_cameras"):
 			print("New active camera found")
 			active_camera.add_to_group("possible_xr_cameras")
+			print("Active camera: ", active_camera)
 			var remote_t : RemoteTransform3D = RemoteTransform3D.new()
 			remote_t.update_rotation = false
 			remote_t.update_scale = false
