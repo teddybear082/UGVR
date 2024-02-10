@@ -1,8 +1,17 @@
-[gd_scene load_steps=4 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=7 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_pointer.tscn" id="2_l282w"]
 [ext_resource type="PackedScene" uid="uid://clujaf3u776a3" path="res://xr_viewport_2d_in_3d.tscn" id="3_f316b"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_10cyd"]
+radius = 0.3
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_iwxk1"]
+radius = 0.2
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_8i68g"]
+radius = 0.2
 
 [node name="XrScene" type="Node3D"]
 script = ExtResource("1_fmh2y")
@@ -13,9 +22,38 @@ current = true
 [node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
 
 [node name="XRMainViewport2Din3D" parent="XROrigin3D/XRCamera3D" instance=ExtResource("3_f316b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -2.8)
 viewport_size = Vector2(1920, 1080)
 unshaded = true
+
+[node name="GestureArea" type="Area3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+collision_layer = 0
+collision_mask = 32768
+
+[node name="GestureAreaShape" type="CollisionShape3D" parent="XROrigin3D/XRCamera3D/GestureArea"]
+shape = SubResource("SphereShape3D_10cyd")
+
+[node name="WelcomeLabel3D" type="Label3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -2)
+modulate = Color(0.854902, 0.866667, 0.211765, 1)
+text = "Welcome to the earliest alpha of
+Godot Universal VR Injector! (UGVR)
+
+-Special Keybinds:
+(Gesture) Place your hand over head 
+and press trigger to toggle menu pointers
+
+DPad, Start and Select Activation Button: 
+Hold your thumb on the right thumbstick
+
+ --Dpad: Left thumbstick (when activated)
+
+--Start: Left Thumbstick Click (when activated)
+
+--Select: Left B/Y button (when activated)"
+font_size = 14
+width = 1500.0
 
 [node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
 tracker = &"left_hand"
@@ -25,9 +63,26 @@ pose = &"aim"
 show_target = true
 target_radius = 0.01
 
+[node name="GestureDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D"]
+collision_layer = 32768
+collision_mask = 0
+
+[node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D/GestureDetectionArea"]
+shape = SubResource("SphereShape3D_iwxk1")
+
 [node name="XRController3D2" type="XRController3D" parent="XROrigin3D"]
 tracker = &"right_hand"
 pose = &"aim"
 
 [node name="XRPointer" parent="XROrigin3D/XRController3D2" instance=ExtResource("2_l282w")]
 show_target = true
+
+[node name="GestureDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D2"]
+collision_layer = 32768
+collision_mask = 0
+
+[node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GestureDetectionArea"]
+shape = SubResource("SphereShape3D_8i68g")
+
+[connection signal="area_entered" from="XROrigin3D/XRCamera3D/GestureArea" to="." method="_on_gesture_area_area_entered"]
+[connection signal="area_exited" from="XROrigin3D/XRCamera3D/GestureArea" to="." method="_on_gesture_area_area_exited"]

@@ -5,24 +5,69 @@
 
 extends Node3D
 
+# Core XR Scene Components
 @onready var xr_origin_3d : XROrigin3D = $XROrigin3D
 @onready var xr_camera_3d : XRCamera3D = xr_origin_3d.get_node("XRCamera3D")
 @onready var xr_main_viewport2d_in_3d : Node3D = xr_camera_3d.get_node("XRMainViewport2Din3D")
 @onready var xr_main_viewport2d_in_3d_subviewport : SubViewport = xr_main_viewport2d_in_3d.get_node("Viewport")
 @onready var xr_left_controller : XRController3D = xr_origin_3d.get_node("XRController3D")
 @onready var xr_right_controller : XRController3D = xr_origin_3d.get_node("XRController3D2")
-
+@onready var gesture_area : Area3D = xr_camera_3d.get_node("GestureArea")
+@onready var left_gesture_detection_area : Area3D = xr_left_controller.get_node("GestureDetectionArea")
+@onready var right_gesture_detection_area : Area3D = xr_right_controller.get_node("GestureDetectionArea")
+@onready var left_xr_pointer = xr_left_controller.get_node("XRPointer")
+@onready var right_xr_pointer = xr_right_controller.get_node("XRPointer")
+@onready var welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
+# Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
 var secondary_action_map : Dictionary
-var xr_interface : XRInterface
+
 var grip_deadzone : float = 0.7
 var left_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var left_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var right_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var right_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var dpad_up : InputEventJoypadButton = InputEventJoypadButton.new()
+var dpad_down : InputEventJoypadButton = InputEventJoypadButton.new()
+var dpad_left : InputEventJoypadButton = InputEventJoypadButton.new()
+var dpad_right : InputEventJoypadButton = InputEventJoypadButton.new()
 
-#var active_ui_node
+# Store state of dpad toggle
+var dpad_toggle_active : bool = false
 
+# Store state of start activation
+var start_toggle_active : bool = false
+
+# Store state of select activation
+var select_toggle_active : bool = false
+
+# Button to toggle VR pointers with head gesture - eventually configurable
+var pointer_gesture_toggle_button = "trigger_click"
+
+# Button to activate dpad alternative binding for joystick
+var dpad_activation_button = "primary_touch"
+
+# Button to activate start button
+var start_activation_button = "primary_touch"
+
+# Button to activate select button
+var select_activation_button = "primary_touch"
+
+# Start button (when toggle active)
+var start_button = "primary_click"
+
+# Select button (when toggle active)
+var select_button = "by_button"
+
+# Prepare for eventual user configs to set primary and secondary controllers
+var primary_controller : XRController3D
+var primary_detection_area : Area3D
+var secondary_controller = XRController3D
+var secondary_detection_area : Area3D
+var primary_pointer = null
+var secondary_pointer = null
+
+var xr_interface : XRInterface
 
 func _ready() -> void:
 	set_process(false)
@@ -53,23 +98,31 @@ func _ready() -> void:
 		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
 		print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 
+		# Set up xr controllers to emulate gamepad
 		map_xr_controllers_to_action_map()
 		
 		set_process(true)
 	else:
 		print("OpenXR not initialized, please check if your headset is connected")
 
+	# Clear Welcome label (probably someday can make it a config not to show again)
+	await get_tree().create_timer(12.0).timeout
+	welcome_label_3d.hide()
 
 func _process(_delta : float) -> void:
+	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
 		_eval_tree_new()
+	
+	# Process emulated joypad inputs, someday maybe this could be a toggle in the event someone wants to use gamepad only controls
 	process_joystick_inputs()
-# Possible alternative version, constantly checks for current camera 3D, will have to determine later which works best
+
+# Constantly checks for current camera 3D
 func _eval_tree_new() -> void:
 	# Ensure Vsync stays OFF!
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	
-	# Try automatically overwriting game options to set max FPS at 144
+	# Try automatically overwriting game options to set max FPS at 144 to avoid hard caps at low frame rate
 	Engine.set_max_fps(144)
 	
 	# Get active camera3D
@@ -110,7 +163,7 @@ func _eval_tree_new() -> void:
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
 	# If so could cycle through group of possible cameras and remove.
 	
-	# Get active menu scene / UI
+	# Get active menu scene / UI - old approach, probably unnecesary but leaving in case needed someday as possible fallback option
 	#var active_gui = get_viewport().gui_get_focus_owner()
 	# In TPS demo, this returns the play button essentially. Maybe check up scene tree until node is no longer a Control, and use last one found as UI to display?
 	#print(active_gui)
@@ -154,10 +207,21 @@ func _eval_tree_new() -> void:
 				#xr_main_viewport2d_in_3d._update_render()
 				#active_ui_node = new_viewport_ui_node
 
+# Function to set up VR Controllers to emulate gamepad
 func map_xr_controllers_to_action_map():
 	print("mapping controls")
-	print(xr_left_controller)
-	print(xr_right_controller)
+	
+	primary_controller = xr_right_controller
+	primary_detection_area = right_gesture_detection_area
+	secondary_controller = xr_left_controller
+	secondary_detection_area = left_gesture_detection_area
+	primary_pointer = right_xr_pointer
+	secondary_pointer = left_xr_pointer
+	
+	print(secondary_controller)
+	print(primary_controller)
+	
+	# Print action map for debugging - someday maybe can facilitate user remapping of actions as alternative to general keybinds
 	var flat_screen_actions = InputMap.get_actions()
 	for action in flat_screen_actions:
 		var action_events = InputMap.action_get_events(action)
@@ -165,15 +229,16 @@ func map_xr_controllers_to_action_map():
 		for event in action_events:
 			if event is InputEventJoypadButton:
 				print(event)
-	xr_left_controller.connect("button_pressed", Callable(self, "handle_secondary_xr_inputs"))
-	xr_right_controller.connect("button_pressed", Callable(self,"handle_primary_xr_inputs"))
-	xr_left_controller.connect("button_released", Callable(self,"handle_secondary_xr_release"))
-	xr_right_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
-	xr_left_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
-	xr_right_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
-	#xr_left_controller.connect("input_vector2_changed", Callable(self, "handle_secondary_xr_vector2"))
-	#xr_right_controller.connect("input_vector2_changed", Callable(self, "handle_primary_xr_vector2"))
 	
+	# Connect controller button and joystick signals to handlers
+	secondary_controller.connect("button_pressed", Callable(self, "handle_secondary_xr_inputs"))
+	primary_controller.connect("button_pressed", Callable(self,"handle_primary_xr_inputs"))
+	secondary_controller.connect("button_released", Callable(self,"handle_secondary_xr_release"))
+	primary_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
+	secondary_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
+	primary_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
+	
+	# Map xr button input to joypad inputs
 	
 	primary_action_map = {
 		"grip_click":JOY_BUTTON_RIGHT_SHOULDER,
@@ -188,17 +253,48 @@ func map_xr_controllers_to_action_map():
 		"by_button":JOY_BUTTON_Y
 	}
 	
+	# Map xr controller joysticks to gamepad joysticks
 	left_x_axis.axis = JOY_AXIS_LEFT_X
 	left_y_axis.axis = JOY_AXIS_LEFT_Y
 	right_x_axis.axis = JOY_AXIS_RIGHT_X
 	right_y_axis.axis = JOY_AXIS_RIGHT_Y
+	
+	# Create gamepad dpad inputs for emulation
+	dpad_up.button_index = JOY_BUTTON_DPAD_UP
+	dpad_down.button_index = JOY_BUTTON_DPAD_DOWN
+	dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
+	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 
+# Handle button presses on VR controller assigned as primary
 func handle_primary_xr_inputs(button):
+	#print("primary contoller button pressed: ", button)
+	
+	# Toggle pointers if user holds primary hand over their head and presses toggle button
+	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(primary_detection_area):
+		primary_pointer.set_enabled(!primary_pointer.enabled)
+		secondary_pointer.set_enabled(!secondary_pointer.enabled)
+	
+	# If user just pressed activation button, activate special combo buttons
+	if button == dpad_activation_button:
+		dpad_toggle_active = true
+		print("dpad toggle active")
+		
+	if button == start_activation_button:
+		start_toggle_active = true
+		print("start toggle active")
+		
+	if button == select_activation_button:
+		select_toggle_active = true
+		print("select toggle active")
+	
+	# Finally pass through remaining gamepad emulation input
 	if primary_action_map.has(button):
 		var event = InputEventJoypadButton.new()
 		event.button_index = primary_action_map[button]
 		event.pressed = true
 		Input.parse_input_event(event)
+	
+	# Saved code to handle other ways of triggering input in case later we allow game custom action mapping
 	#print("pressed button",button)
 	#if button == "ax_button":
 		#print("detected ax button press")
@@ -216,12 +312,27 @@ func handle_primary_xr_inputs(button):
 		#Input.parse_input_event(by_event)
 		#Input.action_press(&"shoot")
 
+# Handle release of buttons on primary controller
 func handle_primary_xr_release(button):
+	#print("primary button released: ", button)
+	if button == dpad_activation_button:
+		dpad_toggle_active = false
+		print("dpad toggle off")
+		
+	if button == start_activation_button:
+		start_toggle_active = false
+		print("start toggle off")
+		
+	if button == select_activation_button:
+		select_toggle_active = false
+		print("select toggle off")
+	
 	if primary_action_map.has(button):
 		var event = InputEventJoypadButton.new()
 		event.button_index = primary_action_map[button]
 		event.pressed = false
 		Input.parse_input_event(event)
+	
 	#print("released button", button)
 	#if button == "ax_button":
 		# If there was action mapping, which may be a good alternative option to allow someday, this is how it would work:
@@ -238,25 +349,58 @@ func handle_primary_xr_release(button):
 		#by_event.pressed = false
 		#Input.parse_input_event(by_event)
 
-
+# Handle button presses on VR Controller assigned as secondary
 func handle_secondary_xr_inputs(button):
+	#print("secondary button pressed: ", button)
+
+	# If pressing pointer activation button and making gesture, toggle pointer
+	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
+		primary_pointer.set_enabled(!primary_pointer.enabled)
+		secondary_pointer.set_enabled(!secondary_pointer.enabled)
+	
+	if start_toggle_active and button == start_button:
+		var event = InputEventJoypadButton.new()
+		event.button_index = JOY_BUTTON_START
+		event.pressed = true
+		Input.parse_input_event(event)
+		
+	if select_toggle_active and button == select_button:
+		var event = InputEventJoypadButton.new()
+		event.button_index = JOY_BUTTON_BACK
+		event.pressed = true
+		Input.parse_input_event(event)
+	
 	if secondary_action_map.has(button):
 		var event = InputEventJoypadButton.new()
 		event.button_index = secondary_action_map[button]
 		event.pressed = true
 		Input.parse_input_event(event)
 	
-	
+# Handle release of buttons on VR Controller assigned as secondary	
 func handle_secondary_xr_release(button):
+	#print("secondary button released: ", button)
+	if button == start_button:
+		var event = InputEventJoypadButton.new()
+		event.button_index = JOY_BUTTON_START
+		event.pressed = false
+		Input.parse_input_event(event)
+	
+	if button == select_button:
+		var event = InputEventJoypadButton.new()
+		event.button_index = JOY_BUTTON_BACK
+		event.pressed = false
+		Input.parse_input_event(event)
+	
 	if secondary_action_map.has(button):
 		var event = InputEventJoypadButton.new()
 		event.button_index = secondary_action_map[button]
 		event.pressed = false
 		Input.parse_input_event(event)
 
+# Handle analogue button presses on VR controller assigned as primary
 func handle_primary_xr_float(button, value):
-	print(button)
-	print(value)
+	#print(button)
+	#print(value)
 	if button == "trigger":
 		var event = InputEventJoypadMotion.new()
 		event.axis = JOY_AXIS_TRIGGER_RIGHT
@@ -271,10 +415,11 @@ func handle_primary_xr_float(button, value):
 		else:
 			event.pressed=false
 		Input.parse_input_event(event)
-		
+
+# Handle analogue button presses on VR Controller assigned as secondary	 	
 func handle_secondary_xr_float(button, value):
-	print(button)
-	print(value)
+	#print(button)
+	#print(value)
 	if button == "trigger":
 		var event = InputEventJoypadMotion.new()
 		event.axis = JOY_AXIS_TRIGGER_LEFT
@@ -289,41 +434,60 @@ func handle_secondary_xr_float(button, value):
 		else:
 			event.pressed=false
 		Input.parse_input_event(event)
-	
-#func handle_primary_xr_vector2(button, value):
-	#print(button)
-	#print(value)
-	#var x_axis = InputEventJoypadMotion.new()
-	#x_axis.axis = JOY_AXIS_RIGHT_X
-	#x_axis.axis_value = value.x
-	#Input.parse_input_event(x_axis)
-	#var y_axis = InputEventJoypadMotion.new()
-	#y_axis.axis = JOY_AXIS_RIGHT_Y
-	#y_axis.axis_value = value.y
-	#Input.parse_input_event(y_axis)
-	#
-#func handle_secondary_xr_vector2(button, value):
-	#print(button)
-	#print(value)
-	#var x_axis = InputEventJoypadMotion.new()
-	#x_axis.axis = JOY_AXIS_LEFT_X
-	#x_axis.axis_value = value.x
-	#Input.parse_input_event(x_axis)
-	#var y_axis = InputEventJoypadMotion.new()
-	#y_axis.axis = JOY_AXIS_LEFT_Y
-	#y_axis.axis_value = value.y
-	#Input.parse_input_event(y_axis)
 
+# Always process joystick analogue inputs
 func process_joystick_inputs():
 	# For some reason xr y input values are reversed, so we have to negate those
-	
+	# Probably have to make these primary and secondary at some point too
 	left_x_axis.axis_value = xr_left_controller.get_vector2("primary").x
 	left_y_axis.axis_value = -xr_left_controller.get_vector2("primary").y
 	
 	right_x_axis.axis_value = xr_right_controller.get_vector2("primary").x
 	right_y_axis.axis_value = -xr_right_controller.get_vector2("primary").y
 	
-	Input.parse_input_event(left_x_axis)
-	Input.parse_input_event(left_y_axis)
-	Input.parse_input_event(right_x_axis)
-	Input.parse_input_event(right_y_axis)
+	# If dpad toggle button is active, then send joystick inputs to dpad instead
+	if dpad_toggle_active:
+		if left_x_axis.axis_value < -0.5:
+			dpad_left.pressed = true
+			Input.parse_input_event(dpad_left)
+		else:
+			dpad_left.pressed = false
+			Input.parse_input_event(dpad_left)
+			
+			
+		if left_x_axis.axis_value >= 0.5:
+			dpad_right.pressed = true
+			Input.parse_input_event(dpad_right)
+		else:
+			dpad_right.pressed = false
+			Input.parse_input_event(dpad_right)
+			
+			
+		if left_y_axis.axis_value < -0.5:
+			dpad_up.pressed = true
+			Input.parse_input_event(dpad_up)
+		else:
+			dpad_up.pressed = false
+			Input.parse_input_event(dpad_up)
+			
+		if left_y_axis.axis_value >= 0.5:
+			dpad_down.pressed = true
+			Input.parse_input_event(dpad_down)
+		else:
+			dpad_down.pressed = false
+			Input.parse_input_event(dpad_down)
+	
+	# Otherwise process joystick like normal		
+	else:
+		Input.parse_input_event(left_x_axis)
+		Input.parse_input_event(left_y_axis)
+		Input.parse_input_event(right_x_axis)
+		Input.parse_input_event(right_y_axis)
+
+# Temporary signals for now for debugging and fine tuning
+func _on_gesture_area_area_entered(area):
+	print("detected user's hand in gesture activation area")
+
+
+func _on_gesture_area_area_exited(area):
+	print("detected user's hand left gesture activation area")
