@@ -14,8 +14,12 @@ extends Node3D
 
 var primary_action_map : Dictionary
 var secondary_action_map : Dictionary
-var xr_interface: XRInterface
-
+var xr_interface : XRInterface
+var grip_deadzone : float = 0.7
+var left_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var left_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var right_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var right_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 
 #var active_ui_node
 
@@ -59,7 +63,7 @@ func _ready() -> void:
 func _process(_delta : float) -> void:
 	if Engine.get_process_frames() % 90 == 0:
 		_eval_tree_new()
-	
+	process_joystick_inputs()
 # Possible alternative version, constantly checks for current camera 3D, will have to determine later which works best
 func _eval_tree_new() -> void:
 	# Ensure Vsync stays OFF!
@@ -167,8 +171,8 @@ func map_xr_controllers_to_action_map():
 	xr_right_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
 	xr_left_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
 	xr_right_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
-	xr_left_controller.connect("input_vector2_changed", Callable(self, "handle_secondary_xr_vector2"))
-	xr_right_controller.connect("input_vector2_changed", Callable(self, "handle_primary_xr_vector2"))
+	#xr_left_controller.connect("input_vector2_changed", Callable(self, "handle_secondary_xr_vector2"))
+	#xr_right_controller.connect("input_vector2_changed", Callable(self, "handle_primary_xr_vector2"))
 	
 	
 	primary_action_map = {
@@ -184,7 +188,10 @@ func map_xr_controllers_to_action_map():
 		"by_button":JOY_BUTTON_Y
 	}
 	
-	
+	left_x_axis.axis = JOY_AXIS_LEFT_X
+	left_y_axis.axis = JOY_AXIS_LEFT_Y
+	right_x_axis.axis = JOY_AXIS_RIGHT_X
+	right_y_axis.axis = JOY_AXIS_RIGHT_Y
 
 func handle_primary_xr_inputs(button):
 	if primary_action_map.has(button):
@@ -250,15 +257,73 @@ func handle_secondary_xr_release(button):
 func handle_primary_xr_float(button, value):
 	print(button)
 	print(value)
-
+	if button == "trigger":
+		var event = InputEventJoypadMotion.new()
+		event.axis = JOY_AXIS_TRIGGER_RIGHT
+		event.axis_value = value
+		Input.parse_input_event(event)
+		
+	if button == "grip":
+		var event = InputEventJoypadButton.new()
+		event.button_index = primary_action_map["grip"]
+		if value >= grip_deadzone:
+			event.pressed = true
+		else:
+			event.pressed=false
+		Input.parse_input_event(event)
+		
 func handle_secondary_xr_float(button, value):
 	print(button)
 	print(value)
+	if button == "trigger":
+		var event = InputEventJoypadMotion.new()
+		event.axis = JOY_AXIS_TRIGGER_LEFT
+		event.axis_value = value
+		Input.parse_input_event(event)
+		
+	if button == "grip":
+		var event = InputEventJoypadButton.new()
+		event.button_index = secondary_action_map["grip"]
+		if value >= grip_deadzone:
+			event.pressed = true
+		else:
+			event.pressed=false
+		Input.parse_input_event(event)
 	
-func handle_primary_xr_vector2(button, value):
-	print(button)
-	print(value)
+#func handle_primary_xr_vector2(button, value):
+	#print(button)
+	#print(value)
+	#var x_axis = InputEventJoypadMotion.new()
+	#x_axis.axis = JOY_AXIS_RIGHT_X
+	#x_axis.axis_value = value.x
+	#Input.parse_input_event(x_axis)
+	#var y_axis = InputEventJoypadMotion.new()
+	#y_axis.axis = JOY_AXIS_RIGHT_Y
+	#y_axis.axis_value = value.y
+	#Input.parse_input_event(y_axis)
+	#
+#func handle_secondary_xr_vector2(button, value):
+	#print(button)
+	#print(value)
+	#var x_axis = InputEventJoypadMotion.new()
+	#x_axis.axis = JOY_AXIS_LEFT_X
+	#x_axis.axis_value = value.x
+	#Input.parse_input_event(x_axis)
+	#var y_axis = InputEventJoypadMotion.new()
+	#y_axis.axis = JOY_AXIS_LEFT_Y
+	#y_axis.axis_value = value.y
+	#Input.parse_input_event(y_axis)
+
+func process_joystick_inputs():
+	# For some reason xr y input values are reversed, so we have to negate those
 	
-func handle_secondary_xr_vector2(button, value):
-	print(button)
-	print(value)
+	left_x_axis.axis_value = xr_left_controller.get_vector2("primary").x
+	left_y_axis.axis_value = -xr_left_controller.get_vector2("primary").y
+	
+	right_x_axis.axis_value = xr_right_controller.get_vector2("primary").x
+	right_y_axis.axis_value = -xr_right_controller.get_vector2("primary").y
+	
+	Input.parse_input_event(left_x_axis)
+	Input.parse_input_event(left_y_axis)
+	Input.parse_input_event(right_x_axis)
+	Input.parse_input_event(right_y_axis)
