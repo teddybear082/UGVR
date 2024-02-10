@@ -9,6 +9,8 @@
 
 -Display 2D UI of most Godot 4 3D games in an interactable panel in the VR world
 
+-Basic emulation of xbox game pad with motion controls (except dpad and start / select buttons)
+
 ## Presently not working:
 
 -Everything else
