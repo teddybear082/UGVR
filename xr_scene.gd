@@ -71,6 +71,7 @@ var secondary_pointer = null
 
 var xr_interface : XRInterface
 var active_canvas_layer : CanvasLayer
+var xr_world_scale : float = 1.0
 
 func _ready() -> void:
 	set_process(false)
@@ -101,13 +102,14 @@ func _ready() -> void:
 		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
 		print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 
-		# Add scene under secondary viewport
-		#var node_2d = Control.new()
+		# Setup secondary viewport for use with canvaslayer node contents, if any found
 		xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
-		#node_2d.size = xr_secondary_viewport2d_in_3d.viewport_size
-		#xr_secondary_viewport2d_in_3d_subviewport.add_child(node_2d, true)
+		
 		# Set up xr controllers to emulate gamepad
 		map_xr_controllers_to_action_map()
+		
+		# Set XR worldscale (eventually user configurable)
+		xr_origin_3d.world_scale = xr_world_scale
 		
 		set_process(true)
 	else:
@@ -180,12 +182,10 @@ func _eval_tree_new() -> void:
 			print("making canvas layer active: ", canvas_layer)
 			active_canvas_layer = canvas_layer
 			canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
+			# This works, only remaining problem is canvas layer is too small in some games, not sure why
 			
-			#var canvas_layer_children = canvas_layer.get_children()
-			#for child in canvas_layer_children:
-				#print("Canvas layer child found: ", child)
-				#xr_secondary_viewport2d_in_3d_subviewport.get_child(0).add_child(child.duplicate())
-			#xr_secondary_viewport2d_in_3d._update_render()
+			
+			
 	# First attempt below
 	# find out if there is a CanvasLayer node and if so try to display its contents on secondary viewport screen
 		
@@ -222,12 +222,7 @@ func _eval_tree_new() -> void:
 			#xr_secondary_viewport2d_in_3d.get_node("StaticBody3D")._viewport = canvas_layer_viewport
 			#print(xr_secondary_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 			#break
-	#for ui_node in potential_ui_nodes:
-		#if ui_node.is_class("Container") or ui_node.is_class("ColorRect") or ui_node.is_class("Panel") or ui_node.get_class() == "Control":
-			## Check if we've found ui_node  before by determining if its in our custom group, if not add it to group
-			#if not ui_node.is_in_group("possible_xr_uis"):
-				#ui_node.add_to_group("possible_xr_uis")
-				#ui_node_final_candidates.append(ui_node)
+	
 	
 	
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
