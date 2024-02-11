@@ -10,6 +10,8 @@ extends Node3D
 @onready var xr_camera_3d : XRCamera3D = xr_origin_3d.get_node("XRCamera3D")
 @onready var xr_main_viewport2d_in_3d : Node3D = xr_camera_3d.get_node("XRMainViewport2Din3D")
 @onready var xr_main_viewport2d_in_3d_subviewport : SubViewport = xr_main_viewport2d_in_3d.get_node("Viewport")
+@onready var xr_secondary_viewport2d_in_3d : Node3D = xr_camera_3d.get_node("XRSecondaryViewport2Din3D")
+@onready var xr_secondary_viewport2d_in_3d_subviewport : SubViewport = xr_secondary_viewport2d_in_3d.get_node("Viewport")
 @onready var xr_left_controller : XRController3D = xr_origin_3d.get_node("XRController3D")
 @onready var xr_right_controller : XRController3D = xr_origin_3d.get_node("XRController3D2")
 @onready var gesture_area : Area3D = xr_camera_3d.get_node("GestureArea")
@@ -68,6 +70,7 @@ var primary_pointer = null
 var secondary_pointer = null
 
 var xr_interface : XRInterface
+var active_canvas_layer : CanvasLayer
 
 func _ready() -> void:
 	set_process(false)
@@ -98,6 +101,11 @@ func _ready() -> void:
 		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
 		print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 
+		# Add scene under secondary viewport
+		#var node_2d = Control.new()
+		xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
+		#node_2d.size = xr_secondary_viewport2d_in_3d.viewport_size
+		#xr_secondary_viewport2d_in_3d_subviewport.add_child(node_2d, true)
 		# Set up xr controllers to emulate gamepad
 		map_xr_controllers_to_action_map()
 		
@@ -159,6 +167,68 @@ func _eval_tree_new() -> void:
 					remote_t.remote_path = xr_origin_3d.get_path()
 				
 					camera.add_child(remote_t)
+					
+	# second attempt to find canvas layer and display it
+	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
+	print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
+	
+	if potential_canvas_layer_nodes == []:
+		return
+	
+	for canvas_layer in potential_canvas_layer_nodes:
+		if canvas_layer.visible == true and active_canvas_layer != canvas_layer:
+			print("making canvas layer active: ", canvas_layer)
+			active_canvas_layer = canvas_layer
+			canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
+			
+			#var canvas_layer_children = canvas_layer.get_children()
+			#for child in canvas_layer_children:
+				#print("Canvas layer child found: ", child)
+				#xr_secondary_viewport2d_in_3d_subviewport.get_child(0).add_child(child.duplicate())
+			#xr_secondary_viewport2d_in_3d._update_render()
+	# First attempt below
+	# find out if there is a CanvasLayer node and if so try to display its contents on secondary viewport screen
+		
+	#var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
+	#print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
+	#if potential_canvas_layer_nodes == []:
+		#return
+	#
+	#for canvas_layer in potential_canvas_layer_nodes:
+		#if canvas_layer.visible == true and active_canvas_layer != canvas_layer:
+			#print("making canvas layer active: ", canvas_layer)
+			#active_canvas_layer = canvas_layer
+			#var canvas_layer_children = canvas_layer.get_children()
+			#for child in canvas_layer_children:
+				#print("Canvas layer child found: ", child)
+				#xr_secondary_viewport2d_in_3d_subviewport.get_child(0).add_child(child.duplicate())
+			#xr_secondary_viewport2d_in_3d._update_render()
+			#
+	## if we have an active canvas layer identified, check whether its visible to determine whether to show secondary viewport
+	#if active_canvas_layer:
+		#print(active_canvas_layer.visible)
+		#if active_canvas_layer.visible == false:
+			#xr_secondary_viewport2d_in_3d.hide()
+		#else:
+			#xr_secondary_viewport2d_in_3d.show()
+		
+		
+			#var canvas_layer_viewport = canvas_layer.get_custom_viewport()
+			#print(canvas_layer_viewport)
+			#xr_secondary_viewport2d_in_3d.set_viewport_size(canvas_layer_viewport.get_visible_rect().size)
+			#xr_secondary_viewport2d_in_3d_subviewport.world_2d = canvas_layer_viewport.world_2d
+			#print(canvas_layer_viewport.world2d)
+			#print(xr_main_viewport2d_in_3d_subviewport.world2d)
+			#xr_secondary_viewport2d_in_3d.get_node("StaticBody3D")._viewport = canvas_layer_viewport
+			#print(xr_secondary_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+			#break
+	#for ui_node in potential_ui_nodes:
+		#if ui_node.is_class("Container") or ui_node.is_class("ColorRect") or ui_node.is_class("Panel") or ui_node.get_class() == "Control":
+			## Check if we've found ui_node  before by determining if its in our custom group, if not add it to group
+			#if not ui_node.is_in_group("possible_xr_uis"):
+				#ui_node.add_to_group("possible_xr_uis")
+				#ui_node_final_candidates.append(ui_node)
+	
 	
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
 	# If so could cycle through group of possible cameras and remove.

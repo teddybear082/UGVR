@@ -14,6 +14,7 @@ radius = 0.2
 radius = 0.2
 
 [node name="XrScene" type="Node3D"]
+process_mode = 3
 script = ExtResource("1_fmh2y")
 
 [node name="XROrigin3D" type="XROrigin3D" parent="."]
@@ -23,6 +24,11 @@ current = true
 
 [node name="XRMainViewport2Din3D" parent="XROrigin3D/XRCamera3D" instance=ExtResource("3_f316b")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -2.8)
+viewport_size = Vector2(1920, 1080)
+unshaded = true
+
+[node name="XRSecondaryViewport2Din3D" parent="XROrigin3D/XRCamera3D" instance=ExtResource("3_f316b")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -3.2)
 viewport_size = Vector2(1920, 1080)
 unshaded = true
 
