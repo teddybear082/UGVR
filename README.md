@@ -11,17 +11,33 @@
 
 -Basic emulation of xbox game pad with motion controls (hotkey to enable start,select and dpad)
 
--Turn on/off menu pointers with gesture
+-Turn on/off menu pointers with gesture (place hand near top of head and press trigger)
 
-## Presently not working:
+-Snap and smooth turn of user camera (right now, default set to snap since no user config yet)
 
--Everything else
+## Presently not working / Roadmap:
+
+-Look into why some games work badly or only display black in headset (maybe shaders? game options?)
+
+-Implement options menu GUI
+
+-Allow user to save game options config
+
+-Allow user to remap controls in interface 
+
+-Allow user to map input action map actions to VR Controls (in the alternative of default mapping, for example, for pure keyboard games)
+
+-Allow user to change the location of the viewports where game 2D elements / Canvas layer appear
+
+-Continue to look at approach for CanvasLayer elements and 2D UI (if no canvas layer, use world 2d else use canvas layer?)
+
+-Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element, child nodes to controller locations
 
 # CREDITS
 
 -Decacis for inventing a way to easily inject XR Origin into camera for Godot 4 3D games
 
--JulianTodd and Decacis for figuring out a way for 2D UI in 3D games to work "universally" in VR with input
+-JulianTodd and Decacis for figuring out a way for 2D UI in 3D games to work "universally" in VR with input, and Bastiaan Olij for a fix to get CanvasLayer elements to appear in VR
 
 -Godot XR Tools team - going to be heavily leveraging scripts from Godot XR Tools
 
