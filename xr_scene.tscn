@@ -66,6 +66,7 @@ tracker = &"left_hand"
 pose = &"aim"
 
 [node name="XRPointer" parent="XROrigin3D/XRController3D" instance=ExtResource("2_l282w")]
+process_mode = 3
 show_target = true
 target_radius = 0.01
 
@@ -81,6 +82,7 @@ tracker = &"right_hand"
 pose = &"aim"
 
 [node name="XRPointer" parent="XROrigin3D/XRController3D2" instance=ExtResource("2_l282w")]
+process_mode = 3
 show_target = true
 
 [node name="GestureDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D2"]
@@ -89,6 +91,3 @@ collision_mask = 0
 
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GestureDetectionArea"]
 shape = SubResource("SphereShape3D_8i68g")
-
-[connection signal="area_entered" from="XROrigin3D/XRCamera3D/GestureArea" to="." method="_on_gesture_area_area_entered"]
-[connection signal="area_exited" from="XROrigin3D/XRCamera3D/GestureArea" to="." method="_on_gesture_area_area_exited"]

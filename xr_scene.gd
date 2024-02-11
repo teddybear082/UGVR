@@ -307,6 +307,9 @@ func map_xr_controllers_to_action_map():
 	primary_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
 	secondary_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
 	primary_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
+	primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
+	# Will be a configurable option which stick turns, for now assume primary
+	#secondary_controller.connect("input_vector2_changed", Callable(self, "secondary_stick_moved"))
 	
 	# Map xr button input to joypad inputs
 	
@@ -509,6 +512,8 @@ func handle_secondary_xr_float(button, value):
 func process_joystick_inputs():
 	# For some reason xr y input values are reversed, so we have to negate those
 	# Probably have to make these primary and secondary at some point too
+	# Also likely have to include option to turn off x axis handling for primary if stick turning used
+	
 	left_x_axis.axis_value = xr_left_controller.get_vector2("primary").x
 	left_y_axis.axis_value = -xr_left_controller.get_vector2("primary").y
 	
@@ -554,10 +559,99 @@ func process_joystick_inputs():
 		Input.parse_input_event(right_x_axis)
 		Input.parse_input_event(right_y_axis)
 
-# Temporary signals for now for debugging and fine tuning
-func _on_gesture_area_area_entered(area):
-	print("detected user's hand in gesture activation area")
+
+# Decacis Smooth / Stick turning code
+
+enum TurningType {
+	SNAP = 0,
+	SMOOTH = 1
+}
+
+const DEADZONE : float = 0.65
+
+var last_stick_val : Vector2 = Vector2.ZERO
+var current_controller = null
+var currently_rotating : bool = false
+var already_performed_rotation : bool = false
+
+var turning_type : TurningType = TurningType.SNAP
+var turning_speed : float = 90.0
+var turning_degrees : float = 30.0
 
 
-func _on_gesture_area_area_exited(area):
-	print("detected user's hand left gesture activation area")
+# Again could include option to use secondary stick someday but turning off for now
+#func secondary_stick_moved(stick_name : String, value : Vector2) -> void:
+	#_stick_handler(secondary_controller, stick_name, value)
+			
+func primary_stick_moved(stick_name : String, value : Vector2) -> void:
+	_stick_handler(primary_controller, stick_name, value)
+
+
+func _stick_handler(c_controller : XRController3D, stick_name : String, value : Vector2) -> void:
+	if current_controller == null or current_controller == c_controller:
+		
+		if stick_name == "primary":
+			# Set stick value. Correct dead zones
+			# https://web.archive.org/web/20191208161810/http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
+			last_stick_val = Vector2(value.x, value.y)
+			if last_stick_val.length() < DEADZONE:
+				last_stick_val = Vector2.ZERO
+			else:
+				last_stick_val = last_stick_val.normalized() * ((last_stick_val.length() - DEADZONE) / (1 - DEADZONE))
+		
+		if not already_performed_rotation:
+			
+			if not currently_rotating and (last_stick_val.x < -0.5 or last_stick_val.x > 0.5):
+				_handle_camera_rotation_request(c_controller)
+			
+			elif last_stick_val.x > -0.5 and last_stick_val.x < 0.5:
+				currently_rotating = false
+				current_controller = null
+		
+		elif last_stick_val.x > -0.5 and last_stick_val.x < 0.5:
+			already_performed_rotation = false
+			currently_rotating = false
+			current_controller = null
+
+
+func _handle_camera_rotation_request(controller : XRController3D) -> void:
+	currently_rotating = true
+	current_controller = controller
+	
+	var rotation_angle : float = deg_to_rad(turning_degrees)
+	
+	if turning_type == TurningType.SNAP:
+		
+		if last_stick_val.x < 0:
+			rotation_angle = -rotation_angle
+			
+		_handle_rotation(rotation_angle)
+		already_performed_rotation = true
+	
+	elif turning_type == TurningType.SMOOTH:
+		_smooth_rotate()
+
+
+func _smooth_rotate() -> void:
+	if currently_rotating:
+		var angle2 : float = deg_to_rad(turning_speed) * get_process_delta_time()
+		
+		if last_stick_val.x < 0:
+			angle2 = -angle2
+		
+		_handle_rotation(angle2)
+		
+		await get_tree().process_frame
+		if currently_rotating:
+			_smooth_rotate()
+
+
+func _handle_rotation(angle : float) -> void:
+	var t1 : Transform3D = Transform3D()
+	var t2 : Transform3D = Transform3D()
+	var rot : Transform3D = Transform3D()
+
+	t1.origin = -xr_camera_3d.transform.origin
+	t2.origin = xr_camera_3d.transform.origin
+	rot = rot.rotated(Vector3(0.0, -1.0, 0.0), angle) ## <-- this is the rotation around the camera
+	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
