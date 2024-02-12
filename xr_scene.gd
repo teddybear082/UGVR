@@ -72,6 +72,7 @@ var secondary_pointer = null
 var xr_interface : XRInterface
 var active_canvas_layer : CanvasLayer
 var xr_world_scale : float = 1.0
+var enable_passthrough = false
 
 func _ready() -> void:
 	set_process(false)
@@ -149,7 +150,7 @@ func _eval_tree_new() -> void:
 			remote_t.update_scale = false
 			remote_t.remote_path = xr_origin_3d.get_path()
 			active_camera.add_child(remote_t)
-	
+
 	# fallback
 	if not active_camera:
 		print("No active cameras found, reverting to fallback search of cameras")
@@ -169,108 +170,42 @@ func _eval_tree_new() -> void:
 					remote_t.remote_path = xr_origin_3d.get_path()
 				
 					camera.add_child(remote_t)
-					
-	# second attempt to find canvas layer and display it
-	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
-	print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
-	
-	if potential_canvas_layer_nodes == []:
-		return
-	
-	for canvas_layer in potential_canvas_layer_nodes:
-		if canvas_layer.visible == true and active_canvas_layer != canvas_layer:
-			print("making canvas layer active: ", canvas_layer)
-			active_canvas_layer = canvas_layer
-			canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
-			# This works, only remaining problem is canvas layer is too small in some games, not sure why
 			
-			
-			
-	# First attempt below
-	# find out if there is a CanvasLayer node and if so try to display its contents on secondary viewport screen
-		
-	#var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
-	#print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
-	#if potential_canvas_layer_nodes == []:
-		#return
-	#
-	#for canvas_layer in potential_canvas_layer_nodes:
-		#if canvas_layer.visible == true and active_canvas_layer != canvas_layer:
-			#print("making canvas layer active: ", canvas_layer)
-			#active_canvas_layer = canvas_layer
-			#var canvas_layer_children = canvas_layer.get_children()
-			#for child in canvas_layer_children:
-				#print("Canvas layer child found: ", child)
-				#xr_secondary_viewport2d_in_3d_subviewport.get_child(0).add_child(child.duplicate())
-			#xr_secondary_viewport2d_in_3d._update_render()
-			#
-	## if we have an active canvas layer identified, check whether its visible to determine whether to show secondary viewport
-	#if active_canvas_layer:
-		#print(active_canvas_layer.visible)
-		#if active_canvas_layer.visible == false:
-			#xr_secondary_viewport2d_in_3d.hide()
-		#else:
-			#xr_secondary_viewport2d_in_3d.show()
-		
-		
-			#var canvas_layer_viewport = canvas_layer.get_custom_viewport()
-			#print(canvas_layer_viewport)
-			#xr_secondary_viewport2d_in_3d.set_viewport_size(canvas_layer_viewport.get_visible_rect().size)
-			#xr_secondary_viewport2d_in_3d_subviewport.world_2d = canvas_layer_viewport.world_2d
-			#print(canvas_layer_viewport.world2d)
-			#print(xr_main_viewport2d_in_3d_subviewport.world2d)
-			#xr_secondary_viewport2d_in_3d.get_node("StaticBody3D")._viewport = canvas_layer_viewport
-			#print(xr_secondary_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
-			#break
-	
-	
-	
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
-	# If so could cycle through group of possible cameras and remove.
-	
-	# Get active menu scene / UI - old approach, probably unnecesary but leaving in case needed someday as possible fallback option
-	#var active_gui = get_viewport().gui_get_focus_owner()
-	# In TPS demo, this returns the play button essentially. Maybe check up scene tree until node is no longer a Control, and use last one found as UI to display?
-	#print(active_gui)
-	#if active_gui != null:
-		#var viewport_gui = active_gui.duplicate()
-		#viewport_gui.get_parent().remove_child(viewport_gui)
-		#xr_main_viewport2d_in_3d.set_viewport_size(active_gui.get_size())
-		#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(viewport_gui)
-	
-	# Get all UI nodes that have the potential to be a top level menu
-	#var potential_ui_nodes : Array = get_node("/root").find_children("*", "Control", true, false)
-	#var ui_node_final_candidates : Array = []
-	#for ui_node in potential_ui_nodes:
-		#if ui_node.is_class("Container") or ui_node.is_class("ColorRect") or ui_node.is_class("Panel") or ui_node.get_class() == "Control":
-			## Check if we've found ui_node  before by determining if its in our custom group, if not add it to group
-			#if not ui_node.is_in_group("possible_xr_uis"):
-				#ui_node.add_to_group("possible_xr_uis")
-				#ui_node_final_candidates.append(ui_node)
-	##print(ui_node_final_candidates)
-	## Assume first one found that is visible is our UI? Find children will search recursively so best candidates are likely near top of list if not the top?
-	#for ui_node in ui_node_final_candidates:
-		#if ui_node.is_visible_in_tree():
-			#if active_ui_node != ui_node:
-				#active_ui_node = ui_node
-				#print(active_ui_node)
-				#break
-	#if active_ui_node != null:
-		#var new_viewport_ui_node = active_ui_node.duplicate()
-		#print(new_viewport_ui_node)
-		#print(new_viewport_ui_node.get_tree_string_pretty())
-		#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(new_viewport_ui_node)
-		#xr_main_viewport2d_in_3d._update_render()
-		#set_process(false)
+	# If so could cycle through group of possible cameras and remove.		
 
-	# Possible replacement to allow code to continue to run
-	#for ui_node in ui_node_final_candidates:
-		#if ui_node.is_visible_in_tree():
-			#if active_ui_node != ui_node:
-				#new_viewport_ui_node = ui_node.duplicate()
-				#xr_main_viewport2d_in_3d.get_node("Viewport").add_child(new_viewport_ui_node)
-				#xr_main_viewport2d_in_3d._update_render()
-				#active_ui_node = new_viewport_ui_node
+
+	# Find canvas layer and display it
+	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled
+	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
+	#print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
+	
+	if potential_canvas_layer_nodes != []:
+		
+		for canvas_layer in potential_canvas_layer_nodes:
+			if canvas_layer.visible == true and active_canvas_layer != canvas_layer:
+				print("making canvas layer active: ", canvas_layer)
+				# Have to think about another way of handling in case there are multiple canvas layers
+				active_canvas_layer = canvas_layer
+				canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
+
+
+	# if user enabled passthrough mode, try to enable it by finding world environment and setting sky to passthrough color (may not work, need to test on airlink/oculus)
+	if enable_passthrough and xr_interface.is_passthrough_supported():
+		var passthrough_color = Color(0,0,0,0.2)
+		print("trying passthrough setup")
+		var potential_world_environment_nodes : Array = get_node("/root").find_children("*", "WorldEnvironment", true, false)
+		if potential_world_environment_nodes != []:
+			for world_environment in potential_world_environment_nodes:
+				if not world_environment.is_in_group("world_environment_nodes"):
+					print("New world environment node found: ", world_environment)
+					print(world_environment.print_tree_pretty())
+					world_environment.add_to_group("world_environment_nodes")
+					var environment : Environment = world_environment.get_environment()
+					environment.set_bg_color(passthrough_color)
+					environment.set_background(Environment.BG_COLOR)
+		
+			enable_passthrough = xr_interface.start_passthrough()
 
 # Function to set up VR Controllers to emulate gamepad
 func map_xr_controllers_to_action_map():
