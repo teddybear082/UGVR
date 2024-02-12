@@ -33,6 +33,10 @@
 
 -Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element, child nodes to controller locations
 
+## Use
+
+Not presently intended for regular users as this tool is in heavy development / testing, and the code may regularly break or change. For devs or testers, see instructions in Wiki.
+
 # CREDITS
 
 -Decacis for inventing a way to easily inject XR Origin into camera for Godot 4 3D games
