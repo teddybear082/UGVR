@@ -73,8 +73,8 @@ var xr_interface : XRInterface
 var active_canvas_layer : CanvasLayer
 var xr_world_scale : float = 1.0
 var enable_passthrough = false
-# Right now use camera method 1 for Strummer's pond, use camera method 2 for GarageRally, until figure out universal fix
-var xr_camera_method = 1
+# Camera method 2 works for everything so far now
+var xr_camera_method = 2
 var current_camera = null
 var current_camera_remote_transform = null
 
@@ -183,6 +183,7 @@ func _eval_tree_new() -> void:
 		#print(cameras)
 		for camera in cameras:
 			if camera != xr_camera_3d:
+				# If we haven't found camera before, add it to our group for possible group functions someday, and add a remote transform
 				if not camera.is_in_group("possible_xr_cameras"):
 					camera.add_to_group("possible_xr_cameras")
 					print("New camera found: ", camera)
@@ -190,18 +191,18 @@ func _eval_tree_new() -> void:
 					remote_t.name = "XRRemoteTransform"
 					remote_t.update_rotation = false
 					remote_t.update_scale = false
-					remote_t.remote_path = self.get_path()
+					remote_t.remote_path = xr_origin_3d.get_path()
 					camera.add_child(remote_t)
-				if camera != current_camera:
-					print("New active camera: ", camera)
+				# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, make it current
+				if camera != current_camera and camera.current == true:
+					print("Found a current camera that is not xr camera_3d: ", camera)
 					if current_camera_remote_transform != null:
 						print("Clearing previous remote transform")
 						current_camera_remote_transform.remote_path = ""
 					current_camera_remote_transform = camera.find_child("*XRRemoteTransform*",false,false)
 					print("Current camera remote transform: ", current_camera_remote_transform)
-					current_camera = camera		
-	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
-	# If so could cycle through group of possible cameras and remove.		
+					current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
+					current_camera = camera
 
 
 	# Find canvas layer and display it
@@ -235,6 +236,7 @@ func _eval_tree_new() -> void:
 					environment.set_background(Environment.BG_COLOR)
 		
 			enable_passthrough = xr_interface.start_passthrough()
+
 
 # Function to set up VR Controllers to emulate gamepad
 func map_xr_controllers_to_action_map():
