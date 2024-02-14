@@ -73,6 +73,10 @@ var xr_interface : XRInterface
 var active_canvas_layer : CanvasLayer
 var xr_world_scale : float = 1.0
 var enable_passthrough = false
+# Right now use camera method 1 for Strummer's pond, use camera method 2 for GarageRally, until figure out universal fix
+var xr_camera_method = 1
+var current_camera = null
+var current_camera_remote_transform = null
 
 func _ready() -> void:
 	set_process(false)
@@ -136,41 +140,66 @@ func _eval_tree_new() -> void:
 	# Try automatically overwriting game options to set max FPS at 144 to avoid hard caps at low frame rate
 	Engine.set_max_fps(144)
 	
-	# Get active camera3D
-	var active_camera : Camera3D = get_viewport().get_camera_3d()
+	# Pick between two user-configurable methods for finding camera (e.g., Sturmmer's Pond vs. GarageRally)
+	if xr_camera_method == 1:
+		# Get active camera3D
+		var active_camera : Camera3D = get_viewport().get_camera_3d()
 	
-	# Check if we've found active_camera before by determining if its in our custom group, if not add it to group and add remote transform
-	if active_camera:
-		if not active_camera.is_in_group("possible_xr_cameras"):
-			print("New active camera found")
-			active_camera.add_to_group("possible_xr_cameras")
-			print("Active camera: ", active_camera)
-			var remote_t : RemoteTransform3D = RemoteTransform3D.new()
-			remote_t.update_rotation = false
-			remote_t.update_scale = false
-			remote_t.remote_path = xr_origin_3d.get_path()
-			active_camera.add_child(remote_t)
+		# Check if we've found active_camera before by determining if its in our custom group, if not add it to group and add remote transform
+		if active_camera:
+			if not active_camera.is_in_group("possible_xr_cameras"):
+				print("New active camera found")
+				active_camera.add_to_group("possible_xr_cameras")
+				print("Active camera: ", active_camera)
+				var remote_t : RemoteTransform3D = RemoteTransform3D.new()
+				remote_t.update_rotation = false
+				remote_t.update_scale = false
+				remote_t.remote_path = xr_origin_3d.get_path()
+				active_camera.add_child(remote_t)
 
-	# fallback
-	if not active_camera:
-		print("No active cameras found, reverting to fallback search of cameras")
+		# fallback
+		if not active_camera:
+			print("No active cameras found, reverting to fallback search of cameras")
+			var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
+			print(cameras)
+			for camera in cameras:
+				if camera != xr_camera_3d:
+					#set_process(false)
+					if camera.is_current() and not camera.is_in_group("possible_xr_cameras"):
+						camera.add_to_group("possible_xr_cameras")
+						print("final camera selected: ", camera)
+						var remote_t : RemoteTransform3D = RemoteTransform3D.new()
+					
+						remote_t.update_rotation = false
+						remote_t.update_scale = false
+					
+						remote_t.remote_path = xr_origin_3d.get_path()
+					
+						camera.add_child(remote_t)
+	elif xr_camera_method == 2:
+		# Get active camera3D
+		var remote_t : RemoteTransform3D = null
 		var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
-		print(cameras)
+		#print(cameras)
 		for camera in cameras:
 			if camera != xr_camera_3d:
-				#set_process(false)
-				if camera.is_current() and not camera.is_in_group("possible_xr_cameras"):
+				if not camera.is_in_group("possible_xr_cameras"):
 					camera.add_to_group("possible_xr_cameras")
-					print("final camera selected: ", camera)
-					var remote_t : RemoteTransform3D = RemoteTransform3D.new()
-				
+					print("New camera found: ", camera)
+					remote_t = RemoteTransform3D.new()
+					remote_t.name = "XRRemoteTransform"
 					remote_t.update_rotation = false
 					remote_t.update_scale = false
-				
-					remote_t.remote_path = xr_origin_3d.get_path()
-				
+					remote_t.remote_path = self.get_path()
 					camera.add_child(remote_t)
-			
+				if camera != current_camera:
+					print("New active camera: ", camera)
+					if current_camera_remote_transform != null:
+						print("Clearing previous remote transform")
+						current_camera_remote_transform.remote_path = ""
+					current_camera_remote_transform = camera.find_child("*XRRemoteTransform*",false,false)
+					print("Current camera remote transform: ", current_camera_remote_transform)
+					current_camera = camera		
 	# Do we need to do something to remove the remote transforms from other cameras here? Remains to be seen.
 	# If so could cycle through group of possible cameras and remove.		
 
