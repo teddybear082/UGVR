@@ -78,6 +78,7 @@ var enable_passthrough : bool = false
 var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
+var already_set_up : bool = false
 
 func _ready() -> void:
 	set_process(false)
@@ -545,7 +546,9 @@ func _handle_rotation(angle : float) -> void:
 
 
 func _on_xr_started():
-
+	# Only set up once not every time user goes in and out of VR
+	if already_set_up:
+		return
 	# Turn off v-sync!
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	
@@ -599,3 +602,6 @@ func _on_xr_started():
 		welcome_label_3d.show()
 		await get_tree().create_timer(12.0).timeout
 		welcome_label_3d.hide()
+	
+	# Once set up, don't do it again during session
+	already_set_up = true
