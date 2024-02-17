@@ -7,6 +7,7 @@ extends Node3D
 
 # Core XR Scene Components
 @onready var xr_origin_3d : XROrigin3D = $XROrigin3D
+@onready var xr_start : Node = xr_origin_3d.get_node("StartXR")
 @onready var xr_camera_3d : XRCamera3D = xr_origin_3d.get_node("XRCamera3D")
 @onready var xr_main_viewport2d_in_3d : Node3D = xr_camera_3d.get_node("XRMainViewport2Din3D")
 @onready var xr_main_viewport2d_in_3d_subviewport : SubViewport = xr_main_viewport2d_in_3d.get_node("Viewport")
@@ -68,61 +69,19 @@ var secondary_controller = XRController3D
 var secondary_detection_area : Area3D
 var primary_pointer = null
 var secondary_pointer = null
-
-var xr_interface : XRInterface
-var active_canvas_layer : CanvasLayer
-var xr_world_scale : float = 1.0
-var enable_passthrough = false
-# Camera method 2 works for everything so far now
-var xr_camera_method = 2
 var current_camera = null
 var current_camera_remote_transform = null
 
+var xr_interface : XRInterface
+var xr_world_scale : float = 1.0
+var enable_passthrough : bool = false
+var disable_2d_ui : bool = false
+var gui_embed_subwindows : bool = false
+var show_welcome_label : bool = true
+
 func _ready() -> void:
 	set_process(false)
-	
-	xr_interface = XRServer.find_interface("OpenXR")
-	if xr_interface and xr_interface.is_initialized():
-		print("OpenXR initialized successfully")
-
-		# Turn off v-sync!
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-		
-		# Set viewport2din3d to correct size
-		var vp_size : Vector2 = xr_interface.get_render_target_size()
-		print("Viewport size: ", vp_size)
-		xr_main_viewport2d_in_3d.set_viewport_size = vp_size
-		
-		# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport, this allows 2D UI to appear in VR
-		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
-		xr_main_viewport2d_in_3d._update_render()
-
-		# Change our main viewport to output to the HMD
-		get_viewport().use_xr = true
-		get_viewport().gui_embed_subwindows = false
-		print("xr viewport ", get_viewport())
-		
-		# Enable input calculations on main viewport 2D UI with Viewport2Din3D node
-		print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
-		xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
-		print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
-
-		# Setup secondary viewport for use with canvaslayer node contents, if any found
-		xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
-		
-		# Set up xr controllers to emulate gamepad
-		map_xr_controllers_to_action_map()
-		
-		# Set XR worldscale (eventually user configurable)
-		xr_origin_3d.world_scale = xr_world_scale
-		
-		set_process(true)
-	else:
-		print("OpenXR not initialized, please check if your headset is connected")
-
-	# Clear Welcome label (probably someday can make it a config not to show again)
-	await get_tree().create_timer(12.0).timeout
-	welcome_label_3d.hide()
+	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
 
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -140,69 +99,37 @@ func _eval_tree_new() -> void:
 	# Try automatically overwriting game options to set max FPS at 144 to avoid hard caps at low frame rate
 	Engine.set_max_fps(144)
 	
-	# Pick between two user-configurable methods for finding camera (e.g., Sturmmer's Pond vs. GarageRally)
-	if xr_camera_method == 1:
-		# Get active camera3D
-		var active_camera : Camera3D = get_viewport().get_camera_3d()
-	
-		# Check if we've found active_camera before by determining if its in our custom group, if not add it to group and add remote transform
-		if active_camera:
-			if not active_camera.is_in_group("possible_xr_cameras"):
-				print("New active camera found")
-				active_camera.add_to_group("possible_xr_cameras")
-				print("Active camera: ", active_camera)
-				var remote_t : RemoteTransform3D = RemoteTransform3D.new()
+	# Get active camera3D by looking for an array of Camera3D nodes in the scene tree
+	var remote_t : RemoteTransform3D = null
+	var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
+	#print(cameras)
+	# For each camera, check if it's not our XR Camera
+	for camera in cameras:
+		if camera != xr_camera_3d:
+			# If we haven't found camera before, add it to our group for possible group functions someday, and add a remote transform
+			if not camera.is_in_group("possible_xr_cameras"):
+				camera.add_to_group("possible_xr_cameras")
+				print("New camera found: ", camera)
+				print("Camera's viewport is: ", camera.get_viewport())
+				print("Camera's window is: ", camera.get_window())
+				remote_t = RemoteTransform3D.new()
+				remote_t.name = "XRRemoteTransform"
 				remote_t.update_rotation = false
 				remote_t.update_scale = false
 				remote_t.remote_path = xr_origin_3d.get_path()
-				active_camera.add_child(remote_t)
-
-		# fallback
-		if not active_camera:
-			print("No active cameras found, reverting to fallback search of cameras")
-			var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
-			print(cameras)
-			for camera in cameras:
-				if camera != xr_camera_3d:
-					#set_process(false)
-					if camera.is_current() and not camera.is_in_group("possible_xr_cameras"):
-						camera.add_to_group("possible_xr_cameras")
-						print("final camera selected: ", camera)
-						var remote_t : RemoteTransform3D = RemoteTransform3D.new()
-					
-						remote_t.update_rotation = false
-						remote_t.update_scale = false
-					
-						remote_t.remote_path = xr_origin_3d.get_path()
-					
-						camera.add_child(remote_t)
-	elif xr_camera_method == 2:
-		# Get active camera3D
-		var remote_t : RemoteTransform3D = null
-		var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
-		#print(cameras)
-		for camera in cameras:
-			if camera != xr_camera_3d:
-				# If we haven't found camera before, add it to our group for possible group functions someday, and add a remote transform
-				if not camera.is_in_group("possible_xr_cameras"):
-					camera.add_to_group("possible_xr_cameras")
-					print("New camera found: ", camera)
-					remote_t = RemoteTransform3D.new()
-					remote_t.name = "XRRemoteTransform"
-					remote_t.update_rotation = false
-					remote_t.update_scale = false
-					remote_t.remote_path = xr_origin_3d.get_path()
-					camera.add_child(remote_t)
-				# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, make it current
-				if camera != current_camera and camera.current == true:
-					print("Found a current camera that is not xr camera_3d: ", camera)
-					if current_camera_remote_transform != null:
-						print("Clearing previous remote transform")
-						current_camera_remote_transform.remote_path = ""
-					current_camera_remote_transform = camera.find_child("*XRRemoteTransform*",false,false)
-					print("Current camera remote transform: ", current_camera_remote_transform)
-					current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
-					current_camera = camera
+				camera.add_child(remote_t)
+			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
+			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
+				print("Found a current camera that is not xr camera_3d: ", camera)
+				print("Camera's viewport is: ", camera.get_viewport())
+				print("Camera's window is: ", camera.get_window())
+				if current_camera_remote_transform != null:
+					print("Clearing previous remote transform")
+					current_camera_remote_transform.remote_path = ""
+				current_camera_remote_transform = camera.find_child("*XRRemoteTransform*",false,false)
+				print("Current camera remote transform: ", current_camera_remote_transform)
+				current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
+				current_camera = camera
 
 
 	# Find canvas layer and display it
@@ -213,10 +140,9 @@ func _eval_tree_new() -> void:
 	if potential_canvas_layer_nodes != []:
 		
 		for canvas_layer in potential_canvas_layer_nodes:
-			if canvas_layer.visible == true and active_canvas_layer != canvas_layer:
+			if canvas_layer.visible == true and not canvas_layer.is_in_group("active_canvas_layers"):
 				print("making canvas layer active: ", canvas_layer)
-				# Have to think about another way of handling in case there are multiple canvas layers
-				active_canvas_layer = canvas_layer
+				canvas_layer.add_to_group("active_canvas_layers")
 				canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
 
 
@@ -616,3 +542,60 @@ func _handle_rotation(angle : float) -> void:
 	t2.origin = xr_camera_3d.transform.origin
 	rot = rot.rotated(Vector3(0.0, -1.0, 0.0), angle) ## <-- this is the rotation around the camera
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
+
+
+func _on_xr_started():
+
+	# Turn off v-sync!
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	
+	xr_interface = XRServer.find_interface("OpenXR")
+		
+	# Set viewport2din3d to correct size
+	var vp_size = xr_interface.get_render_target_size()
+	print("Viewport size: ", vp_size)
+	# Should the following be disabled?
+	#xr_main_viewport2d_in_3d.set_viewport_size(vp_size)
+		
+	# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport, this allows 2D UI to appear in VR
+	if disable_2d_ui == false:
+		print("Viewport world2d: ", get_viewport().world_2d)
+		#get_viewport().vrs_mode = Viewport.VRS_DISABLED
+		#get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+		#get_viewport().use_hdr_2d = false
+		#get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
+		xr_main_viewport2d_in_3d._update_render()
+
+	if gui_embed_subwindows == true:
+		get_viewport().gui_embed_subwindows = true
+	
+	else:
+		get_viewport().gui_embed_subwindows = false
+	
+	# Enable input calculations on main viewport 2D UI with Viewport2Din3D node
+	print("xr viewport ", get_viewport())
+	print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+	xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
+	print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+
+	# Setup secondary viewport for use with canvaslayer node contents, if any found
+	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
+		
+	# Set up xr controllers to emulate gamepad
+	map_xr_controllers_to_action_map()
+		
+	# Set XR worldscale (eventually user configurable)
+	xr_origin_3d.world_scale = xr_world_scale
+		
+	# Print final viewport and window of xr camera
+	print("XR Camera's viewport is: ", xr_camera_3d.get_viewport())
+	print("XR Camera's window is: ", xr_camera_3d.get_window()) 
+	
+	set_process(true)
+
+	# Clear Welcome label (probably someday can make it a config not to show again)
+	if show_welcome_label:
+		welcome_label_3d.show()
+		await get_tree().create_timer(12.0).timeout
+		welcome_label_3d.hide()
