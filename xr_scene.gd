@@ -94,6 +94,9 @@ func _process(_delta : float) -> void:
 
 # Constantly checks for current camera 3D
 func _eval_tree_new() -> void:
+	# Check to make sure main viewport still uses xr
+	get_viewport().use_xr = true
+	
 	# Ensure Vsync stays OFF!
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	
