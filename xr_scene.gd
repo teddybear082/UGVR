@@ -21,6 +21,7 @@ extends Node3D
 @onready var left_xr_pointer = xr_left_controller.get_node("XRPointer")
 @onready var right_xr_pointer = xr_right_controller.get_node("XRPointer")
 @onready var welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
+@onready var xr_config_handler = get_node("XRConfigHandler")
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
 var secondary_action_map : Dictionary
@@ -560,12 +561,13 @@ func _on_xr_started():
 	# Set viewport2din3d to correct size
 	var vp_size = xr_interface.get_render_target_size()
 	print("Viewport size: ", vp_size)
-	# Should the following be disabled?
+	# Should the following be disabled? Seems so from testing, probably rely on user config instead
 	#xr_main_viewport2d_in_3d.set_viewport_size(vp_size)
 		
 	# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport, this allows 2D UI to appear in VR
 	if disable_2d_ui == false:
 		print("Viewport world2d: ", get_viewport().world_2d)
+		# Possible future options but seem to be unnecessary for now
 		#get_viewport().vrs_mode = Viewport.VRS_DISABLED
 		#get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 		#get_viewport().use_hdr_2d = false
@@ -597,6 +599,11 @@ func _on_xr_started():
 	# Print final viewport and window of xr camera
 	print("XR Camera's viewport is: ", xr_camera_3d.get_viewport())
 	print("XR Camera's window is: ", xr_camera_3d.get_window()) 
+	
+	# Resize viewports based on world scale - doesnt quite work need to think more - appears too large when world scale high
+	#xr_main_viewport2d_in_3d.screen_size *= xr_world_scale
+	#xr_secondary_viewport2d_in_3d.screen_size *= xr_world_scale 
+	
 	
 	set_process(true)
 
