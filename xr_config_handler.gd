@@ -216,7 +216,7 @@ var game_action_map_cfg_path : String
 var cfg_base_path : String
 
 
-# Called when the node enters the scene tree for the first time.
+# Set up files for configs
 func _ready():
 	
 	# Determine where to put file, then save it
@@ -234,15 +234,21 @@ func _ready():
 		
 	if not FileAccess.file_exists(game_options_cfg_path):
 		FileAccess.open(game_options_cfg_path, FileAccess.WRITE)
-		var complete = save_game_options_cfg_file(game_options_cfg_path)	
+		var complete = save_game_options_cfg_file(game_options_cfg_path)
+	else:
+		var complete = load_game_options_cfg_file(game_options_cfg_path)	
 	
 	if not FileAccess.file_exists(game_action_map_cfg_path):
 		FileAccess.open(game_action_map_cfg_path, FileAccess.WRITE)
 		var complete = create_action_map_cfg_file(game_action_map_cfg_path)
+	else:
+		var complete = load_action_map_file(game_action_map_cfg_path)
 		
 	if not FileAccess.file_exists(game_control_map_cfg_path):
 		FileAccess.open(game_control_map_cfg_path, FileAccess.WRITE)
 		var complete = create_game_control_map_cfg_file(game_control_map_cfg_path)
+	else:
+		var complete = load_game_control_map_cfg_file(game_control_map_cfg_path)
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -250,117 +256,287 @@ func _process(delta):
 	pass
 
 
-func load_game_options_cfg_file(file_path):
-	pass
+func load_game_options_cfg_file(file_path: String) -> bool:
+	var game_options_cfg_file = ConfigFile.new()
+	err = game_options_cfg_file.load(file_path)
+
+	if err != OK:
+		printerr("Error loading game options config file! Error: ", err)
+		return false
+
+	# Load camera options
+	vr_world_scale = game_options_cfg_file.get_value("CAMERA_OPTIONS", "vr_world_scale", vr_world_scale)
+	camera_offset = game_options_cfg_file.get_value("CAMERA_OPTIONS", "camera_offset", camera_offset)
+	experimental_passthrough = game_options_cfg_file.get_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
+
+	# Load viewport options
+	primary_viewport_location = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_location", primary_viewport_location)
+	secondary_viewport_location = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "secondary_viewport_location", secondary_viewport_location)
+	primary_viewport_size_multiplier = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_size_multiplier", primary_viewport_size_multiplier)
+	secondary_viewport_size_multiplier = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "secondary_viewport_size_multiplier", secondary_viewport_size_multiplier)
+	primary_viewport_offset = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_offset", primary_viewport_offset)
+	secondary_viewport_offset = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "secondary_viewport_offset", secondary_viewport_offset)
+
 	return true
-	
+
+
 func save_game_options_cfg_file(file_path):
 	var game_options_cfg_file = ConfigFile.new()
 	err = game_options_cfg_file.load(file_path)
-	
+
 	if err != OK:
 		printerr("Error saving game options config file!  Error: ", err)
 		return false
-	
-	game_options_cfg_file.set_value("Camera_Options", "vr_world_scale", vr_world_scale)
-	
-	game_options_cfg_file.set_value("Camera_Options", "camera_offset", camera_offset)
 
-	game_options_cfg_file.set_value("Camera_Options", "experimental_passthrough", experimental_passthrough)
-	
-	game_options_cfg_file.set_value("Viewports_Options", "primary_viewport_location", primary_viewport_location)
+	game_options_cfg_file.set_value("CAMERA_OPTIONS", "vr_world_scale", vr_world_scale)
 
-	game_options_cfg_file.set_value("Viewports_Options", "secondary_viewport_location", secondary_viewport_location)
+	game_options_cfg_file.set_value("CAMERA_OPTIONS", "camera_offset", camera_offset)
 
-	game_options_cfg_file.set_value("Viewports_Options", "primary_viewport_size_multiplier", primary_viewport_size_multiplier)
+	game_options_cfg_file.set_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
 
-	game_options_cfg_file.set_value("Viewports_Options", "secondary_viewport_size_multiplier", secondary_viewport_size_multiplier)
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "primary_viewport_location", primary_viewport_location)
 
-	game_options_cfg_file.set_value("Viewports_Options", "primary_viewport_offset", primary_viewport_offset)
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "secondary_viewport_location", secondary_viewport_location)
 
-	game_options_cfg_file.set_value("Viewports_Options", "secondary_viewport_offset", secondary_viewport_offset)
-	
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "primary_viewport_size_multiplier", primary_viewport_size_multiplier)
+
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "secondary_viewport_size_multiplier", secondary_viewport_size_multiplier)
+
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "primary_viewport_offset", primary_viewport_offset)
+
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "secondary_viewport_offset", secondary_viewport_offset)
+
 	err = game_options_cfg_file.save(file_path)
+
 	return true
 
 func create_action_map_cfg_file(file_path):
 	var action_map_cfg_file = ConfigFile.new()
 	err = action_map_cfg_file.load(file_path)
-	
+
 	if err != OK:
 		printerr("Error creating action map config file!  Error: ", err)
 		return false
-	
+	# Get a list of the input actions the game dev used
 	var flat_screen_actions = InputMap.get_actions()
+
+	# Only try to remap custom actions, so check if default first
 	for action in flat_screen_actions:
-		var game_action_events = InputMap.action_get_events(action)
-		for event in game_action_events:
-			if not event in default_action_map_actions:
+		if not action in default_action_map_actions:
+			# Get input events assigned to each action
+			var game_action_events = InputMap.action_get_events(action)
+			for event in game_action_events:
+				# If not mapped to a joypad input let user know otherwise show mapping
 				if not event is InputEventJoypadButton and not event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, needs_mapping_phrase)
 				elif event is InputEventJoypadButton:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, default_gamepad_button_names[event.button_index])
 				elif event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, [default_joystick_axis_names[event.axis], event.axis_value])
+	# Save config file
 	err = action_map_cfg_file.save(file_path)
 	return true
-	
+
 func save_action_map_cfg_file(file_path):
-	pass
+	var action_map_cfg_file = ConfigFile.new()
+	err = action_map_cfg_file.load(file_path)
+
+	if err != OK:
+		printerr("Error creating action map config file!  Error: ", err)
+		return false
+	# Get a list of the input actions the game dev used
+	var flat_screen_actions = InputMap.get_actions()
+
+	# Only try to remap custom actions, so check if default first
+	for action in flat_screen_actions:
+		if not action in default_action_map_actions:
+			# Get input events assigned to each action
+			var game_action_events = InputMap.action_get_events(action)
+			for event in game_action_events:
+				# If not mapped to a joypad input let user know otherwise show mapping
+				if not event is InputEventJoypadButton and not event is InputEventJoypadMotion:
+					action_map_cfg_file.set_value("GAME_ACTIONS", action, needs_mapping_phrase)
+				elif event is InputEventJoypadButton:
+					action_map_cfg_file.set_value("GAME_ACTIONS", action, default_gamepad_button_names[event.button_index])
+				elif event is InputEventJoypadMotion:
+					action_map_cfg_file.set_value("GAME_ACTIONS", action, [default_joystick_axis_names[event.axis], event.axis_value])
+	# Save config file
+	err = action_map_cfg_file.save(file_path)
 	return true
-	
-func load_action_map_file(file_path):
-	pass
+
+func load_action_map_file(file_path: String) -> bool:
+	var action_map_cfg_file = ConfigFile.new()
+	err = action_map_cfg_file.load(file_path)
+
+	if err != OK:
+		printerr("Error loading action map config file: ", err)
+		return false
+
+	var game_action_events = InputMap.get_actions()
+
+	for action in game_action_events:
+		if action_map_cfg_file.has_section_key("GAME_ACTIONS", action):
+			var value = action_map_cfg_file.get_value("GAME_ACTIONS", action)
+			if value != needs_mapping_phrase:
+				if value is String:
+					# Button mapping
+					var button_index = default_gamepad_button_names.find(value)
+					if button_index != -1:
+						var event = InputEventJoypadButton.new()
+						event.button_index = button_index
+						InputMap.action_add_event(action, event)
+				elif value is Array and value.size() == 2:
+					# Axis mapping
+					var axis_name = value[0]
+					var axis_value = value[1]
+					var axis_index = default_joystick_axis_names.find(axis_name)
+					if axis_index != -1:
+						var event = InputEventJoypadMotion.new()
+						event.axis = axis_index
+						event.axis_value = axis_value
+						InputMap.action_add_event(action, event)
+
 	return true
 
 func save_game_control_map_cfg_file(file_path):
-	pass
-	return true
-
-func load_game_control_map_cfg_file(file_path):
-	pass
-	return true
-	
-func create_game_control_map_cfg_file(file_path):
 	var game_control_map_cfg_file = ConfigFile.new()
 	err = game_control_map_cfg_file.load(file_path)
-	
+
 	if err != OK:
 		printerr("Error saving game control map config: ", err)
 		return
-	
+
 	for key in primary_action_map:	
 		game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", key, default_gamepad_button_names[primary_action_map[key]])
-	
+
 	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "trigger", "Joypad RightTrigger")
-	
+
 	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "thumbstick", "Joypad RightStick")
-	
+
 	for key in secondary_action_map:
 		game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", key, default_gamepad_button_names[secondary_action_map[key]])
-	
+
 	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "trigger", "Joypad LeftTrigger")
-	
+
 	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "thumbstick", "Joypad LeftStick")
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button", gesture_pointer_activation_button)
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button", controller_for_dpad_activation_button)
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "dpad_activation_button", dpad_activation_button)
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_start_button", controller_for_start_button)
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "start_button", start_button)
-	
+
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_select_button", controller_for_select_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "select_button", select_button)
-	
+
 	err = game_control_map_cfg_file.save(file_path)
-	
+
+	return true
+
+func load_game_control_map_cfg_file(file_path: String) -> bool:
+	var game_control_map_cfg_file = ConfigFile.new()
+	err = game_control_map_cfg_file.load(file_path)
+
+	if err != OK:
+		printerr("Error loading game control map config: ", err)
+		return false
+
+	# Load primary controller mappings
+	for key in primary_action_map.keys():
+		if game_control_map_cfg_file.has_section_key("PRIMARY_CONTROLLER", key):
+			var button_name = game_control_map_cfg_file.get_value("PRIMARY_CONTROLLER", key)
+			var button_index = default_gamepad_button_names.find(button_name)
+			if button_index != -1:
+				primary_action_map[key] = button_index
+
+	# Load secondary controller mappings
+	for key in secondary_action_map.keys():
+		if game_control_map_cfg_file.has_section_key("SECONDARY_CONTROLLER", key):
+			var button_name = game_control_map_cfg_file.get_value("SECONDARY_CONTROLLER", key)
+			var button_index = default_gamepad_button_names.find(button_name)
+			if button_index != -1:
+				secondary_action_map[key] = button_index
+
+	# Load other control options
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_style"):
+		turning_style = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_style")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "primary_controller"):
+		primary_controller = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "primary_controller")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button"):
+		gesture_pointer_activation_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button"):
+		controller_for_dpad_activation_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "dpad_activation_button"):
+		dpad_activation_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "dpad_activation_button")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "controller_for_start_button"):
+		controller_for_start_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "controller_for_start_button")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "start_button"):
+		start_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "start_button")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "controller_for_select_button"):
+		controller_for_select_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "controller_for_select_button")
+
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "select_button"):
+		select_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "select_button")
+
+	return true
+
+
+func create_game_control_map_cfg_file(file_path):
+	var game_control_map_cfg_file = ConfigFile.new()
+	err = game_control_map_cfg_file.load(file_path)
+
+	if err != OK:
+		printerr("Error saving game control map config: ", err)
+		return
+
+	for key in primary_action_map:	
+		game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", key, default_gamepad_button_names[primary_action_map[key]])
+
+	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "trigger", "Joypad RightTrigger")
+
+	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "thumbstick", "Joypad RightStick")
+
+	for key in secondary_action_map:
+		game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", key, default_gamepad_button_names[secondary_action_map[key]])
+
+	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "trigger", "Joypad LeftTrigger")
+
+	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "thumbstick", "Joypad LeftStick")
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button", gesture_pointer_activation_button)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button", controller_for_dpad_activation_button)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "dpad_activation_button", dpad_activation_button)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_start_button", controller_for_start_button)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "start_button", start_button)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_select_button", controller_for_select_button)
+
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "select_button", select_button)
+
+	err = game_control_map_cfg_file.save(file_path)
+
 	return true
