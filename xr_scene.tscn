@@ -99,3 +99,6 @@ shape = SubResource("SphereShape3D_8i68g")
 
 [node name="XRConfigHandler" type="Node" parent="."]
 script = ExtResource("5_jiibt")
+
+[node name="XRAutoSaveTimer" type="Timer" parent="."]
+wait_time = 180.0

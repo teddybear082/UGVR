@@ -1,6 +1,18 @@
+## This node handles all the saving and loading of UGVR config files for options and game action mapping
 extends Node
 
-## This node handles all the saving and loading of UGVR config files for options and game action mapping
+signal xr_game_options_cfg_saved(path : String)
+
+signal xr_game_control_map_cfg_saved(path : String)
+
+signal xr_game_action_map_cfg_saved(path : String)
+
+signal xr_game_options_cfg_loaded(path : String)
+
+signal xr_game_control_map_cfg_loaded(path : String)
+
+signal xr_game_action_map_cfg_loaded(path : String)
+
 var needs_mapping_phrase = "needs_joypad_mapping"
 
 var default_action_map_actions = [
@@ -109,8 +121,6 @@ var default_joystick_axis_names: Array = [
 	"Joypad RightTrigger"
 ]
 
-var default_gamepad_button_maps : Dictionary = {}
-
 var primary_action_map = {
 		"grip_click":JOY_BUTTON_RIGHT_SHOULDER,
 		"primary_click":JOY_BUTTON_RIGHT_STICK,
@@ -131,14 +141,17 @@ enum TurningStyle {
 	SMOOTH = 1,
 	NONE = 2
 }
+
+# Maybe unnecessary; maybe we always use gamepad emulation, but still might want to turn this off if someone built a more robust game-specific mod
 var use_gamepad_emulation : bool = true
 
 # Maybe just use action mapping to assign joypad binds instead of ever "emulating" keyboard?
 var use_keyboard_emulation : bool = false
 
+# Stick turning style for camera
 var turning_style : TurningStyle = TurningStyle.SNAP
 
-#UGVR menu toggle combo (maybe by on both?)
+var ugvr_menu_toggle_combo : Dictionary = {"primary_controller" : ["primary_click"], "secondary_controller": ["primary_click"]}
 
 var gesture_pointer_activation_button : String = "trigger_click"
 
@@ -154,16 +167,12 @@ var start_button : String = "primary_click"
 
 var select_button : String = "by_button"
 
+# Have to decide if these should be left/right or primary/secondary
 var controller_for_dpad_activation_button : String = "right"
 
 var controller_for_start_button : String = "left"
 
 var controller_for_select_button : String = "left"
-
-#If custom mapping:
-#Set click events to buttons mapped by user
-
-#if keyboard+mouse- trigger keyboard / mouse input? How to distinguish? Use special API?  Depends on how ConfigFile parses values
 
 
 ## CAMERA Config Options
@@ -173,6 +182,7 @@ var vr_world_scale : float = 1.0
 var camera_offset : Vector3 = Vector3(0,0,0)
 
 var experimental_passthrough : bool = false
+
 
 ##VIEWPORTS Config options
 enum ViewportLocation {
@@ -197,6 +207,9 @@ var primary_viewport_offset : Vector3 = Vector3(0,0,0)
 
 var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 
+## AUTOSAVE OPTIONS
+var autosave_action_map_duration_in_secs : int = 180
+
 
 ## ConfigFile variables
 
@@ -215,19 +228,24 @@ var game_action_map_cfg_path : String
 # Used to store config base path
 var cfg_base_path : String
 
-
 # Set up files for configs
 func _ready():
+	var game_name : String = ProjectSettings.get_setting("application/config/name")
 	
+	if game_name == "":
+		game_name = "default"
+	
+	game_name = game_name.to_lower().validate_filename()
+		
 	# Determine where to put file, then save it
 	if OS.has_feature("editor"):
 		cfg_base_path = "user://XRConfigs"
 	else:
 		cfg_base_path = OS.get_executable_path().get_base_dir() + "/XRConfigs" 
 	
-	game_options_cfg_path = cfg_base_path + "/" + "xr_game_options.cfg"
-	game_action_map_cfg_path = cfg_base_path + "/" + "xr_game_action_map.cfg"
-	game_control_map_cfg_path = cfg_base_path + "/" + "xr_game_control_map.cfg"
+	game_options_cfg_path = cfg_base_path + "/" + game_name + "_" + "xr_game_options.cfg"
+	game_action_map_cfg_path = cfg_base_path + "/" + game_name + "_" + "xr_game_action_map.cfg"
+	game_control_map_cfg_path = cfg_base_path + "/" + game_name + "_" + "xr_game_control_map.cfg"
 	
 	if not DirAccess.dir_exists_absolute(cfg_base_path):
 		DirAccess.make_dir_recursive_absolute(cfg_base_path)	
@@ -277,6 +295,11 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	primary_viewport_offset = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_offset", primary_viewport_offset)
 	secondary_viewport_offset = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "secondary_viewport_offset", secondary_viewport_offset)
 
+	# Load autosave options
+	autosave_action_map_duration_in_secs = game_options_cfg_file.get_value("AUTOSAVE_OPTIONS", "autosave_action_map_duration_in_secs", autosave_action_map_duration_in_secs)
+	
+	emit_signal("xr_game_options_cfg_loaded", file_path)
+	
 	return true
 
 
@@ -306,8 +329,12 @@ func save_game_options_cfg_file(file_path):
 
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "secondary_viewport_offset", secondary_viewport_offset)
 
+	game_options_cfg_file.set_value("AUTOSAVE_OPTIONS", "autosave_action_map_duration_in_secs", autosave_action_map_duration_in_secs)
+	
 	err = game_options_cfg_file.save(file_path)
-
+	
+	emit_signal("xr_game_options_cfg_saved", file_path)
+	
 	return true
 
 func create_action_map_cfg_file(file_path):
@@ -325,16 +352,25 @@ func create_action_map_cfg_file(file_path):
 		if not action in default_action_map_actions:
 			# Get input events assigned to each action
 			var game_action_events = InputMap.action_get_events(action)
+			# Some actions may have multiple events assigned, set this variable to prevent overwriting valid actions with "needs mapping"
+			var event_already_set_for_action = false
 			for event in game_action_events:
 				# If not mapped to a joypad input let user know otherwise show mapping
+				if event_already_set_for_action:
+					break
 				if not event is InputEventJoypadButton and not event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, needs_mapping_phrase)
 				elif event is InputEventJoypadButton:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, default_gamepad_button_names[event.button_index])
+					event_already_set_for_action = true
 				elif event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, [default_joystick_axis_names[event.axis], event.axis_value])
+					event_already_set_for_action = true
 	# Save config file
 	err = action_map_cfg_file.save(file_path)
+	
+	emit_signal("xr_game_action_map_cfg_saved", file_path)
+	
 	return true
 
 func save_action_map_cfg_file(file_path):
@@ -352,16 +388,25 @@ func save_action_map_cfg_file(file_path):
 		if not action in default_action_map_actions:
 			# Get input events assigned to each action
 			var game_action_events = InputMap.action_get_events(action)
+			# Some actions may have multiple events assigned, set this variable to prevent overwriting valid actions with "needs mapping"
+			var event_already_set_for_action = false
 			for event in game_action_events:
 				# If not mapped to a joypad input let user know otherwise show mapping
+				if event_already_set_for_action:
+					break
 				if not event is InputEventJoypadButton and not event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, needs_mapping_phrase)
 				elif event is InputEventJoypadButton:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, default_gamepad_button_names[event.button_index])
+					event_already_set_for_action = true
 				elif event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, [default_joystick_axis_names[event.axis], event.axis_value])
+					event_already_set_for_action = true
 	# Save config file
 	err = action_map_cfg_file.save(file_path)
+	
+	emit_signal("xr_game_action_map_cfg_saved", file_path)
+	
 	return true
 
 func load_action_map_file(file_path: String) -> bool:
@@ -395,7 +440,11 @@ func load_action_map_file(file_path: String) -> bool:
 						event.axis = axis_index
 						event.axis_value = axis_value
 						InputMap.action_add_event(action, event)
+				else:
+					printerr("Error in user action map config file - value is not recognized: ", value)
 
+	emit_signal("xr_game_action_map_cfg_loaded", file_path)
+	
 	return true
 
 func save_game_control_map_cfg_file(file_path):
@@ -424,6 +473,8 @@ func save_game_control_map_cfg_file(file_path):
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
 
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button", gesture_pointer_activation_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button", controller_for_dpad_activation_button)
@@ -440,6 +491,8 @@ func save_game_control_map_cfg_file(file_path):
 
 	err = game_control_map_cfg_file.save(file_path)
 
+	emit_signal("xr_game_control_map_cfg_saved", file_path)
+	
 	return true
 
 func load_game_control_map_cfg_file(file_path: String) -> bool:
@@ -457,6 +510,17 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			var button_index = default_gamepad_button_names.find(button_name)
 			if button_index != -1:
 				primary_action_map[key] = button_index
+			# Need to set analogue values for triggers and sticks separately
+			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
+				pass
+			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
+				pass
+			elif button_name == "Joypad RightStick" and key == "thumbstick":
+				pass
+			elif button_name == "Joypad LeftStick" and key == "thumbstick":
+				pass
+			else:	
+				printerr("Primary controller button mapping error, assigned key not recognized: ", button_name)
 
 	# Load secondary controller mappings
 	for key in secondary_action_map.keys():
@@ -465,7 +529,18 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			var button_index = default_gamepad_button_names.find(button_name)
 			if button_index != -1:
 				secondary_action_map[key] = button_index
-
+			# Need to set analogue values for triggers and sticks separately
+			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
+				pass
+			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
+				pass
+			elif button_name == "Joypad RightStick" and key == "thumbstick":
+				pass
+			elif button_name == "Joypad LeftStick" and key == "thumbstick":
+				pass
+			else:
+				printerr("Secondary controller button mapping error, assigned key not recognized: ", button_name)
+	
 	# Load other control options
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_style"):
 		turning_style = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_style")
@@ -473,6 +548,9 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "primary_controller"):
 		primary_controller = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "primary_controller")
 
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo"):
+		ugvr_menu_toggle_combo = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo")
+	
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button"):
 		gesture_pointer_activation_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button")
 
@@ -494,6 +572,8 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "select_button"):
 		select_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "select_button")
 
+	emit_signal("xr_game_control_map_cfg_loaded", file_path)
+	
 	return true
 
 
@@ -523,6 +603,8 @@ func create_game_control_map_cfg_file(file_path):
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
 
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button", gesture_pointer_activation_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button", controller_for_dpad_activation_button)
@@ -539,4 +621,6 @@ func create_game_control_map_cfg_file(file_path):
 
 	err = game_control_map_cfg_file.save(file_path)
 
+	emit_signal("xr_game_control_map_cfg_saved", file_path)
+	
 	return true

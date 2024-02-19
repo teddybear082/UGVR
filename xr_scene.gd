@@ -18,10 +18,12 @@ extends Node3D
 @onready var gesture_area : Area3D = xr_camera_3d.get_node("GestureArea")
 @onready var left_gesture_detection_area : Area3D = xr_left_controller.get_node("GestureDetectionArea")
 @onready var right_gesture_detection_area : Area3D = xr_right_controller.get_node("GestureDetectionArea")
-@onready var left_xr_pointer = xr_left_controller.get_node("XRPointer")
-@onready var right_xr_pointer = xr_right_controller.get_node("XRPointer")
-@onready var welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
-@onready var xr_config_handler = get_node("XRConfigHandler")
+@onready var left_xr_pointer : Node3D = xr_left_controller.get_node("XRPointer")
+@onready var right_xr_pointer : Node3D = xr_right_controller.get_node("XRPointer")
+@onready var welcome_label_3d : Label3D = xr_camera_3d.get_node("WelcomeLabel3D")
+@onready var xr_config_handler : Node = get_node("XRConfigHandler")
+@onready var xr_autosave_timer : Timer = get_node("XRAutoSaveTimer")
+
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
 var secondary_action_map : Dictionary
@@ -84,6 +86,7 @@ var already_set_up : bool = false
 func _ready() -> void:
 	set_process(false)
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
+	xr_autosave_timer.connect("timeout", Callable(self, "_on_xr_autosave_timer_timeout"))
 
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -553,6 +556,10 @@ func _on_xr_started():
 	# Only set up once not every time user goes in and out of VR
 	if already_set_up:
 		return
+	
+	# Once set up, don't do it again during session
+	already_set_up = true
+	
 	# Turn off v-sync!
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	
@@ -604,14 +611,20 @@ func _on_xr_started():
 	#xr_main_viewport2d_in_3d.screen_size *= xr_world_scale
 	#xr_secondary_viewport2d_in_3d.screen_size *= xr_world_scale 
 	
-	
 	set_process(true)
-
+	
 	# Clear Welcome label (probably someday can make it a config not to show again)
 	if show_welcome_label:
 		welcome_label_3d.show()
 		await get_tree().create_timer(12.0).timeout
 		welcome_label_3d.hide()
+		
+	# Start autosave config timer, at some point only set this in the config file loaded or created signal but just for testing for now
+	# Setting to 0 will disable autosave
+	if xr_config_handler.autosave_action_map_duration_in_secs != 0:
+		xr_autosave_timer.wait_time = xr_config_handler.autosave_action_map_duration_in_secs
+		xr_autosave_timer.start()
 	
-	# Once set up, don't do it again during session
-	already_set_up = true
+func _on_xr_autosave_timer_timeout():
+	# When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu
+	xr_config_handler.save_action_map_cfg_file(xr_config_handler.game_action_map_cfg_path)
