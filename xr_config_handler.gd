@@ -299,7 +299,7 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	autosave_action_map_duration_in_secs = game_options_cfg_file.get_value("AUTOSAVE_OPTIONS", "autosave_action_map_duration_in_secs", autosave_action_map_duration_in_secs)
 	
 	emit_signal("xr_game_options_cfg_loaded", file_path)
-	
+	print("Xr game options config loaded")
 	return true
 
 
@@ -410,6 +410,7 @@ func save_action_map_cfg_file(file_path):
 	return true
 
 func load_action_map_file(file_path: String) -> bool:
+	print("Loading user config action map file")
 	var action_map_cfg_file = ConfigFile.new()
 	err = action_map_cfg_file.load(file_path)
 
@@ -422,28 +423,34 @@ func load_action_map_file(file_path: String) -> bool:
 	for action in game_action_events:
 		if action_map_cfg_file.has_section_key("GAME_ACTIONS", action):
 			var value = action_map_cfg_file.get_value("GAME_ACTIONS", action)
-			if value != needs_mapping_phrase:
-				if value is String:
-					# Button mapping
-					var button_index = default_gamepad_button_names.find(value)
-					if button_index != -1:
-						var event = InputEventJoypadButton.new()
-						event.button_index = button_index
-						InputMap.action_add_event(action, event)
-				elif value is Array and value.size() == 2:
-					# Axis mapping
-					var axis_name = value[0]
-					var axis_value = value[1]
-					var axis_index = default_joystick_axis_names.find(axis_name)
-					if axis_index != -1:
-						var event = InputEventJoypadMotion.new()
-						event.axis = axis_index
-						event.axis_value = axis_value
-						InputMap.action_add_event(action, event)
-				else:
-					printerr("Error in user action map config file - value is not recognized: ", value)
+			if typeof(value) == TYPE_STRING or typeof(value) == TYPE_STRING_NAME:
+				# Button mapping
+				var button_index = default_gamepad_button_names.find(value)
+				if button_index != -1:
+					var event = InputEventJoypadButton.new()
+					event.button_index = button_index
+					InputMap.action_add_event(action, event)
+			elif typeof(value) == TYPE_ARRAY:
+				if value.size() != 2:
+					printerr("Array used for action map for action is wrong size!", action, value)
+					continue
+				# Axis mapping
+				var axis_name = value[0]
+				var axis_value = value[1]
+				var axis_index = default_joystick_axis_names.find(axis_name)
+				if axis_index != -1:
+					print("Valid axis index found, adding event to action")
+					var event = InputEventJoypadMotion.new()
+					event.axis = axis_index
+					event.axis_value = axis_value
+					#event.deadzone = 0.1
+					InputMap.action_add_event(action, event)
+			else:
+				printerr("Error in user action map config file - value is not recognized: ", value)
 
 	emit_signal("xr_game_action_map_cfg_loaded", file_path)
+	
+	print("finished loading action map")
 	
 	return true
 
@@ -511,7 +518,7 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			if button_index != -1:
 				primary_action_map[key] = button_index
 			# Need to set analogue values for triggers and sticks separately
-			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
+			if button_name == "Joypad RightTrigger" and key != "thumbstick":
 				pass
 			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
 				pass
@@ -530,7 +537,7 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			if button_index != -1:
 				secondary_action_map[key] = button_index
 			# Need to set analogue values for triggers and sticks separately
-			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
+			if button_name == "Joypad RightTrigger" and key != "thumbstick":
 				pass
 			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
 				pass
@@ -573,7 +580,7 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 		select_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "select_button")
 
 	emit_signal("xr_game_control_map_cfg_loaded", file_path)
-	
+	print("xr game control map cfg loaded")
 	return true
 
 
