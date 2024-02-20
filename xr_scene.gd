@@ -124,7 +124,7 @@ func _eval_tree_new() -> void:
 				remote_t.name = "XRRemoteTransform"
 				remote_t.update_rotation = false
 				remote_t.update_scale = false
-				remote_t.remote_path = xr_origin_3d.get_path()
+				remote_t.remote_path = ""#xr_origin_3d.get_path()
 				camera.add_child(remote_t)
 			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
 			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
@@ -321,10 +321,11 @@ func handle_primary_xr_release(button):
 func handle_secondary_xr_inputs(button):
 	#print("secondary button pressed: ", button)
 
-	# If pressing pointer activation button and making gesture, toggle pointer
+	# If pressing pointer activation button and making gesture, toggle pointer and (temporarily) load config map in case it has been overwritten by game
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
 		primary_pointer.set_enabled(!primary_pointer.enabled)
 		secondary_pointer.set_enabled(!secondary_pointer.enabled)
+		xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
 	
 	if start_toggle_active and button == start_button:
 		var event = InputEventJoypadButton.new()

@@ -518,7 +518,7 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			if button_index != -1:
 				primary_action_map[key] = button_index
 			# Need to set analogue values for triggers and sticks separately
-			if button_name == "Joypad RightTrigger" and key != "thumbstick":
+			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
 				pass
 			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
 				pass
@@ -537,7 +537,7 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			if button_index != -1:
 				secondary_action_map[key] = button_index
 			# Need to set analogue values for triggers and sticks separately
-			if button_name == "Joypad RightTrigger" and key != "thumbstick":
+			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
 				pass
 			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
 				pass
