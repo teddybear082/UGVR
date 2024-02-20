@@ -50,6 +50,12 @@ var select_toggle_active : bool = false
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
 
+# Button to load action map with gesture (temporary, should eventually be GUI)
+var gesture_load_action_map_button = "by_button"
+
+# Button to set height with gesture (temporary, should eventually be GUI)
+var gesture_set_user_height_button = "by_button"
+
 # Button to activate dpad alternative binding for joystick
 var dpad_activation_button = "primary_touch"
 
@@ -70,10 +76,10 @@ var primary_controller : XRController3D
 var primary_detection_area : Area3D
 var secondary_controller = XRController3D
 var secondary_detection_area : Area3D
-var primary_pointer = null
-var secondary_pointer = null
-var current_camera = null
-var current_camera_remote_transform = null
+var primary_pointer : Node3D = null
+var secondary_pointer : Node3D = null
+var current_camera : Camera3D = null
+var current_camera_remote_transform : RemoteTransform3D = null
 
 var xr_interface : XRInterface
 var xr_world_scale : float = 1.0
@@ -82,6 +88,7 @@ var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
 var already_set_up : bool = false
+var user_height : float = 0.0
 
 func _ready() -> void:
 	set_process(false)
@@ -138,7 +145,15 @@ func _eval_tree_new() -> void:
 				print("Current camera remote transform: ", current_camera_remote_transform)
 				current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
 				current_camera = camera
-
+	# If for some reason we haven't found a current camera after cycling through all cameras in scene, fall back to setting remote path of available cameras to xr_origin_3d
+	if current_camera == null:
+		var available_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
+		for available_camera in available_cameras:
+			var available_camera_remote_transform = available_camera.find_child("*XRRemoteTransform",false,false)
+			available_camera_remote_transform.remote_path = xr_origin_3d.get_path()
+			current_camera_remote_transform = available_camera_remote_transform
+		# Set last camera as current camera to avoid running through this special loop every iteration
+		current_camera = available_cameras[-1]
 
 	# Find canvas layer and display it
 	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled
@@ -242,6 +257,13 @@ func handle_primary_xr_inputs(button):
 		primary_pointer.set_enabled(!primary_pointer.enabled)
 		secondary_pointer.set_enabled(!secondary_pointer.enabled)
 	
+	# (Temporary) Set user height if user presses designated button while doing gesture
+	if button == gesture_set_user_height_button and gesture_area.overlaps_area(primary_detection_area):
+		print("Now resetting user height")
+		user_height = xr_camera_3d.transform.origin.y
+		print("User height: ", user_height)
+		apply_user_height(user_height)
+	
 	# If user just pressed activation button, activate special combo buttons
 	if button == dpad_activation_button:
 		dpad_toggle_active = true
@@ -321,10 +343,13 @@ func handle_primary_xr_release(button):
 func handle_secondary_xr_inputs(button):
 	#print("secondary button pressed: ", button)
 
-	# If pressing pointer activation button and making gesture, toggle pointer and (temporarily) load config map in case it has been overwritten by game
+	# If pressing pointer activation button and making gesture, toggle pointer
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
 		primary_pointer.set_enabled(!primary_pointer.enabled)
 		secondary_pointer.set_enabled(!secondary_pointer.enabled)
+	
+	# If button is assigned to load action map (temporary,this should be a GUI option) and making gesture, load action map
+	if button == gesture_load_action_map_button and gesture_area.overlaps_area(secondary_detection_area):
 		xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
 	
 	if start_toggle_active and button == start_button:
@@ -625,7 +650,24 @@ func _on_xr_started():
 	if xr_config_handler.autosave_action_map_duration_in_secs != 0:
 		xr_autosave_timer.wait_time = xr_config_handler.autosave_action_map_duration_in_secs
 		xr_autosave_timer.start()
-	
+
+# When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu	
 func _on_xr_autosave_timer_timeout():
-	# When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu
 	xr_config_handler.save_action_map_cfg_file(xr_config_handler.game_action_map_cfg_path)
+
+# Used when user performs gesture (or later, presses GUI button) to set height. Tradeoff is that will be camera dependent.
+func apply_user_height(height: float):
+	print("Changing all available camera remote transforms to reflect user height")
+	var cameras_available = get_tree().get_nodes_in_group("possible_xr_cameras")
+	for camera in cameras_available:
+		var remote_transform = camera.find_child("*XRRemoteTransform*",false,false)
+		if remote_transform:
+			remote_transform.transform.origin.y = 0.0
+			remote_transform.transform.origin.y -= (height * xr_world_scale)
+	
+	# XR Origin approach, use if there's no active camera 3D in the scene
+	if current_camera_remote_transform == null:
+		print("No current remote transform. Changing xr origin height")
+		xr_origin_3d.transform.origin.y = 0.0
+		xr_origin_3d.transform.origin.y -= (height * xr_world_scale)
+		print("xr origin 3d new height: ", xr_origin_3d.transform.origin.y)

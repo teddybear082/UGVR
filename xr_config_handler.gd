@@ -427,6 +427,12 @@ func load_action_map_file(file_path: String) -> bool:
 				# Button mapping
 				var button_index = default_gamepad_button_names.find(value)
 				if button_index != -1:
+					# If we have a valid button to assign, check whether there are already joypad events assigned to this action,and if so, delete them to avoid conflicting inputs
+					for original_event in InputMap.action_get_events(action):
+						if original_event.is_class("InputEventJoypadButton") or original_event.is_class("InputEventJoypadMotion"):
+							print("Original action map had joypad event assigned, deleting for new event")
+							InputMap.action_erase_event(action, original_event)
+					# Now add our new joypad event
 					var event = InputEventJoypadButton.new()
 					event.button_index = button_index
 					InputMap.action_add_event(action, event)
@@ -439,7 +445,12 @@ func load_action_map_file(file_path: String) -> bool:
 				var axis_value = value[1]
 				var axis_index = default_joystick_axis_names.find(axis_name)
 				if axis_index != -1:
-					print("Valid axis index found, adding event to action")
+					# If we have a valid input to assign, check whether there are already joypad events assigned to this action,and if so, delete them to avoid conflicting inputs
+					for original_event in InputMap.action_get_events(action):
+						if original_event.is_class("InputEventJoypadButton") or original_event.is_class("InputEventJoypadMotion"):
+							print("Original action map had joypad event assigned, deleting for new event")
+							InputMap.action_erase_event(action, original_event)
+					# Now add our fresh joypad event
 					var event = InputEventJoypadMotion.new()
 					event.axis = axis_index
 					event.axis_value = axis_value
