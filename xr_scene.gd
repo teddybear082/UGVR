@@ -136,8 +136,10 @@ func _eval_tree_new() -> void:
 				remote_t.name = "XRRemoteTransform"
 				remote_t.update_rotation = false
 				remote_t.update_scale = false
-				remote_t.remote_path = ""#xr_origin_3d.get_path()
+				remote_t.remote_path = ""
 				camera.add_child(remote_t)
+				# If user has already set height at some point in session, adjust height by same for any new cameras that enter scene later
+				remote_t.transform.origin.y -= (user_height * xr_world_scale)
 			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
 			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
 				print("Found a current camera that is not xr camera_3d: ", camera)
