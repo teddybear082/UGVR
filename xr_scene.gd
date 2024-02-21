@@ -50,10 +50,10 @@ var select_toggle_active : bool = false
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
 
-# Button to load action map with gesture (temporary, should eventually be GUI)
+# Button to load action map with gesture (temporary, should eventually be GUI) - Needs to be included in config file
 var gesture_load_action_map_button = "by_button"
 
-# Button to set height with gesture (temporary, should eventually be GUI)
+# Button to set height with gesture (temporary, should eventually be GUI) - Needs to be included in config file
 var gesture_set_user_height_button = "by_button"
 
 # Button to activate dpad alternative binding for joystick
@@ -82,13 +82,18 @@ var current_camera : Camera3D = null
 var current_camera_remote_transform : RemoteTransform3D = null
 
 var xr_interface : XRInterface
+var already_set_up : bool = false
+var user_height : float = 0.0
+
+# Additional user config variables
 var xr_world_scale : float = 1.0
 var enable_passthrough : bool = false
 var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
-var already_set_up : bool = false
-var user_height : float = 0.0
+var emulate_mouse_movement : bool = true
+var emulated_mouse_sensitivity_multiplier : int = 10
+var emulated_mouse_deadzone : float = 0.25
 
 func _ready() -> void:
 	set_process(false)
@@ -480,6 +485,11 @@ func process_joystick_inputs():
 		Input.parse_input_event(right_x_axis)
 		Input.parse_input_event(right_y_axis)
 
+	# Allow emulation of mouse with right stick (should be switched to primary or a variable - mouse emulation controller stick or something)
+	if emulate_mouse_movement and (abs(right_x_axis.axis_value) > emulated_mouse_deadzone or abs(right_y_axis.axis_value) > emulated_mouse_deadzone):
+		var mouse_move = InputEventMouseMotion.new()
+		mouse_move.relative = Vector2(right_x_axis.axis_value, right_y_axis.axis_value) * emulated_mouse_sensitivity_multiplier
+		Input.parse_input_event(mouse_move)
 
 # Decacis Smooth / Stick turning code
 
