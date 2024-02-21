@@ -13,11 +13,16 @@
 
 -Turn on/off menu pointers with gesture (place hand near top of head and press trigger)
 
+-Take user height into account for camera position with gesture (place right hand near top of head and press B/Y)
+
+-reload user config of action map on demand in case game overwrites it, with gesture (place left hand near top of head and press B/Y)
+
+
 -Snap and smooth turn of user camera (right now, default set to snap since no user config yet)
 
-## Presently not working / Roadmap:
+-Allow user to map input action map actions to VR Controls (in the alternative of default mapping, for example, for pure keyboard games) (currently via manual config file only, which is created automatically when running game with mod for the first time in a special XRConfigs folder)
 
--Look into why some games work badly or only display black in headset (maybe shaders? game options?)
+## Presently not working / Roadmap:
 
 -Implement options menu GUI
 
@@ -25,11 +30,9 @@
 
 -Allow user to remap controls in interface 
 
--Allow user to map input action map actions to VR Controls (in the alternative of default mapping, for example, for pure keyboard games)
 
 -Allow user to change the location of the viewports where game 2D elements / Canvas layer appear
 
--Continue to look at approach for CanvasLayer elements and 2D UI (if no canvas layer, use world 2d else use canvas layer?)
 
 -Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element, child nodes to controller locations
 
