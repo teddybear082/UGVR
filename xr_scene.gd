@@ -91,9 +91,30 @@ var enable_passthrough : bool = false
 var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
-var emulate_mouse_movement : bool = true
+var stick_emulate_mouse_movement : bool = false
+var head_emulate_mouse_movement : bool = false
+var primary_controller_emulate_mouse_movement : bool = false
+var secondary_controller_emulate_mouse_movement : bool = false
 var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
+
+# Decacis Stick Turning Variables
+enum TurningType {
+	SNAP = 0,
+	SMOOTH = 1,
+	NONE = 2
+}
+
+const DEADZONE : float = 0.65
+
+var last_stick_val : Vector2 = Vector2.ZERO
+var current_controller = null
+var currently_rotating : bool = false
+var already_performed_rotation : bool = false
+
+var turning_type : TurningType = TurningType.SNAP
+var turning_speed : float = 90.0
+var turning_degrees : float = 30.0
 
 func _ready() -> void:
 	set_process(false)
@@ -224,8 +245,7 @@ func map_xr_controllers_to_action_map():
 	primary_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
 	secondary_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
 	primary_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
-	if not emulate_mouse_movement:
-		primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
+	primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
 	# Will be a configurable option which stick turns, for now assume primary
 	#secondary_controller.connect("input_vector2_changed", Callable(self, "secondary_stick_moved"))
 	
@@ -485,33 +505,17 @@ func process_joystick_inputs():
 	else:
 		Input.parse_input_event(left_x_axis)
 		Input.parse_input_event(left_y_axis)
-		if not emulate_mouse_movement:
+		if not stick_emulate_mouse_movement:
 			Input.parse_input_event(right_x_axis)
 			Input.parse_input_event(right_y_axis)
 
 	# Allow emulation of mouse with right stick (should be switched to primary or a variable - mouse emulation controller stick or something)
-	if emulate_mouse_movement and (abs(right_x_axis.axis_value) > emulated_mouse_deadzone or abs(right_y_axis.axis_value) > emulated_mouse_deadzone):
+	if stick_emulate_mouse_movement and (abs(right_x_axis.axis_value) > emulated_mouse_deadzone or abs(right_y_axis.axis_value) > emulated_mouse_deadzone):
 		var mouse_move = InputEventMouseMotion.new()
 		mouse_move.relative = Vector2(right_x_axis.axis_value, right_y_axis.axis_value) * emulated_mouse_sensitivity_multiplier
 		Input.parse_input_event(mouse_move)
 
 # Decacis Smooth / Stick turning code
-
-enum TurningType {
-	SNAP = 0,
-	SMOOTH = 1
-}
-
-const DEADZONE : float = 0.65
-
-var last_stick_val : Vector2 = Vector2.ZERO
-var current_controller = null
-var currently_rotating : bool = false
-var already_performed_rotation : bool = false
-
-var turning_type : TurningType = TurningType.SNAP
-var turning_speed : float = 90.0
-var turning_degrees : float = 30.0
 
 
 # Again could include option to use secondary stick someday but turning off for now
@@ -519,7 +523,9 @@ var turning_degrees : float = 30.0
 	#_stick_handler(secondary_controller, stick_name, value)
 			
 func primary_stick_moved(stick_name : String, value : Vector2) -> void:
-	_stick_handler(primary_controller, stick_name, value)
+	# If turning type is none, do not process stick turn movement
+	if not turning_type == TurningType.NONE:
+		_stick_handler(primary_controller, stick_name, value)
 
 
 func _stick_handler(c_controller : XRController3D, stick_name : String, value : Vector2) -> void:
