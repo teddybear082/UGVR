@@ -224,7 +224,8 @@ func map_xr_controllers_to_action_map():
 	primary_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
 	secondary_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
 	primary_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
-	primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
+	if not emulate_mouse_movement:
+		primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
 	# Will be a configurable option which stick turns, for now assume primary
 	#secondary_controller.connect("input_vector2_changed", Callable(self, "secondary_stick_moved"))
 	
@@ -484,8 +485,9 @@ func process_joystick_inputs():
 	else:
 		Input.parse_input_event(left_x_axis)
 		Input.parse_input_event(left_y_axis)
-		Input.parse_input_event(right_x_axis)
-		Input.parse_input_event(right_y_axis)
+		if not emulate_mouse_movement:
+			Input.parse_input_event(right_x_axis)
+			Input.parse_input_event(right_y_axis)
 
 	# Allow emulation of mouse with right stick (should be switched to primary or a variable - mouse emulation controller stick or something)
 	if emulate_mouse_movement and (abs(right_x_axis.axis_value) > emulated_mouse_deadzone or abs(right_y_axis.axis_value) > emulated_mouse_deadzone):
