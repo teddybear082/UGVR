@@ -29,10 +29,10 @@ var primary_action_map : Dictionary
 var secondary_action_map : Dictionary
 
 var grip_deadzone : float = 0.7
-var left_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
-var left_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
-var right_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
-var right_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var secondary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var secondary_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var primary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
+var primary_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var dpad_up : InputEventJoypadButton = InputEventJoypadButton.new()
 var dpad_down : InputEventJoypadButton = InputEventJoypadButton.new()
 var dpad_left : InputEventJoypadButton = InputEventJoypadButton.new()
@@ -265,10 +265,10 @@ func map_xr_controllers_to_action_map():
 	}
 	
 	# Map xr controller joysticks to gamepad joysticks
-	left_x_axis.axis = JOY_AXIS_LEFT_X
-	left_y_axis.axis = JOY_AXIS_LEFT_Y
-	right_x_axis.axis = JOY_AXIS_RIGHT_X
-	right_y_axis.axis = JOY_AXIS_RIGHT_Y
+	secondary_x_axis.axis = JOY_AXIS_LEFT_X
+	secondary_y_axis.axis = JOY_AXIS_LEFT_Y
+	primary_x_axis.axis = JOY_AXIS_RIGHT_X
+	primary_y_axis.axis = JOY_AXIS_RIGHT_Y
 	
 	# Create gamepad dpad inputs for emulation
 	dpad_up.button_index = JOY_BUTTON_DPAD_UP
@@ -460,18 +460,17 @@ func handle_secondary_xr_float(button, value):
 # Always process joystick analogue inputs
 func process_joystick_inputs():
 	# For some reason xr y input values are reversed, so we have to negate those
-	# Probably have to make these primary and secondary at some point too
-	# Also likely have to include option to turn off x axis handling for primary if stick turning used
+	# Likely have to include option to turn off x axis handling for primary if stick turning used
 	
-	left_x_axis.axis_value = xr_left_controller.get_vector2("primary").x
-	left_y_axis.axis_value = -xr_left_controller.get_vector2("primary").y
+	secondary_x_axis.axis_value = secondary_controller.get_vector2("primary").x
+	secondary_y_axis.axis_value = -secondary_controller.get_vector2("primary").y
 	
-	right_x_axis.axis_value = xr_right_controller.get_vector2("primary").x
-	right_y_axis.axis_value = -xr_right_controller.get_vector2("primary").y
+	primary_x_axis.axis_value = primary_controller.get_vector2("primary").x
+	primary_y_axis.axis_value = -primary_controller.get_vector2("primary").y
 	
 	# If dpad toggle button is active, then send joystick inputs to dpad instead
 	if dpad_toggle_active:
-		if left_x_axis.axis_value < -0.5:
+		if secondary_x_axis.axis_value < -0.5:
 			dpad_left.pressed = true
 			Input.parse_input_event(dpad_left)
 		else:
@@ -479,7 +478,7 @@ func process_joystick_inputs():
 			Input.parse_input_event(dpad_left)
 			
 			
-		if left_x_axis.axis_value >= 0.5:
+		if secondary_x_axis.axis_value >= 0.5:
 			dpad_right.pressed = true
 			Input.parse_input_event(dpad_right)
 		else:
@@ -487,14 +486,14 @@ func process_joystick_inputs():
 			Input.parse_input_event(dpad_right)
 			
 			
-		if left_y_axis.axis_value < -0.5:
+		if secondary_y_axis.axis_value < -0.5:
 			dpad_up.pressed = true
 			Input.parse_input_event(dpad_up)
 		else:
 			dpad_up.pressed = false
 			Input.parse_input_event(dpad_up)
 			
-		if left_y_axis.axis_value >= 0.5:
+		if secondary_y_axis.axis_value >= 0.5:
 			dpad_down.pressed = true
 			Input.parse_input_event(dpad_down)
 		else:
@@ -503,16 +502,16 @@ func process_joystick_inputs():
 	
 	# Otherwise process joystick like normal		
 	else:
-		Input.parse_input_event(left_x_axis)
-		Input.parse_input_event(left_y_axis)
+		Input.parse_input_event(secondary_x_axis)
+		Input.parse_input_event(secondary_y_axis)
 		if not stick_emulate_mouse_movement:
-			Input.parse_input_event(right_x_axis)
-			Input.parse_input_event(right_y_axis)
+			Input.parse_input_event(primary_x_axis)
+			Input.parse_input_event(primary_y_axis)
 
-	# Allow emulation of mouse with right stick (should be switched to primary or a variable - mouse emulation controller stick or something)
-	if stick_emulate_mouse_movement and (abs(right_x_axis.axis_value) > emulated_mouse_deadzone or abs(right_y_axis.axis_value) > emulated_mouse_deadzone):
+	# Allow emulation of mouse with primary (default: right) stick
+	if stick_emulate_mouse_movement and (abs(primary_x_axis.axis_value) > emulated_mouse_deadzone or abs(primary_y_axis.axis_value) > emulated_mouse_deadzone):
 		var mouse_move = InputEventMouseMotion.new()
-		mouse_move.relative = Vector2(right_x_axis.axis_value, right_y_axis.axis_value) * emulated_mouse_sensitivity_multiplier
+		mouse_move.relative = Vector2(primary_x_axis.axis_value, primary_y_axis.axis_value) * emulated_mouse_sensitivity_multiplier
 		Input.parse_input_event(mouse_move)
 
 # Decacis Smooth / Stick turning code

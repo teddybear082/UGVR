@@ -208,7 +208,7 @@ var primary_viewport_offset : Vector3 = Vector3(0,0,0)
 var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 
 ## AUTOSAVE OPTIONS
-var autosave_action_map_duration_in_secs : int = 180
+var autosave_action_map_duration_in_secs : int = 0 # Off by default
 
 
 ## ConfigFile variables
