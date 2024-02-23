@@ -181,7 +181,8 @@ func _eval_tree_new() -> void:
 			available_camera_remote_transform.remote_path = xr_origin_3d.get_path()
 			current_camera_remote_transform = available_camera_remote_transform
 		# Set last camera as current camera to avoid running through this special loop every iteration
-		current_camera = available_cameras[-1]
+		if available_cameras != null and available_cameras.size() >= 1:
+			current_camera = available_cameras[-1]
 
 	# Find canvas layer and display it
 	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled
@@ -431,7 +432,7 @@ func handle_primary_xr_float(button, value):
 		
 	if button == "grip":
 		var event = InputEventJoypadButton.new()
-		event.button_index = primary_action_map["grip"]
+		event.button_index = primary_action_map["grip_click"]
 		if value >= grip_deadzone:
 			event.pressed = true
 		else:
@@ -450,7 +451,7 @@ func handle_secondary_xr_float(button, value):
 		
 	if button == "grip":
 		var event = InputEventJoypadButton.new()
-		event.button_index = secondary_action_map["grip"]
+		event.button_index = secondary_action_map["grip_click"]
 		if value >= grip_deadzone:
 			event.pressed = true
 		else:
