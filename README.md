@@ -20,7 +20,7 @@
 
 -Snap and smooth turn of user camera (right now, default set to snap since no user config yet)
 
--Allow user to map input action map actions to VR Controls (in the alternative of default mapping, for example, for pure keyboard games) (currently via manual config file only, which is created automatically when running game with mod for the first time in a special XRConfigs folder)
+-Allow user to map input action map actions to VR Controls (in the alternative of default mapping, for example, for pure keyboard games) (currently via manual config file only, which is created automatically when running game with mod for the first time in a special XRConfigs folder)  - see https://github.com/teddybear082/UGVR/wiki/Remapping-Controls-with-Action-Map-Config for more details.
 
 ## Presently not working / Roadmap:
 
