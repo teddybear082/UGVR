@@ -1,10 +1,12 @@
-[gd_scene load_steps=9 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=11 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_pointer.tscn" id="2_l282w"]
 [ext_resource type="PackedScene" uid="uid://clc5dre31iskm" path="res://start_xr.tscn" id="2_rrkev"]
 [ext_resource type="PackedScene" uid="uid://clujaf3u776a3" path="res://xr_viewport_2d_in_3d.tscn" id="3_f316b"]
+[ext_resource type="Script" path="res://xr_roomscale_controller.gd" id="5_1018u"]
 [ext_resource type="Script" path="res://xr_config_handler.gd" id="5_jiibt"]
+[ext_resource type="Script" path="res://xr_physical_movement_controller.gd" id="6_1wyxn"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_10cyd"]
 radius = 0.3
@@ -25,6 +27,9 @@ current = true
 [node name="StartXR" parent="XROrigin3D" instance=ExtResource("2_rrkev")]
 
 [node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
+
+[node name="Neck" type="Node3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0.1)
 
 [node name="XRMainViewport2Din3D" parent="XROrigin3D/XRCamera3D" instance=ExtResource("3_f316b")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -2.8)
@@ -96,6 +101,13 @@ collision_mask = 0
 
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GestureDetectionArea"]
 shape = SubResource("SphereShape3D_8i68g")
+
+[node name="XRRoomscaleController" type="Node" parent="XROrigin3D" node_paths=PackedStringArray("origin_node")]
+script = ExtResource("5_1018u")
+origin_node = NodePath("..")
+
+[node name="XRPhysicalMovementController" type="Node" parent="XROrigin3D"]
+script = ExtResource("6_1wyxn")
 
 [node name="XRConfigHandler" type="Node" parent="."]
 script = ExtResource("5_jiibt")

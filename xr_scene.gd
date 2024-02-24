@@ -23,6 +23,7 @@ extends Node3D
 @onready var welcome_label_3d : Label3D = xr_camera_3d.get_node("WelcomeLabel3D")
 @onready var xr_config_handler : Node = get_node("XRConfigHandler")
 @onready var xr_autosave_timer : Timer = get_node("XRAutoSaveTimer")
+@onready var xr_roomscale_controller : Node = xr_origin_3d.get_node("XRRoomscaleController")
 
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
@@ -80,7 +81,7 @@ var primary_pointer : Node3D = null
 var secondary_pointer : Node3D = null
 var current_camera : Camera3D = null
 var current_camera_remote_transform : RemoteTransform3D = null
-
+var current_roomscale_character_body : CharacterBody3D = null
 var xr_interface : XRInterface
 var already_set_up : bool = false
 var user_height : float = 0.0
@@ -91,13 +92,13 @@ var enable_passthrough : bool = false
 var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
-var stick_emulate_mouse_movement : bool = false
+var stick_emulate_mouse_movement : bool = true
 var head_emulate_mouse_movement : bool = false
 var primary_controller_emulate_mouse_movement : bool = false
 var secondary_controller_emulate_mouse_movement : bool = false
 var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
-
+var use_roomscale : bool = true
 # Decacis Stick Turning Variables
 enum TurningType {
 	SNAP = 0,
@@ -129,7 +130,7 @@ func _process(_delta : float) -> void:
 	# Process emulated joypad inputs, someday maybe this could be a toggle in the event someone wants to use gamepad only controls
 	process_joystick_inputs()
 
-# Constantly checks for current camera 3D
+# Constantly checks for current camera 3D or roomscale body (if roomscale enabled)
 func _eval_tree_new() -> void:
 	# Check to make sure main viewport still uses xr
 	get_viewport().use_xr = true
@@ -162,7 +163,7 @@ func _eval_tree_new() -> void:
 				# If user has already set height at some point in session, adjust height by same for any new cameras that enter scene later
 				remote_t.transform.origin.y -= (user_height * xr_world_scale)
 			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
-			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
+			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport() and current_roomscale_character_body == null:
 				print("Found a current camera that is not xr camera_3d: ", camera)
 				print("Camera's viewport is: ", camera.get_viewport())
 				print("Camera's window is: ", camera.get_window())
@@ -173,8 +174,9 @@ func _eval_tree_new() -> void:
 				print("Current camera remote transform: ", current_camera_remote_transform)
 				current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
 				current_camera = camera
+
 	# If for some reason we haven't found a current camera after cycling through all cameras in scene, fall back to setting remote path of available cameras to xr_origin_3d
-	if current_camera == null:
+	if current_camera == null and current_roomscale_character_body == null:
 		var available_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
 		for available_camera in available_cameras:
 			var available_camera_remote_transform = available_camera.find_child("*XRRemoteTransform",false,false)
@@ -215,6 +217,46 @@ func _eval_tree_new() -> void:
 		
 			enable_passthrough = xr_interface.start_passthrough()
 
+	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
+	if current_roomscale_character_body == null and use_roomscale == true:
+		xr_roomscale_controller.set_enabled(false)
+		var potential_character_body_node = null
+		if current_camera:
+			# First try non-recursive search for "typical" FPS setups
+			potential_character_body_node = current_camera.get_parent_node_3d()
+			if !potential_character_body_node.is_class("CharacterBody3D"):
+				print("parent of current camera is not CharacterBody3D, trying again")
+				potential_character_body_node = potential_character_body_node.get_parent_node_3d()
+				if !potential_character_body_node.is_class("CharacterBody3D"):
+					print("parent of parent of current camera is not CharacterBody3D, ending simple search.")
+					var potential_character_bodies : Array = get_node("/root").find_children("*", "CharacterBody3D", true, false)
+					print("now checking all other character bodies")
+					print(potential_character_bodies)
+					if potential_character_bodies.size() == 1:
+						print("Only one characterbody3d found, assuming it's our player.")
+						current_roomscale_character_body = potential_character_bodies[0]
+					else:
+						for body in potential_character_bodies:
+							if body.is_ancestor_of(current_camera):
+								print("Winning characterbody from recursive search found")
+								current_roomscale_character_body = body
+								break
+				else:
+					print("Character body found, sending to roomscale node")
+					current_roomscale_character_body = potential_character_body_node
+			else:
+				print("Character body found, sending to roomscale node")
+				current_roomscale_character_body = potential_character_body_node
+		if current_roomscale_character_body != null:
+			current_camera_remote_transform.remote_path = ""
+			remove_child(xr_origin_3d)
+			current_roomscale_character_body.add_child(xr_origin_3d)
+			xr_origin_3d.transform.origin.y = 0.0
+			xr_roomscale_controller.set_characterbody3D(current_roomscale_character_body)
+			xr_roomscale_controller.set_enabled(true)
+			xr_roomscale_controller.recenter()
+			current_camera = null
+			current_camera_remote_transform = null
 
 # Function to set up VR Controllers to emulate gamepad
 func map_xr_controllers_to_action_map():
