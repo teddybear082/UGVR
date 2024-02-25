@@ -26,7 +26,8 @@ var enabled : bool = false
 # to a starting position or a checkpoint.
 func _ready():
 	set_enabled(false)
-
+	print("Current gravity detected in xr roomscale node is: ", gravity)
+	
 func recenter():
 	# Calculate where our camera should be, we start with our global transform
 	var new_camera_transform : Transform3D = current_characterbody3D.global_transform

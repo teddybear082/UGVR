@@ -86,6 +86,7 @@ var xr_interface : XRInterface
 var already_set_up : bool = false
 var user_height : float = 0.0
 
+
 # Additional user config variables
 var xr_world_scale : float = 1.0
 var enable_passthrough : bool = false
@@ -99,6 +100,7 @@ var secondary_controller_emulate_mouse_movement : bool = false
 var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
 var use_roomscale : bool = true
+var default_roomscale_height : float = 1.80
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -220,7 +222,6 @@ func _eval_tree_new() -> void:
 			enable_passthrough = xr_interface.start_passthrough()
 
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
-	# if not is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
 	if current_roomscale_character_body == null and use_roomscale == true:
 		xr_roomscale_controller.set_enabled(false)
 		var potential_character_body_node = null
@@ -245,10 +246,10 @@ func _eval_tree_new() -> void:
 								current_roomscale_character_body = body
 								break
 				else:
-					print("Character body found, sending to roomscale node")
+					print("Character body found as parent of current camera, sending to roomscale node")
 					current_roomscale_character_body = potential_character_body_node
 			else:
-				print("Character body found, sending to roomscale node")
+				print("Character body found as parent of parent to current camera, sending to roomscale node")
 				current_roomscale_character_body = potential_character_body_node
 		if current_roomscale_character_body != null:
 			current_camera_remote_transform.remote_path = ""
@@ -730,12 +731,20 @@ func apply_user_height(height: float):
 			remote_transform.transform.origin.y = 0.0
 			remote_transform.transform.origin.y -= (height * xr_world_scale)
 	
-	# XR Origin approach, use if there's no active camera 3D in the scene
+	# XR Origin-only approach, use if there's no active camera 3D in the scene
 	if current_camera_remote_transform == null:
 		print("No current remote transform. Changing xr origin height")
 		xr_origin_3d.transform.origin.y = 0.0
 		xr_origin_3d.transform.origin.y -= (height * xr_world_scale)
 		print("xr origin 3d new height: ", xr_origin_3d.transform.origin.y)
+		
+	# Roomscale approach
+	if use_roomscale == true and current_roomscale_character_body:
+		print("Adjusting roomscale user height")
+		if xr_camera_3d.transform.origin.y <= (default_roomscale_height * xr_world_scale):
+			xr_origin_3d.transform.origin.y = 0.0
+			xr_origin_3d.transform.origin.y = (default_roomscale_height - xr_camera_3d.transform.origin.y) * xr_world_scale
+			print("xr origin 3d new height: ", xr_origin_3d.transform.origin.y)
 
 # Called to try to catch xr origin before it gets deleted from tree in roomscale mode
 func _on_xr_origin_exiting_tree():
