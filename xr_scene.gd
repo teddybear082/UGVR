@@ -93,13 +93,13 @@ var enable_passthrough : bool = false
 var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
-var stick_emulate_mouse_movement : bool = true
+var stick_emulate_mouse_movement : bool = false
 var head_emulate_mouse_movement : bool = false
 var primary_controller_emulate_mouse_movement : bool = false
 var secondary_controller_emulate_mouse_movement : bool = false
 var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
-var use_roomscale : bool = true
+var use_roomscale : bool = false
 var default_roomscale_height : float = 1.80
 
 # Decacis Stick Turning Variables
