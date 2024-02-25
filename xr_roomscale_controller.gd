@@ -1,3 +1,6 @@
+# Credit to demo by Bastiaan Olij
+# This script enables room scale VR movement when there is a valid characterbody3D and the user has enabled roomscale option
+
 extends Node
 # Settings to control the character
 @export var rotation_speed : float = 1.0

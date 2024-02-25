@@ -1,4 +1,5 @@
-# Provides support for keeping VR player aligned with FPS CharacterBody3D
+# Provides experimental support for alternative physical movement options to trigger game actions
+
 
 extends Node
 

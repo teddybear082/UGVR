@@ -99,6 +99,7 @@ var secondary_controller_emulate_mouse_movement : bool = false
 var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
 var use_roomscale : bool = true
+
 # Decacis Stick Turning Variables
 enum TurningType {
 	SNAP = 0,
@@ -121,6 +122,7 @@ func _ready() -> void:
 	set_process(false)
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
 	xr_autosave_timer.connect("timeout", Callable(self, "_on_xr_autosave_timer_timeout"))
+	xr_origin_3d.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
 
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -218,6 +220,7 @@ func _eval_tree_new() -> void:
 			enable_passthrough = xr_interface.start_passthrough()
 
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
+	# if not is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
 	if current_roomscale_character_body == null and use_roomscale == true:
 		xr_roomscale_controller.set_enabled(false)
 		var potential_character_body_node = null
@@ -733,3 +736,12 @@ func apply_user_height(height: float):
 		xr_origin_3d.transform.origin.y = 0.0
 		xr_origin_3d.transform.origin.y -= (height * xr_world_scale)
 		print("xr origin 3d new height: ", xr_origin_3d.transform.origin.y)
+
+# Called to try to catch xr origin before it gets deleted from tree in roomscale mode
+func _on_xr_origin_exiting_tree():
+	if use_roomscale and current_roomscale_character_body and !is_ancestor_of(xr_origin_3d):
+		xr_roomscale_controller.set_enabled(false)
+		xr_roomscale_controller.set_characterbody3D(null)
+		current_roomscale_character_body.remove_child.call_deferred(xr_origin_3d)	
+		add_child.call_deferred(xr_origin_3d)
+		
