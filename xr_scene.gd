@@ -222,36 +222,45 @@ func _eval_tree_new() -> void:
 			enable_passthrough = xr_interface.start_passthrough()
 
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
-	if current_roomscale_character_body == null and use_roomscale == true:
+	if !is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
+		# If no valid character body make sure xr roomscale controller is off
 		xr_roomscale_controller.set_enabled(false)
+		xr_roomscale_controller.set_characterbody3D(null)
 		var potential_character_body_node = null
+		# Only search for characterbody if we have a present camera in the scene driving the xr origin
 		if current_camera:
 			# First try non-recursive search for "typical" FPS setups
+			print("Trying to find characterbody 3D for roomscale....")
 			potential_character_body_node = current_camera.get_parent_node_3d()
+			# if parent of active camera not a Characterbody3D continue search
 			if !potential_character_body_node.is_class("CharacterBody3D"):
-				print("parent of current camera is not CharacterBody3D, trying again")
-				potential_character_body_node = potential_character_body_node.get_parent_node_3d()
-				if !potential_character_body_node.is_class("CharacterBody3D"):
-					print("parent of parent of current camera is not CharacterBody3D, ending simple search.")
-					var potential_character_bodies : Array = get_node("/root").find_children("*", "CharacterBody3D", true, false)
-					print("now checking all other character bodies")
-					print(potential_character_bodies)
-					if potential_character_bodies.size() == 1:
-						print("Only one characterbody3d found, assuming it's our player.")
-						current_roomscale_character_body = potential_character_bodies[0]
+				if potential_character_body_node != null:
+					print("parent of current camera is not CharacterBody3D, trying again")
+					potential_character_body_node = potential_character_body_node.get_parent_node_3d()
+					if !potential_character_body_node.is_class("CharacterBody3D"):
+						print("parent of parent of current camera is not CharacterBody3D, ending simple search.")
+						potential_character_body_node = null
+						var potential_character_bodies : Array = get_node("/root").find_children("*", "CharacterBody3D", true, false)
+						print("now checking all other character bodies")
+						print(potential_character_bodies)
+						if potential_character_bodies.size() == 1:
+							print("Only one characterbody3d found, assuming it's our player.")
+							current_roomscale_character_body = potential_character_bodies[0]
+						elif potential_character_bodies.size() > 1:
+							for body in potential_character_bodies:
+								if body.is_ancestor_of(current_camera):
+									print("Winning characterbody from recursive search found: ", body)
+									current_roomscale_character_body = body
+									break
 					else:
-						for body in potential_character_bodies:
-							if body.is_ancestor_of(current_camera):
-								print("Winning characterbody from recursive search found")
-								current_roomscale_character_body = body
-								break
-				else:
-					print("Character body found as parent of current camera, sending to roomscale node")
-					current_roomscale_character_body = potential_character_body_node
+						print("Character body found as parent of parent of current camera, sending to roomscale node: ", potential_character_body_node)
+						current_roomscale_character_body = potential_character_body_node
 			else:
-				print("Character body found as parent of parent to current camera, sending to roomscale node")
+				print("Character body found as parent to current camera, sending to roomscale node: ", potential_character_body_node)
 				current_roomscale_character_body = potential_character_body_node
-		if current_roomscale_character_body != null:
+		#if current_roomscale_character_body != null:
+		# If we now found a roomscale body, reparent xr origin 3D to character body
+		if is_instance_valid(current_roomscale_character_body) and self.is_ancestor_of(xr_origin_3d):
 			current_camera_remote_transform.remote_path = ""
 			remove_child(xr_origin_3d)
 			current_roomscale_character_body.add_child(xr_origin_3d)
@@ -748,7 +757,8 @@ func apply_user_height(height: float):
 
 # Called to try to catch xr origin before it gets deleted from tree in roomscale mode
 func _on_xr_origin_exiting_tree():
-	if use_roomscale and current_roomscale_character_body and !is_ancestor_of(xr_origin_3d):
+	if use_roomscale and is_instance_valid(current_roomscale_character_body) and !self.is_ancestor_of(xr_origin_3d):
+		print("Calling xr origin exiting scene function")
 		xr_roomscale_controller.set_enabled(false)
 		xr_roomscale_controller.set_characterbody3D(null)
 		current_roomscale_character_body.remove_child.call_deferred(xr_origin_3d)	

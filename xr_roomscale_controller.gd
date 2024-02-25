@@ -145,9 +145,19 @@ func _physics_process(delta):
 	#_process_movement_on_input(is_colliding, delta)
 	
 func set_characterbody3D(new_characterbody3D : CharacterBody3D):
-	current_characterbody3D = new_characterbody3D
+	if new_characterbody3D == null:
+		print("Game sent null characterbody3d to roomscale")
+		current_characterbody3D = null
+	elif !is_instance_valid(new_characterbody3D):
+		print("Game sent invalid instance of characterbody3D to roomscale")
+		current_characterbody3D = null
+	else:
+		current_characterbody3D = new_characterbody3D
 
 func set_enabled(value:bool):
+	if value == true and (current_characterbody3D == null or !is_instance_valid(current_characterbody3D)):
+		print("Tried to enable roomscale but characterbody3D still not set or is set to an invalid instance.")
+		return
 	enabled = value
 	set_process(value)
 	set_physics_process(value)
