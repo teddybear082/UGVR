@@ -85,7 +85,7 @@ var current_roomscale_character_body : CharacterBody3D = null
 var xr_interface : XRInterface
 var already_set_up : bool = false
 var user_height : float = 0.0
-
+var xr_origin_reparented : bool = false
 
 # Additional user config variables
 var xr_world_scale : float = 1.0
@@ -224,8 +224,8 @@ func _eval_tree_new() -> void:
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
 	if !is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
 		# If no valid character body make sure xr roomscale controller is off
-		xr_roomscale_controller.set_enabled(false)
-		xr_roomscale_controller.set_characterbody3D(null)
+		#xr_roomscale_controller.set_enabled(false)
+		#xr_roomscale_controller.set_characterbody3D(null)
 		var potential_character_body_node = null
 		# Only search for characterbody if we have a present camera in the scene driving the xr origin
 		if current_camera:
@@ -260,7 +260,7 @@ func _eval_tree_new() -> void:
 				current_roomscale_character_body = potential_character_body_node
 		#if current_roomscale_character_body != null:
 		# If we now found a roomscale body, reparent xr origin 3D to character body
-		if is_instance_valid(current_roomscale_character_body) and self.is_ancestor_of(xr_origin_3d):
+		if is_instance_valid(current_roomscale_character_body) and xr_origin_reparented == false:
 			current_camera_remote_transform.remote_path = ""
 			remove_child(xr_origin_3d)
 			current_roomscale_character_body.add_child(xr_origin_3d)
@@ -270,6 +270,7 @@ func _eval_tree_new() -> void:
 			xr_roomscale_controller.recenter()
 			current_camera = null
 			current_camera_remote_transform = null
+			xr_origin_reparented = true
 
 # Function to set up VR Controllers to emulate gamepad
 func map_xr_controllers_to_action_map():
@@ -757,10 +758,11 @@ func apply_user_height(height: float):
 
 # Called to try to catch xr origin before it gets deleted from tree in roomscale mode
 func _on_xr_origin_exiting_tree():
-	if use_roomscale and is_instance_valid(current_roomscale_character_body) and !self.is_ancestor_of(xr_origin_3d):
+	if use_roomscale and is_instance_valid(current_roomscale_character_body) and xr_origin_reparented:
 		print("Calling xr origin exiting scene function")
+		xr_origin_reparented = false
 		xr_roomscale_controller.set_enabled(false)
 		xr_roomscale_controller.set_characterbody3D(null)
-		current_roomscale_character_body.remove_child.call_deferred(xr_origin_3d)	
+		current_roomscale_character_body.remove_child.call_deferred(xr_origin_3d)
 		add_child.call_deferred(xr_origin_3d)
 		
