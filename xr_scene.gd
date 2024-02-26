@@ -228,16 +228,16 @@ func _eval_tree_new() -> void:
 		#xr_roomscale_controller.set_characterbody3D(null)
 		var potential_character_body_node = null
 		# Only search for characterbody if we have a present camera in the scene driving the xr origin
-		if current_camera:
+		if is_instance_valid(current_camera):
 			# First try non-recursive search for "typical" FPS setups
 			print("Trying to find characterbody 3D for roomscale....")
 			potential_character_body_node = current_camera.get_parent_node_3d()
 			# if parent of active camera not a Characterbody3D continue search
-			if !potential_character_body_node.is_class("CharacterBody3D"):
-				if potential_character_body_node != null:
+			if is_instance_valid(potential_character_body_node):
+				if !potential_character_body_node.is_class("CharacterBody3D"):
 					print("parent of current camera is not CharacterBody3D, trying again")
 					potential_character_body_node = potential_character_body_node.get_parent_node_3d()
-					if !potential_character_body_node.is_class("CharacterBody3D"):
+					if is_instance_valid(potential_character_body_node) and !potential_character_body_node.is_class("CharacterBody3D"):
 						print("parent of parent of current camera is not CharacterBody3D, ending simple search.")
 						potential_character_body_node = null
 						var potential_character_bodies : Array = get_node("/root").find_children("*", "CharacterBody3D", true, false)
@@ -760,9 +760,9 @@ func apply_user_height(height: float):
 func _on_xr_origin_exiting_tree():
 	if use_roomscale and is_instance_valid(current_roomscale_character_body) and xr_origin_reparented:
 		print("Calling xr origin exiting scene function")
-		xr_origin_reparented = false
-		xr_roomscale_controller.set_enabled(false)
-		xr_roomscale_controller.set_characterbody3D(null)
 		current_roomscale_character_body.remove_child.call_deferred(xr_origin_3d)
 		add_child.call_deferred(xr_origin_3d)
+		xr_roomscale_controller.set_enabled(false)
+		xr_roomscale_controller.set_characterbody3D(null)
+		xr_origin_reparented = false
 		

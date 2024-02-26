@@ -64,6 +64,10 @@ func recenter():
 # and we will stop further character movement until the player physically
 # moves back.
 func _process_on_physical_movement(delta) -> bool:
+	# If we don't have a current character body, current xr_origin or xr_camera, return
+	if !is_instance_valid(current_characterbody3D) or !is_instance_valid(origin_node) or !is_instance_valid(camera_node):
+		return false
+	
 	# Remember our current velocity, we'll apply that later
 	var current_velocity = current_characterbody3D.velocity
 
@@ -82,7 +86,7 @@ func _process_on_physical_movement(delta) -> bool:
 	var org_player_body: Vector3 = current_characterbody3D.global_transform.origin
 	var player_body_location: Vector3 = origin_node.transform * camera_node.transform * neck_position_node.transform.origin
 	player_body_location.y = 0.0
-	player_body_location = current_characterbody3D.global_transform * current_characterbody3D.player_body_location
+	player_body_location = current_characterbody3D.global_transform * player_body_location
 
 	current_characterbody3D.velocity = (player_body_location - org_player_body) / delta
 	current_characterbody3D.move_and_slide()
