@@ -93,6 +93,7 @@ var enable_passthrough : bool = false
 var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
+var use_gamepad_only : bool = false
 var stick_emulate_mouse_movement : bool = false
 var head_emulate_mouse_movement : bool = false
 var primary_controller_emulate_mouse_movement : bool = false
@@ -129,8 +130,12 @@ func _ready() -> void:
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
-		_eval_tree_new()
-	
+		if is_instance_valid(xr_origin_3d):
+			_eval_tree_new()
+		
+	# If controllers aren't found, or if user has selected gamepad only option, skip processing inputs
+	if !is_instance_valid(xr_left_controller) or !is_instance_valid(xr_right_controller) or use_gamepad_only:
+		return
 	# Process emulated joypad inputs, someday maybe this could be a toggle in the event someone wants to use gamepad only controls
 	process_joystick_inputs()
 
