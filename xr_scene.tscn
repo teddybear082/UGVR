@@ -102,9 +102,8 @@ collision_mask = 0
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GestureDetectionArea"]
 shape = SubResource("SphereShape3D_8i68g")
 
-[node name="XRRoomscaleController" type="Node" parent="XROrigin3D" node_paths=PackedStringArray("origin_node")]
+[node name="XRRoomscaleController" type="Node" parent="XROrigin3D"]
 script = ExtResource("5_1018u")
-origin_node = NodePath("..")
 
 [node name="XRPhysicalMovementController" type="Node" parent="XROrigin3D"]
 script = ExtResource("6_1wyxn")
