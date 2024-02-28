@@ -17,10 +17,11 @@
 
 -reload user config of action map on demand in case game overwrites it, with gesture (place left hand near top of head and press B/Y)
 
-
 -Snap and smooth turn of user camera (right now, default set to snap since no user config yet)
 
 -Allow user to map input action map actions to VR Controls (in the alternative of default mapping, for example, for pure keyboard games) (currently via manual config file only, which is created automatically when running game with mod for the first time in a special XRConfigs folder)  - see https://github.com/teddybear082/UGVR/wiki/Remapping-Controls-with-Action-Map-Config for more details.
+
+-Allow user to convert to roomscale mode, intended for FPS games, to reparent the XR elements to the player CharacterBody3D, and walk around in room and turn freely while having in game character reflect those movements (may have unintended effects in third person mode, not tested)
 
 ## Presently not working / Roadmap:
 
@@ -44,7 +45,7 @@ Not presently intended for regular users as this tool is in heavy development / 
 
 -Decacis for inventing a way to easily inject XR Origin into camera for Godot 4 3D games
 
--JulianTodd and Decacis for figuring out a way for 2D UI in 3D games to work "universally" in VR with input, and Bastiaan Olij for a fix to get CanvasLayer elements to appear in VR
+-JulianTodd and Decacis for figuring out a way for 2D UI in 3D games to work "universally" in VR with input, and Bastiaan Olij for a fix to get CanvasLayer elements to appear in VR as well as code for example of CharacterBody3D driven XR origin
 
 -Godot XR Tools team - going to be heavily leveraging scripts from Godot XR Tools
 
