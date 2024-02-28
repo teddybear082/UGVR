@@ -86,6 +86,7 @@ var xr_interface : XRInterface
 var already_set_up : bool = false
 var user_height : float = 0.0
 var xr_origin_reparented : bool = false
+var backup_xr_origin : XROrigin3D = null
 
 # Additional user config variables
 var xr_world_scale : float = 1.0
@@ -93,7 +94,6 @@ var enable_passthrough : bool = false
 var disable_2d_ui : bool = false
 var gui_embed_subwindows : bool = false
 var show_welcome_label : bool = true
-var use_gamepad_only : bool = false
 var stick_emulate_mouse_movement : bool = false
 var head_emulate_mouse_movement : bool = false
 var primary_controller_emulate_mouse_movement : bool = false
@@ -102,6 +102,7 @@ var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
 var use_roomscale : bool = false
 var default_roomscale_height : float = 1.80
+var use_gamepad_only : bool = false
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -125,15 +126,18 @@ func _ready() -> void:
 	set_process(false)
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
 	xr_autosave_timer.connect("timeout", Callable(self, "_on_xr_autosave_timer_timeout"))
-	xr_origin_3d.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
-
+	xr_origin_3d.get_node("XRPhysicalMovementController").connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
+	#xr_origin_3d.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
-		if is_instance_valid(xr_origin_3d):
-			_eval_tree_new()
+		if !is_instance_valid(xr_origin_3d):
+			_setup_new_xr_origin(backup_xr_origin)
 		
-	# If controllers aren't found, or if user has selected gamepad only option, skip processing inputs
+		if is_instance_valid(xr_origin_3d) and is_instance_valid(xr_camera_3d):
+			_eval_tree_new()
+	
+	# If controllers aren't found, skip processing inputs
 	if !is_instance_valid(xr_left_controller) or !is_instance_valid(xr_right_controller) or use_gamepad_only:
 		return
 	# Process emulated joypad inputs, someday maybe this could be a toggle in the event someone wants to use gamepad only controls
@@ -271,8 +275,8 @@ func _eval_tree_new() -> void:
 			current_roomscale_character_body.add_child(xr_origin_3d)
 			xr_origin_3d.transform.origin.y = 0.0
 			xr_roomscale_controller.set_characterbody3D(current_roomscale_character_body)
-			xr_roomscale_controller.set_enabled(true)
-			xr_roomscale_controller.recenter()
+			var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d)
+			var err2 = xr_roomscale_controller.recenter()
 			current_camera = null
 			current_camera_remote_transform = null
 			xr_origin_reparented = true
@@ -765,9 +769,64 @@ func apply_user_height(height: float):
 func _on_xr_origin_exiting_tree():
 	if use_roomscale and is_instance_valid(current_roomscale_character_body) and xr_origin_reparented:
 		print("Calling xr origin exiting scene function")
-		current_roomscale_character_body.remove_child.call_deferred(xr_origin_3d)
-		add_child.call_deferred(xr_origin_3d)
-		xr_roomscale_controller.set_enabled(false)
+		#print(xr_origin_3d)
+		#print(xr_origin_3d.get_parent())
+		current_roomscale_character_body.remove_child(xr_origin_3d)
+		add_child(xr_origin_3d)
+		#print(xr_origin_3d)
+		#print(xr_origin_3d.get_parent())
+		xr_roomscale_controller.set_enabled(false, null)
 		xr_roomscale_controller.set_characterbody3D(null)
 		xr_origin_reparented = false
+		backup_xr_origin = xr_origin_3d.duplicate()
 		
+
+func _setup_new_xr_origin(new_origin : XROrigin3D):
+	add_child(new_origin)
+	xr_origin_3d = new_origin
+	xr_origin_3d.current = true
+	xr_start = xr_origin_3d.get_node("StartXR")
+	xr_camera_3d = xr_origin_3d.get_node("XRCamera3D")
+	xr_main_viewport2d_in_3d = xr_camera_3d.get_node("XRMainViewport2Din3D")
+	xr_main_viewport2d_in_3d_subviewport = xr_main_viewport2d_in_3d.get_node("Viewport")
+	xr_secondary_viewport2d_in_3d = xr_camera_3d.get_node("XRSecondaryViewport2Din3D")
+	xr_secondary_viewport2d_in_3d_subviewport = xr_secondary_viewport2d_in_3d.get_node("Viewport")
+	xr_left_controller = xr_origin_3d.get_node("XRController3D")
+	xr_right_controller = xr_origin_3d.get_node("XRController3D2")
+	gesture_area = xr_camera_3d.get_node("GestureArea")
+	left_gesture_detection_area = xr_left_controller.get_node("GestureDetectionArea")
+	right_gesture_detection_area = xr_right_controller.get_node("GestureDetectionArea")
+	left_xr_pointer = xr_left_controller.get_node("XRPointer")
+	right_xr_pointer = xr_right_controller.get_node("XRPointer")
+	welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
+	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
+	_setup_viewports()
+	map_xr_controllers_to_action_map()
+	xr_origin_reparented = false
+	current_roomscale_character_body = null
+	
+func _setup_viewports():
+	if disable_2d_ui == false:
+		print("Viewport world2d: ", get_viewport().world_2d)
+		# Possible future options but seem to be unnecessary for now
+		#get_viewport().vrs_mode = Viewport.VRS_DISABLED
+		#get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+		#get_viewport().use_hdr_2d = false
+		#get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
+		xr_main_viewport2d_in_3d._update_render()
+
+	if gui_embed_subwindows == true:
+		get_viewport().gui_embed_subwindows = true
+	
+	else:
+		get_viewport().gui_embed_subwindows = false
+	
+	# Enable input calculations on main viewport 2D UI with Viewport2Din3D node
+	print("xr viewport ", get_viewport())
+	print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+	xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
+	print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+
+	# Setup secondary viewport for use with canvaslayer node contents, if any found
+	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)

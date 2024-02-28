@@ -11,9 +11,9 @@ extends Node
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 # Helper variables to keep our code readable
-@export var origin_node : XROrigin3D
-@onready var camera_node : XRCamera3D = origin_node.get_node("XRCamera3D")
-@onready var neck_position_node : Node3D = camera_node.get_node("Neck")
+var origin_node : XROrigin3D = null
+var camera_node : XRCamera3D = null
+var neck_position_node : Node3D = null
 
 var current_characterbody3D : CharacterBody3D = null: set = set_characterbody3D
 var enabled : bool = false
@@ -25,10 +25,10 @@ var enabled : bool = false
 # But other strategies can be applied here as well such as returning the player
 # to a starting position or a checkpoint.
 func _ready():
-	set_enabled(false)
+	set_enabled(false, null)
 	print("Current gravity detected in xr roomscale node is: ", gravity)
 	
-func recenter():
+func recenter() -> bool:
 	# Calculate where our camera should be, we start with our global transform
 	var new_camera_transform : Transform3D = current_characterbody3D.global_transform
 
@@ -47,6 +47,7 @@ func recenter():
 	# Update our XR location
 	origin_node.global_transform = new_camera_transform * camera_transform.inverse()
 
+	return true
 # `_get_movement_input` returns our move input by querying the move action on each controller
 #func _get_movement_input() -> Vector2:
 	#var movement : Vector2 = Vector2()
@@ -158,12 +159,18 @@ func set_characterbody3D(new_characterbody3D : CharacterBody3D):
 	else:
 		current_characterbody3D = new_characterbody3D
 
-func set_enabled(value:bool):
+func set_enabled(value:bool, new_origin) -> bool:
 	if value == true and (current_characterbody3D == null or !is_instance_valid(current_characterbody3D)):
 		print("Tried to enable roomscale but characterbody3D still not set or is set to an invalid instance.")
-		return
+		return false
+	if value == true and new_origin.is_class("XROrigin3D"):
+		print("setting new origin3d in roomscale node")
+		origin_node = new_origin
+		camera_node = new_origin.get_node("XRCamera3D")
+		neck_position_node = camera_node.get_node("Neck")
 	enabled = value
 	set_process(value)
 	set_physics_process(value)
 	if enabled == false:
 		current_characterbody3D = null
+	return true
