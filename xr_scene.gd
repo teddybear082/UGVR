@@ -24,6 +24,7 @@ extends Node3D
 @onready var xr_config_handler : Node = get_node("XRConfigHandler")
 @onready var xr_autosave_timer : Timer = get_node("XRAutoSaveTimer")
 @onready var xr_roomscale_controller : Node = xr_origin_3d.get_node("XRRoomscaleController")
+@onready var xr_physical_movement_controller : Node = xr_origin_3d.get_node("XRPhysicalMovementController")
 
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
@@ -104,6 +105,8 @@ var use_roomscale : bool = false
 var default_roomscale_height : float = 1.80
 var reverse_roomscale_direction : bool = false
 var use_gamepad_only : bool = false
+var use_arm_swing_jump : bool = false
+var use_jog_movement : bool = false
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -342,6 +345,9 @@ func map_xr_controllers_to_action_map():
 	dpad_down.button_index = JOY_BUTTON_DPAD_DOWN
 	dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
+	
+	# Enable arm swing jog or jump movement if enabled by the user
+	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller)
 
 # Handle button presses on VR controller assigned as primary
 func handle_primary_xr_inputs(button):
@@ -446,6 +452,8 @@ func handle_secondary_xr_inputs(button):
 	# If button is assigned to load action map (temporary,this should be a GUI option) and making gesture, load action map
 	if button == gesture_load_action_map_button and gesture_area.overlaps_area(secondary_detection_area):
 		xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
+		if use_arm_swing_jump:
+			xr_physical_movement_controller.detect_game_jump_action_events()
 	
 	if start_toggle_active and button == start_button:
 		var event = InputEventJoypadButton.new()
@@ -801,6 +809,7 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	right_xr_pointer = xr_right_controller.get_node("XRPointer")
 	welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
 	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
+	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
 	_setup_viewports()
 	map_xr_controllers_to_action_map()
 	xr_origin_reparented = false
