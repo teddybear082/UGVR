@@ -17,6 +17,8 @@ var current_characterbody3D : CharacterBody3D = null
 # Whether roomscale movement is presently enabled
 var enabled : bool = false
 
+# Whether to reverse roomscale character direction for when dev has the characterbody facing 180 degrees opposite, e.g., in Drift
+var reverse_roomscale_direction : bool = false
 # Currently unused - node for blacking out screen when player walks to where they should not in roomscale
 #@onready var black_out : Node3D = $XROrigin3D/XRCamera3D/BlackOut
 
@@ -65,6 +67,8 @@ func _process_on_physical_movement(delta) -> bool:
 	# Start by rotating the player to face the same way our real player is
 	var camera_basis: Basis = xr_origin_3D.transform.basis * xr_camera_3D.transform.basis
 	var forward: Vector2 = Vector2(camera_basis.z.x, camera_basis.z.z)
+	if reverse_roomscale_direction:
+		forward = -forward
 	var angle: float = forward.angle_to(Vector2(0.0, 1.0))
 
 	# Rotate our character body
@@ -119,7 +123,7 @@ func set_characterbody3D(new_characterbody3D : CharacterBody3D):
 		current_characterbody3D = new_characterbody3D
 
 # Function to enable or disable roomscale movement
-func set_enabled(value:bool, new_origin) -> bool:
+func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false) -> bool:
 	if value == true and (current_characterbody3D == null or !is_instance_valid(current_characterbody3D)):
 		print("Tried to enable roomscale but characterbody3D still not set or is set to an invalid instance.")
 		return false
@@ -131,6 +135,7 @@ func set_enabled(value:bool, new_origin) -> bool:
 	enabled = value
 	set_process(value)
 	set_physics_process(value)
+	reverse_roomscale_direction = reverse_roomscale
 	if enabled == false:
 		current_characterbody3D = null
 	

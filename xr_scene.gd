@@ -102,6 +102,7 @@ var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
 var use_roomscale : bool = false
 var default_roomscale_height : float = 1.80
+var reverse_roomscale_direction : bool = false
 var use_gamepad_only : bool = false
 
 # Decacis Stick Turning Variables
@@ -275,7 +276,7 @@ func _eval_tree_new() -> void:
 			current_roomscale_character_body.add_child(xr_origin_3d)
 			xr_origin_3d.transform.origin.y = 0.0
 			xr_roomscale_controller.set_characterbody3D(current_roomscale_character_body)
-			var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d)
+			var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d, reverse_roomscale_direction)
 			var err2 = xr_roomscale_controller.recenter()
 			current_camera = null
 			current_camera_remote_transform = null
@@ -775,7 +776,7 @@ func _on_xr_origin_exiting_tree():
 		add_child(xr_origin_3d)
 		#print(xr_origin_3d)
 		#print(xr_origin_3d.get_parent())
-		xr_roomscale_controller.set_enabled(false, null)
+		xr_roomscale_controller.set_enabled(false, null, reverse_roomscale_direction)
 		xr_roomscale_controller.set_characterbody3D(null)
 		xr_origin_reparented = false
 		backup_xr_origin = xr_origin_3d.duplicate()
