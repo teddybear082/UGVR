@@ -82,6 +82,12 @@ var jog_enabled : bool = false
 # Variable to determine whether arm swing jump movement enabled
 var arm_swing_jump_enabled : bool = false
 
+# Sprint action event variable
+var sprint_action : InputEventJoypadButton = null
+
+# Track whether currently sprinting
+var physically_sprinting : bool = false
+
 # Arms jump detection threshold (M/S^2)
 var arms_jump_threshold : float = 5.0
 
@@ -166,14 +172,28 @@ func physics_movement(delta: float):
 		if _speed_mode == SpeedMode.SLOW:
 			print("slow speed detected")
 			speed = slow_speed
+			if physically_sprinting:
+				sprint_action.pressed = false
+				Input.parse_input_event(sprint_action)
+				physically_sprinting = false
 		elif _speed_mode == SpeedMode.FAST:
 			print("fast speed detected")
 			speed = fast_speed
+			if sprint_action != null and physically_sprinting == false:
+				sprint_action.pressed = true
+				Input.parse_input_event(sprint_action)
+				physically_sprinting = true
+		elif _speed_mode == SpeedMode.STOPPED:
+			if physically_sprinting:
+				sprint_action.pressed = false
+				Input.parse_input_event(sprint_action)
+				physically_sprinting = false
 
 		# Trigger simulated input event
 		joypad_left_y_axis.axis = JOY_AXIS_LEFT_Y
 		joypad_left_y_axis.axis_value = clamp(-secondary_controller.get_vector2("primary").y + speed, -1.0, 1.0)
 		Input.parse_input_event(joypad_left_y_axis)
+		
 	
 	# If arm swing jump enabled, perform calculations
 	if arm_swing_jump_enabled:
@@ -290,9 +310,7 @@ func _detect_arms_jump(delta):
 
 func detect_game_jump_action_events():
 	var game_actions = InputMap.get_actions()
-	var game_action_jump_exact = null
-	var game_action_jump_contains = null
-	var game_action_jump_joypad_event = null
+
 	for action in game_actions:
 		if action.to_lower() == "jump":
 			var action_events = InputMap.action_get_events(action)
@@ -309,6 +327,25 @@ func detect_game_jump_action_events():
 	else:
 		print("Jump action found in physical movement controller")
 
+func detect_game_sprint_events():
+	var game_actions = InputMap.get_actions()
+	
+	for action in game_actions:
+		if action.to_lower() == "sprint":
+			var action_events = InputMap.action_get_events(action)
+			for action_event in action_events:
+				if action_event.is_class("InputEventJoypadButton"):
+					sprint_action = action_event
+		if sprint_action == null and action.to_lower().contains("sprint"):
+			var action_events = InputMap.action_get_events(action)
+			for action_event in action_events:
+				if action_event.is_class("InputEventJoypadButton"):
+					sprint_action = action_event
+	if sprint_action == null:
+		print("No sprint action found in physical movement controller")
+	else:
+		print("Sprint action found in physical movement controller")
+
 func set_enabled(jog_value: bool, jump_value: bool, pri_controller : XRController3D, sec_controller : XRController3D):
 	jog_enabled = jog_value
 	print("Jog enabled: ", jog_enabled)
@@ -322,6 +359,8 @@ func set_enabled(jog_value: bool, jump_value: bool, pri_controller : XRControlle
 		set_process(false)
 	if arm_swing_jump_enabled:
 		detect_game_jump_action_events()
+	if jog_enabled:
+		detect_game_sprint_events()
 
 func _process(delta):
 	if !is_instance_valid(primary_controller) or !is_instance_valid(secondary_controller):

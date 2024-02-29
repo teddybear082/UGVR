@@ -454,6 +454,8 @@ func handle_secondary_xr_inputs(button):
 		xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
 		if use_arm_swing_jump:
 			xr_physical_movement_controller.detect_game_jump_action_events()
+		if use_jog_movement:
+			xr_physical_movement_controller.detect_game_sprint_events()
 	
 	if start_toggle_active and button == start_button:
 		var event = InputEventJoypadButton.new()
