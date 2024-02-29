@@ -79,6 +79,9 @@ var joypad_left_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 # Variable to determine whether jog movement enabled
 var jog_enabled : bool = false
 
+# Variable to determine if arm swing jog should also try to trigger a sprint action
+var jog_triggers_sprint : bool = false
+
 # Variable to determine whether arm swing jump movement enabled
 var arm_swing_jump_enabled : bool = false
 
@@ -328,6 +331,9 @@ func detect_game_jump_action_events():
 		print("Jump action found in physical movement controller")
 
 func detect_game_sprint_events():
+	if jog_triggers_sprint == false:
+		return
+	
 	var game_actions = InputMap.get_actions()
 	
 	for action in game_actions:
@@ -346,7 +352,7 @@ func detect_game_sprint_events():
 	else:
 		print("Sprint action found in physical movement controller")
 
-func set_enabled(jog_value: bool, jump_value: bool, pri_controller : XRController3D, sec_controller : XRController3D):
+func set_enabled(jog_value: bool, jump_value: bool, pri_controller : XRController3D, sec_controller : XRController3D, use_jog_for_sprint : bool):
 	jog_enabled = jog_value
 	print("Jog enabled: ", jog_enabled)
 	arm_swing_jump_enabled = jump_value
@@ -360,6 +366,7 @@ func set_enabled(jog_value: bool, jump_value: bool, pri_controller : XRControlle
 	if arm_swing_jump_enabled:
 		detect_game_jump_action_events()
 	if jog_enabled:
+		jog_triggers_sprint = use_jog_for_sprint
 		detect_game_sprint_events()
 
 func _process(delta):

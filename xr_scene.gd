@@ -107,6 +107,7 @@ var reverse_roomscale_direction : bool = false
 var use_gamepad_only : bool = false
 var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
+var jog_triggers_sprint : bool = false
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -347,7 +348,7 @@ func map_xr_controllers_to_action_map():
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 	
 	# Enable arm swing jog or jump movement if enabled by the user
-	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller)
+	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 
 # Handle button presses on VR controller assigned as primary
 func handle_primary_xr_inputs(button):
