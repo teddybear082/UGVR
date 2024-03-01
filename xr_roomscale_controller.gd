@@ -10,7 +10,7 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var xr_origin_3D : XROrigin3D = null
 var xr_camera_3D : XRCamera3D = null
 var xr_neck_position_3D : Node3D = null
-
+var camera_3d : Camera3D = null
 # Node driving the player movement
 var current_characterbody3D : CharacterBody3D = null
 
@@ -19,6 +19,9 @@ var enabled : bool = false
 
 # Whether to reverse roomscale character direction for when dev has the characterbody facing 180 degrees opposite, e.g., in Drift
 var reverse_roomscale_direction : bool = false
+
+# Height adjustment set by user if any
+var roomscale_height_adjustment : float = 0.0
 # Currently unused - node for blacking out screen when player walks to where they should not in roomscale
 #@onready var black_out : Node3D = $XROrigin3D/XRCamera3D/BlackOut
 
@@ -92,7 +95,13 @@ func _process_on_physical_movement(delta) -> bool:
 
 	# Negate any height change in local space due to player hitting ramps etc.
 	xr_origin_3D.transform.origin.y = 0.0
-
+	
+	# If user has set a further offset, apply that here; also use relative camera offset if enabled
+	if is_instance_valid(camera_3d):
+		xr_origin_3D.transform.origin.y = (camera_3d.transform.origin.y - current_characterbody3D.transform.origin.y) - xr_camera_3D.transform.origin.y + roomscale_height_adjustment
+	else:
+		xr_origin_3D.transform.origin.y += roomscale_height_adjustment
+		
 	# Return our value
 	current_characterbody3D.velocity = current_velocity
 
@@ -123,7 +132,7 @@ func set_characterbody3D(new_characterbody3D : CharacterBody3D):
 		current_characterbody3D = new_characterbody3D
 
 # Function to enable or disable roomscale movement
-func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false) -> bool:
+func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false, current_camera : Camera3D = null, height_adjustment : float = 0.0) -> bool:
 	if value == true and (current_characterbody3D == null or !is_instance_valid(current_characterbody3D)):
 		print("Tried to enable roomscale but characterbody3D still not set or is set to an invalid instance.")
 		return false
@@ -132,12 +141,14 @@ func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false) -> bool
 		xr_origin_3D = new_origin
 		xr_camera_3D = new_origin.get_node("XRCamera3D")
 		xr_neck_position_3D = xr_camera_3D.get_node("Neck")
+		camera_3d = current_camera
+		roomscale_height_adjustment = height_adjustment
 	enabled = value
 	set_process(value)
 	set_physics_process(value)
 	reverse_roomscale_direction = reverse_roomscale
 	if enabled == false:
 		current_characterbody3D = null
-	
+		camera_3d = null
 	# Return true in case calling method needs to know we finished; again could use signal here but this is simpler
 	return true
