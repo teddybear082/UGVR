@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=12 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_pointer.tscn" id="2_l282w"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://xr_roomscale_controller.gd" id="5_1018u"]
 [ext_resource type="Script" path="res://xr_config_handler.gd" id="5_jiibt"]
 [ext_resource type="Script" path="res://xr_physical_movement_controller.gd" id="6_1wyxn"]
+[ext_resource type="Script" path="res://xr_radial_menu.gd" id="7_hw5k1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_10cyd"]
 radius = 0.3
@@ -101,6 +102,9 @@ collision_mask = 0
 
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GestureDetectionArea"]
 shape = SubResource("SphereShape3D_8i68g")
+
+[node name="XRRadialMenu" type="Node3D" parent="XROrigin3D"]
+script = ExtResource("7_hw5k1")
 
 [node name="XRRoomscaleController" type="Node" parent="XROrigin3D"]
 script = ExtResource("5_1018u")

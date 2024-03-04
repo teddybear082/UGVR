@@ -95,12 +95,12 @@ var physically_sprinting : bool = false
 var arms_jump_threshold : float = 5.0
 
 # Node Positions for Arm Swing Jump
-var _xr_camera_3D_position : float = 0.0
+#var _xr_camera_3D_position : float = 0.0
 var _secondary_controller_position : float = 0.0
 var _primary_controller_position : float = 0.0
 
 # Node Velocities for Arm Swing Jump
-var _xr_camera_3D_velocity : SlidingAverage = SlidingAverage.new(5)
+#var _xr_camera_3D_velocity : SlidingAverage = SlidingAverage.new(5)
 var _secondary_controller_velocity : SlidingAverage = SlidingAverage.new(5)
 var _primary_controller_velocity : SlidingAverage = SlidingAverage.new(5)
 

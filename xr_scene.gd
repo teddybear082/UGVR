@@ -25,6 +25,7 @@ extends Node3D
 @onready var xr_autosave_timer : Timer = get_node("XRAutoSaveTimer")
 @onready var xr_roomscale_controller : Node = xr_origin_3d.get_node("XRRoomscaleController")
 @onready var xr_physical_movement_controller : Node = xr_origin_3d.get_node("XRPhysicalMovementController")
+@onready var xr_radial_menu : Node3D =  xr_origin_3d.get_node("XRRadialMenu")
 
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
@@ -109,6 +110,16 @@ var use_gamepad_only : bool = false
 var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
+var use_xr_radial_menu : bool = false
+enum XR_RADIAL_TYPE {
+	GAMEPAD = 0,
+	KEYBOARD = 0,
+	ACTION = 3
+}
+
+var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
+
+var xr_radial_menu_entries : Array = ["Joypad A/Cross", "Joypad B/Circle", "Joypad X/Square", "Joypad Y/Triangle"]
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -132,8 +143,9 @@ func _ready() -> void:
 	set_process(false)
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
 	xr_autosave_timer.connect("timeout", Callable(self, "_on_xr_autosave_timer_timeout"))
-	xr_origin_3d.get_node("XRPhysicalMovementController").connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
-	#xr_origin_3d.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
+	xr_physical_movement_controller.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
+	xr_radial_menu.connect("entry_selected", Callable(self, "_on_xr_radial_menu_entry_selected"))
+	
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
@@ -301,10 +313,10 @@ func map_xr_controllers_to_action_map():
 	primary_pointer = right_xr_pointer
 	secondary_pointer = left_xr_pointer
 	
-	print(secondary_controller)
-	print(primary_controller)
+	print("secondary controller: ", secondary_controller)
+	print("primary controller: ", primary_controller)
 	
-	# Print action map for debugging - someday maybe can facilitate user remapping of actions as alternative to general keybinds
+	# Print action map for debugging - facilitate user remapping of actions as alternative to general keybinds
 	var flat_screen_actions = InputMap.get_actions()
 	for action in flat_screen_actions:
 		var action_events = InputMap.action_get_events(action)
@@ -351,8 +363,15 @@ func map_xr_controllers_to_action_map():
 	dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 	
+	# Enable and set up radial menu if using it
+	if use_xr_radial_menu:
+		xr_radial_menu.set_enabled(true)
+		xr_radial_menu.set_controller(primary_controller)
+		xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
+	
 	# Enable arm swing jog or jump movement if enabled by the user
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
+
 
 # Handle button presses on VR controller assigned as primary
 func handle_primary_xr_inputs(button):
@@ -678,6 +697,36 @@ func _handle_rotation(angle : float) -> void:
 	rot = rot.rotated(Vector3(0.0, -1.0, 0.0), angle) ## <-- this is the rotation around the camera
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
 
+func _on_xr_radial_menu_entry_selected(entry : String):
+	if xr_radial_menu_mode == XR_RADIAL_TYPE.GAMEPAD:
+		var gamepad_event : InputEventJoypadButton = InputEventJoypadButton.new()
+		var gamepad_button_index = xr_config_handler.default_gamepad_button_names.find(entry)
+		gamepad_event.button_index = gamepad_button_index
+		gamepad_event.pressed = true
+		Input.parse_input_event(gamepad_event)
+		print("Pressed gamepad event from radial menu: ", entry)
+		await get_tree().create_timer(0.2).timeout
+		gamepad_event.pressed = false
+		Input.parse_input_event(gamepad_event)
+	
+	# Not presently working	
+	elif xr_radial_menu_mode == XR_RADIAL_TYPE.KEYBOARD:
+		var keyboard_event : InputEventKey = InputEventKey.new()
+		#keyboard_event.keycode = entry
+		keyboard_event.pressed = true
+		Input.parse_input_event(keyboard_event)
+		await get_tree().create_timer(0.2).timeout
+		keyboard_event.pressed = false
+		Input.parse_input_event(keyboard_event)
+		
+	elif xr_radial_menu_mode == XR_RADIAL_TYPE.ACTION:
+		var action_event : InputEventAction = InputEventAction.new()
+		action_event.action = entry
+		action_event.pressed = true
+		Input.parse_input_event(action_event)
+		await get_tree().create_timer(0.2).timeout
+		action_event.pressed = false
+		Input.parse_input_event(action_event)
 
 func _on_xr_started():
 	# Only set up once not every time user goes in and out of VR
@@ -813,6 +862,7 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
 	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
+	xr_radial_menu = xr_origin_3d.get_node("XRRadialMenu")
 	_setup_viewports()
 	map_xr_controllers_to_action_map()
 	xr_origin_reparented = false
