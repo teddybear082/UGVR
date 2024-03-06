@@ -205,6 +205,9 @@ func _eval_tree_new() -> void:
 				print("Current camera remote transform: ", current_camera_remote_transform)
 				current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
 				current_camera = camera
+				# Try to turn off blur on all cameras by default
+				current_camera.attributes.dof_blur_near_enabled = false
+				current_camera.attributes.dof_blur_far_enabled = false
 
 	# If for some reason we haven't found a current camera after cycling through all cameras in scene, fall back to setting remote path of available cameras to xr_origin_3d
 	if current_camera == null and current_roomscale_character_body == null:
