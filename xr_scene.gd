@@ -113,13 +113,13 @@ var jog_triggers_sprint : bool = false
 var use_xr_radial_menu : bool = false
 enum XR_RADIAL_TYPE {
 	GAMEPAD = 0,
-	KEYBOARD = 0,
-	ACTION = 3
+	KEYBOARD = 1,
+	ACTION = 2
 }
 
 var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
 
-var xr_radial_menu_entries : Array = ["Joypad A/Cross", "Joypad B/Circle", "Joypad X/Square", "Joypad Y/Triangle"]
+var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -704,29 +704,28 @@ func _on_xr_radial_menu_entry_selected(entry : String):
 		gamepad_event.button_index = gamepad_button_index
 		gamepad_event.pressed = true
 		Input.parse_input_event(gamepad_event)
-		print("Pressed gamepad event from radial menu: ", entry)
+		#print("Pressed gamepad event from radial menu: ", entry)
 		await get_tree().create_timer(0.2).timeout
 		gamepad_event.pressed = false
 		Input.parse_input_event(gamepad_event)
 	
-	# Not presently working	
+	# Not presently working	because rest of code assumes entries are strings and keys only accept KEY int constants
 	elif xr_radial_menu_mode == XR_RADIAL_TYPE.KEYBOARD:
 		var keyboard_event : InputEventKey = InputEventKey.new()
 		#keyboard_event.keycode = entry
 		keyboard_event.pressed = true
 		Input.parse_input_event(keyboard_event)
+		#print("Pressed key from radial menu: ", str(entry))
 		await get_tree().create_timer(0.2).timeout
 		keyboard_event.pressed = false
 		Input.parse_input_event(keyboard_event)
 		
 	elif xr_radial_menu_mode == XR_RADIAL_TYPE.ACTION:
-		var action_event : InputEventAction = InputEventAction.new()
-		action_event.action = entry
-		action_event.pressed = true
-		Input.parse_input_event(action_event)
+		# Using parse input event with Action Events did not seem to work but this seems to
+		Input.action_press(entry)
+		#print("Pressed action from radial menu: ", entry)
 		await get_tree().create_timer(0.2).timeout
-		action_event.pressed = false
-		Input.parse_input_event(action_event)
+		Input.action_release(entry)
 
 func _on_xr_started():
 	# Only set up once not every time user goes in and out of VR

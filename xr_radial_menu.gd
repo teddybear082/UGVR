@@ -46,7 +46,7 @@ func set_menu_entries(entries : Array) -> void:
 		add_entry(entry)
 	already_added_meshes = true
 
-func add_entry(entry: String) -> void:
+func add_entry(entry : String) -> void:
 	#print("Made it to add entry function in xr radial menu")
 	var mesh_instance : MeshInstance3D = MeshInstance3D.new()
 	var mesh : QuadMesh = QuadMesh.new()
