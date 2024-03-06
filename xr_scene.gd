@@ -229,25 +229,32 @@ func _eval_tree_new() -> void:
 				print("making canvas layer active: ", canvas_layer)
 				canvas_layer.add_to_group("active_canvas_layers")
 				canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
-
-
-	# if user enabled passthrough mode, try to enable it by finding world environment and setting sky to passthrough color (may not work, need to test on airlink/oculus)
-	if enable_passthrough and xr_interface.is_passthrough_supported():
-		var passthrough_color = Color(0,0,0,0.2)
-		print("trying passthrough setup")
-		var potential_world_environment_nodes : Array = get_node("/root").find_children("*", "WorldEnvironment", true, false)
-		if potential_world_environment_nodes != []:
-			for world_environment in potential_world_environment_nodes:
-				if not world_environment.is_in_group("world_environment_nodes"):
-					print("New world environment node found: ", world_environment)
-					print(world_environment.print_tree_pretty())
-					world_environment.add_to_group("world_environment_nodes")
-					var environment : Environment = world_environment.get_environment()
-					environment.set_bg_color(passthrough_color)
-					environment.set_background(Environment.BG_COLOR)
+	
+	# Turn off any world environment blur effects which work badly in VR. Only one WorldEnvironment node can be in the scene tree at one time so can hopefully stop after one child.
+	var world_environment = get_node("/root").find_child("*Environment*", true, false)
+	# If found node is not actually the WorldEnvironment, check its children, and use the first one:
+	if world_environment and not world_environment.is_class("WorldEnvironment"):
+		world_environment = world_environment.find_children("*", "WorldEnvironment", true, false)[0]
+	# If no node found or node is still not the WorldEnvironment, try running a search of lower case environment
+	if world_environment == null or not world_environment.is_class("WorldEnvironment"):
+		world_environment = get_node("/root").find_child("*environment*", true, false)
+	#If we found the world environment set its camera attributes to blur enabled false
+	if world_environment and world_environment.is_class("WorldEnvironment"):
+		world_environment.camera_attributes.dof_blur_near_enabled = false
+		world_environment.camera_attributes.dof_blur_far_enabled = false
+				
+		# NOT PRESENTLY WORKING, NEEDS MORE THOUGHT: if user enabled passthrough mode, try to enable it by finding world environment and setting sky to passthrough color
+		if enable_passthrough and xr_interface.is_passthrough_supported():
+			var passthrough_color = Color(0,0,0,0.2)
+			print("trying passthrough setup")
+			var environment : Environment = world_environment.get_environment()
+			environment.set_bg_color(passthrough_color)
+			environment.set_background(Environment.BG_COLOR)
 		
 			enable_passthrough = xr_interface.start_passthrough()
 
+	xr_camera_3d.attributes.dof_blur_near_enabled = false
+	xr_camera_3d.attributes.dof_blur_far_enabled = false
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
 	if !is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
 		# If no valid character body make sure xr roomscale controller is off
