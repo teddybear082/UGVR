@@ -92,6 +92,9 @@ collision_mask = 0
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D/GestureDetectionArea"]
 shape = SubResource("SphereShape3D_iwxk1")
 
+[node name="XRViewportHolder" type="Node3D" parent="XROrigin3D/XRController3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.1)
+
 [node name="XRController3D2" type="XRController3D" parent="XROrigin3D"]
 tracker = &"right_hand"
 pose = &"aim"
@@ -106,6 +109,9 @@ collision_mask = 0
 
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GestureDetectionArea"]
 shape = SubResource("SphereShape3D_8i68g")
+
+[node name="XRViewportHolder" type="Node3D" parent="XROrigin3D/XRController3D2"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.1)
 
 [node name="XRRadialMenu" type="Node3D" parent="XROrigin3D"]
 script = ExtResource("7_hw5k1")

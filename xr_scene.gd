@@ -139,6 +139,16 @@ var turning_type : TurningType = TurningType.SNAP
 var turning_speed : float = 90.0
 var turning_degrees : float = 30.0
 
+# Variables for moving viewport2din3d nodes - they start as childed to the origin and then moved as necessary
+enum XR_VIEWPORT_LOCATION {
+	CAMERA = 0,
+	PRIMARY_CONTROLLER = 1,
+	SECONDARY_CONTROLLER = 2
+}
+
+var xr_main_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
+var xr_secondary_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
+
 func _ready() -> void:
 	set_process(false)
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
@@ -796,6 +806,13 @@ func _on_xr_started():
 	#xr_main_viewport2d_in_3d.screen_size *= xr_world_scale
 	#xr_secondary_viewport2d_in_3d.screen_size *= xr_world_scale 
 	
+	# Place viewports at proper location based on user config
+	if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
+	if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
+
+	
 	set_process(true)
 	
 	# Clear Welcome label (probably someday can make it a config not to show again)
@@ -902,3 +919,37 @@ func _setup_viewports():
 
 	# Setup secondary viewport for use with canvaslayer node contents, if any found
 	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
+	
+	# Place viewports at proper location based on user config
+	if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
+	if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
+
+
+func reparent_viewport(viewport_node, viewport_location):
+	var viewport_parent = viewport_node.get_parent()
+	viewport_parent.remove_child(viewport_node)
+	
+	if viewport_location == XR_VIEWPORT_LOCATION.CAMERA:
+		viewport_node.set_screen_size(Vector2(3.0,2.0))
+		viewport_node.transform.origin = Vector3(0,0,0)
+		xr_camera_3d.add_child(viewport_node)
+		if viewport_node == xr_main_viewport2d_in_3d:
+			viewport_node.transform.origin = Vector3(0,-0.3,-2.8)
+		else:
+			viewport_node.transform.origin = Vector3(0,-0.3,-3.2)
+		
+	elif viewport_location == XR_VIEWPORT_LOCATION.PRIMARY_CONTROLLER:
+		primary_controller.get_node("XRViewportHolder").add_child(viewport_node)
+		viewport_node.set_screen_size(Vector2(0.5, 0.33))
+		viewport_node.transform.origin = Vector3(0,0,0)
+		if viewport_node == xr_main_viewport2d_in_3d:
+			viewport_node.transform.origin = Vector3(0,0.005,0)
+	
+	elif viewport_location == XR_VIEWPORT_LOCATION.SECONDARY_CONTROLLER:
+		secondary_controller.get_node("XRViewportHolder").add_child(viewport_node)
+		viewport_node.set_screen_size(Vector2(0.5, 0.33))
+		viewport_node.transform.origin = Vector3(0,0,0)
+		if viewport_node == xr_main_viewport2d_in_3d:
+			viewport_node.transform.origin = Vector3(0,0.005,0)
