@@ -43,10 +43,16 @@ Not presently intended for regular users as this tool is in heavy development / 
 
 # CREDITS
 
--Decacis for inventing a way to easily inject XR Origin into camera for Godot 4 3D games
+-Decacis for inventing a way to easily inject XR Origin into camera for Godot 4 3D games.  Check out Decacis's game BadaBoom on Oculus AppLab: https://meta.com/experiences/5816419461787331/
 
--JulianTodd and Decacis for figuring out a way for 2D UI in 3D games to work "universally" in VR with input, and Bastiaan Olij for a fix to get CanvasLayer elements to appear in VR as well as code for example of CharacterBody3D driven XR origin
+-JulianTodd and Decacis for figuring out a way for 2D UI in 3D games to work "universally" in VR with input, and Bastiaan Olij for a fix to get CanvasLayer elements to appear in VR as well as code for example of CharacterBody3D driven XR origin.  Check out JulianTodd's game TunnelVR on Sidequest: https://sidequestvr.com/app/1630/tunnelvr
 
 -Godot XR Tools team - going to be heavily leveraging scripts from Godot XR Tools
 
--Praydog for concept of universal VR mod (for Unreal Engine) and providing advice about potential methods to display 2D UI in VR
+ -Check out MalcolmNixon's Youtube here: https://www.youtube.com/@MalcolmANixon
+
+ -Check out Bastiaan Olij's Youtube here: https://www.youtube.com/c/BastiaanOlij
+
+ -Check out DigitalNightmare's Steam Page here: https://store.steampowered.com/developer/DNeU and Youtube here: https://www.youtube.com/@DigitalN8m4r3
+
+-Praydog for concept of universal VR mod (for Unreal Engine - UEVR) and providing advice about potential methods to display 2D UI in VR
