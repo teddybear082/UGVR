@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=14 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_pointer.tscn" id="2_l282w"]
 [ext_resource type="PackedScene" uid="uid://clc5dre31iskm" path="res://start_xr.tscn" id="2_rrkev"]
 [ext_resource type="PackedScene" uid="uid://clujaf3u776a3" path="res://xr_viewport_2d_in_3d.tscn" id="3_f316b"]
+[ext_resource type="PackedScene" uid="uid://bbvciliw3xnf6" path="res://xr_black_out.tscn" id="4_ny8kq"]
 [ext_resource type="Script" path="res://xr_roomscale_controller.gd" id="5_1018u"]
 [ext_resource type="Script" path="res://xr_config_handler.gd" id="5_jiibt"]
 [ext_resource type="Script" path="res://xr_physical_movement_controller.gd" id="6_1wyxn"]
@@ -75,6 +76,8 @@ Hold your thumb on the right thumbstick
 --Select: Left B/Y button (when activated)"
 font_size = 14
 width = 1500.0
+
+[node name="BlackOut" parent="XROrigin3D/XRCamera3D" instance=ExtResource("4_ny8kq")]
 
 [node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
 tracker = &"left_hand"

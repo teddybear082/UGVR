@@ -11,6 +11,8 @@ var xr_origin_3D : XROrigin3D = null
 var xr_camera_3D : XRCamera3D = null
 var xr_neck_position_3D : Node3D = null
 var camera_3d : Camera3D = null
+# Node for blacking out screen when player walks to where they should not in roomscale
+var black_out : Node3D = null
 # Node driving the player movement
 var current_characterbody3D : CharacterBody3D = null
 
@@ -22,8 +24,7 @@ var reverse_roomscale_direction : bool = false
 
 # Height adjustment set by user if any
 var roomscale_height_adjustment : float = 0.0
-# Currently unused - node for blacking out screen when player walks to where they should not in roomscale
-#@onready var black_out : Node3D = $XROrigin3D/XRCamera3D/BlackOut
+
 
 # `recenter` is called when the user has requested their view to be recentered.
 # The code here assumes the player has walked into an area they shouldn't be
@@ -109,11 +110,10 @@ func _process_on_physical_movement(delta) -> bool:
 	var location_offset = (player_body_location - current_characterbody3D.global_transform.origin).length()
 	if location_offset > 0.1:
 		# We couldn't go where we wanted to, black out our screen
-		#black_out.fade = clamp((location_offset - 0.1) / 0.1, 0.0, 1.0)
-
+		black_out.fade = clamp((location_offset - 0.1) / 0.1, 0.0, 1.0)
 		return true
 	else:
-		#black_out.fade = 0.0
+		black_out.fade = 0.0
 		return false
 
 # _physics_process handles our player movement.
@@ -141,6 +141,7 @@ func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false, current
 		xr_origin_3D = new_origin
 		xr_camera_3D = new_origin.get_node("XRCamera3D")
 		xr_neck_position_3D = xr_camera_3D.get_node("Neck")
+		black_out = xr_camera_3D.get_node("BlackOut")
 		camera_3d = current_camera
 		roomscale_height_adjustment = height_adjustment
 	enabled = value

@@ -26,12 +26,12 @@ extends Node3D
 @onready var xr_roomscale_controller : Node = xr_origin_3d.get_node("XRRoomscaleController")
 @onready var xr_physical_movement_controller : Node = xr_origin_3d.get_node("XRPhysicalMovementController")
 @onready var xr_radial_menu : Node3D =  xr_origin_3d.get_node("XRRadialMenu")
-
+@onready var xr_black_out : Node3D = xr_camera_3d.get_node("BlackOut")
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
 var secondary_action_map : Dictionary
 
-var grip_deadzone : float = 0.7
+# Variables to hold emulated gamepad/joypad events that are triggered by motion controllers
 var secondary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var secondary_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var primary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
@@ -50,6 +50,25 @@ var start_toggle_active : bool = false
 # Store state of select activation
 var select_toggle_active : bool = false
 
+# Internal variables to prepare for eventual user configs to set primary and secondary controllers
+var primary_controller : XRController3D
+var primary_detection_area : Area3D
+var secondary_controller = XRController3D
+var secondary_detection_area : Area3D
+var primary_pointer : Node3D = null
+var secondary_pointer : Node3D = null
+
+# Internal variables to store states of active camera following/roomscale status
+var current_camera : Camera3D = null
+var current_camera_remote_transform : RemoteTransform3D = null
+var current_roomscale_character_body : CharacterBody3D = null
+var xr_interface : XRInterface
+var already_set_up : bool = false
+var user_height : float = 0.0
+var xr_origin_reparented : bool = false
+var backup_xr_origin : XROrigin3D = null
+
+# User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
 
@@ -74,42 +93,31 @@ var start_button = "primary_click"
 # Select button (when toggle active)
 var select_button = "by_button"
 
-# Prepare for eventual user configs to set primary and secondary controllers
-var primary_controller : XRController3D
-var primary_detection_area : Area3D
-var secondary_controller = XRController3D
-var secondary_detection_area : Area3D
-var primary_pointer : Node3D = null
-var secondary_pointer : Node3D = null
-var current_camera : Camera3D = null
-var current_camera_remote_transform : RemoteTransform3D = null
-var current_roomscale_character_body : CharacterBody3D = null
-var xr_interface : XRInterface
-var already_set_up : bool = false
-var user_height : float = 0.0
-var xr_origin_reparented : bool = false
-var backup_xr_origin : XROrigin3D = null
 
 # Additional user config variables
 var xr_world_scale : float = 1.0
 var enable_passthrough : bool = false
-var disable_2d_ui : bool = false
-var gui_embed_subwindows : bool = false
+var disable_2d_ui : bool = false  # Not presently in config - ever give option?
+var gui_embed_subwindows : bool = false # Not presently in config - ever give option?
 var show_welcome_label : bool = true
+var use_physical_gamepad_only : bool = false
 var stick_emulate_mouse_movement : bool = false
-var head_emulate_mouse_movement : bool = false
-var primary_controller_emulate_mouse_movement : bool = false
-var secondary_controller_emulate_mouse_movement : bool = false
+var head_emulate_mouse_movement : bool = false # Not presently working
+var primary_controller_emulate_mouse_movement : bool = false # Not presently working
+var secondary_controller_emulate_mouse_movement : bool = false # Not presently working
 var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
+
+# Roomscale movement configs
 var use_roomscale : bool = false
 var roomscale_height_adjustment : float = 0.0
 var attempt_to_use_camera_to_set_roomscale_height : bool = false
 var reverse_roomscale_direction : bool = false
-var use_gamepad_only : bool = false
 var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
+
+# Radial menu configs
 var use_xr_radial_menu : bool = false
 enum XR_RADIAL_TYPE {
 	GAMEPAD = 0,
@@ -149,6 +157,9 @@ enum XR_VIEWPORT_LOCATION {
 var xr_main_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 var xr_secondary_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 
+# Variable for grip deadzone
+var grip_deadzone : float = 0.7
+
 func _ready() -> void:
 	set_process(false)
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
@@ -166,7 +177,7 @@ func _process(_delta : float) -> void:
 			_eval_tree_new()
 	
 	# If controllers aren't found, skip processing inputs
-	if !is_instance_valid(xr_left_controller) or !is_instance_valid(xr_right_controller) or use_gamepad_only:
+	if !is_instance_valid(xr_left_controller) or !is_instance_valid(xr_right_controller) or use_physical_gamepad_only:
 		return
 	# Process emulated joypad inputs, someday maybe this could be a toggle in the event someone wants to use gamepad only controls
 	process_joystick_inputs()
@@ -268,6 +279,7 @@ func _eval_tree_new() -> void:
 
 	xr_camera_3d.attributes.dof_blur_near_enabled = false
 	xr_camera_3d.attributes.dof_blur_far_enabled = false
+	
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
 	if !is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
 		# If no valid character body make sure xr roomscale controller is off
@@ -314,9 +326,12 @@ func _eval_tree_new() -> void:
 			xr_origin_3d.transform.origin.y = 0.0
 			xr_roomscale_controller.set_characterbody3D(current_roomscale_character_body)
 			if attempt_to_use_camera_to_set_roomscale_height:
+				@warning_ignore("unused_variable")
 				var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d, reverse_roomscale_direction, current_camera, roomscale_height_adjustment)
 			else:
+				@warning_ignore("unused_variable")
 				var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d, reverse_roomscale_direction, null, roomscale_height_adjustment)
+			@warning_ignore("unused_variable")
 			var err2 = xr_roomscale_controller.recenter()
 			current_camera = null
 			current_camera_remote_transform = null
@@ -860,8 +875,10 @@ func _on_xr_origin_exiting_tree():
 		#print(xr_origin_3d)
 		#print(xr_origin_3d.get_parent())
 		if attempt_to_use_camera_to_set_roomscale_height:
+			@warning_ignore("unused_variable")
 			var err = xr_roomscale_controller.set_enabled(false, null, reverse_roomscale_direction, current_camera, roomscale_height_adjustment)
 		else:
+			@warning_ignore("unused_variable")
 			var err = xr_roomscale_controller.set_enabled(false, null, reverse_roomscale_direction, null, roomscale_height_adjustment)
 		xr_roomscale_controller.set_characterbody3D(null)
 		xr_origin_reparented = false
@@ -889,6 +906,8 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
 	xr_radial_menu = xr_origin_3d.get_node("XRRadialMenu")
+	xr_black_out = xr_camera_3d.get_node("BlackOut")
+	
 	_setup_viewports()
 	map_xr_controllers_to_action_map()
 	xr_origin_reparented = false

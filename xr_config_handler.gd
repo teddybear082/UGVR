@@ -136,21 +136,46 @@ var secondary_action_map = {
 	}
 
 ##CONTROLS Config Options
-enum TurningStyle {
+enum XR_RADIAL_TYPE {
+	GAMEPAD = 0,
+	KEYBOARD = 1,
+	ACTION = 2
+}
+
+enum TurningType {
 	SNAP = 0,
 	SMOOTH = 1,
 	NONE = 2
 }
 
+# NEW - needs config file mapping - option if user will use only a physical gamepad, deactivates rest of motion control emulation
+var use_physical_gamepad_only : bool = false
+
 # Maybe unnecessary; maybe we always use gamepad emulation, but still might want to turn this off if someone built a more robust game-specific mod
 var use_gamepad_emulation : bool = true
 
-# Maybe just use action mapping to assign joypad binds instead of ever "emulating" keyboard?
+# Maybe just use action mapping to assign joypad binds instead of ever "emulating" keyboard? LIKELY DELETE
 var use_keyboard_emulation : bool = false
 
-# Stick turning style for camera
-var turning_style : TurningStyle = TurningStyle.SNAP
+# NEW - needs config mapping - mouse emulation options
+var stick_emulate_mouse_movement : bool = false
+var head_emulate_mouse_movement : bool = false
+var primary_controller_emulate_mouse_movement : bool = false
+var secondary_controller_emulate_mouse_movement : bool = false
+var emulated_mouse_sensitivity_multiplier : int = 10
+var emulated_mouse_deadzone : float = 0.25
 
+# NEW - needs config mapping - grip deazone
+var grip_deadzone : float = 0.7
+
+# Stick turning style for camera
+var turning_style : TurningType = TurningType.SNAP
+
+# More stick turning options - need to be added to config
+var turning_speed : float = 90.0
+var turning_degrees : float = 30.0
+
+# UGVR specific special button maps
 var ugvr_menu_toggle_combo : Dictionary = {"primary_controller" : ["primary_click"], "secondary_controller": ["primary_click"]}
 
 var gesture_pointer_activation_button : String = "trigger_click"
@@ -159,9 +184,9 @@ var dpad_activation_button : String = "primary_touch"
 
 var primary_controller : String = "right"
 
-var controller_mapping: String = "default" 
+var controller_mapping: String = "default" # Think this is no longer needed
 
-var custom_action_map : Dictionary = {}
+var custom_action_map : Dictionary = {} # Think this is no longer needed
 
 var start_button : String = "primary_click"
 
@@ -174,8 +199,29 @@ var controller_for_start_button : String = "left"
 
 var controller_for_select_button : String = "left"
 
+# Radial menu options in CONTROL options - need to be added to config
+var use_xr_radial_menu : bool = false
+
+var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
+
+var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
+
+# Roomscale menu options in CONTROL options - need to be added to config - maybe add "Roomscale" subheader
+var use_roomscale : bool = false
+var roomscale_height_adjustment : float = 0.0
+var attempt_to_use_camera_to_set_roomscale_height : bool = false
+var reverse_roomscale_direction : bool = false
+var use_arm_swing_jump : bool = false
+var use_jog_movement : bool = false
+var jog_triggers_sprint : bool = false
 
 ## CAMERA Config Options
+
+enum XR_VIEWPORT_LOCATION {
+	CAMERA = 0,
+	PRIMARY_CONTROLLER = 1,
+	SECONDARY_CONTROLLER = 2
+}
 
 var vr_world_scale : float = 1.0
 
@@ -183,17 +229,9 @@ var camera_offset : Vector3 = Vector3(0,0,0)
 
 var experimental_passthrough : bool = false
 
+var xr_main_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 
-##VIEWPORTS Config options
-enum ViewportLocation {
-	CAMERA = 0,
-	PRIMARY_CONTROLLER = 1,
-	SECONDARY_CONTROLLER = 2
-}
-
-var primary_viewport_location : ViewportLocation = ViewportLocation.CAMERA
-
-var secondary_viewport_location : ViewportLocation = ViewportLocation.CAMERA
+var xr_secondary_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 
 var primary_viewport_size_multiplier : float = 1.0
 
@@ -209,6 +247,9 @@ var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 
 ## AUTOSAVE OPTIONS
 var autosave_action_map_duration_in_secs : int = 0 # Off by default
+
+## OTHER GAME OPTIONS - needs config file mapping
+var show_welcome_label : bool = true
 
 
 ## ConfigFile variables
@@ -269,11 +310,6 @@ func _ready():
 		var complete = load_game_control_map_cfg_file(game_control_map_cfg_path)
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	pass
-
-
 func load_game_options_cfg_file(file_path: String) -> bool:
 	var game_options_cfg_file = ConfigFile.new()
 	err = game_options_cfg_file.load(file_path)
@@ -288,8 +324,8 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	experimental_passthrough = game_options_cfg_file.get_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
 
 	# Load viewport options
-	primary_viewport_location = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_location", primary_viewport_location)
-	secondary_viewport_location = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "secondary_viewport_location", secondary_viewport_location)
+	xr_main_viewport_location = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "xr_main_viewport_location", xr_main_viewport_location)
+	xr_secondary_viewport_location = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "xr_secondary_viewport_location", xr_secondary_viewport_location)
 	primary_viewport_size_multiplier = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_size_multiplier", primary_viewport_size_multiplier)
 	secondary_viewport_size_multiplier = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "secondary_viewport_size_multiplier", secondary_viewport_size_multiplier)
 	primary_viewport_offset = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_offset", primary_viewport_offset)
@@ -317,9 +353,9 @@ func save_game_options_cfg_file(file_path):
 
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
 
-	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "primary_viewport_location", primary_viewport_location)
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "xr_main_viewport_location", xr_main_viewport_location)
 
-	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "secondary_viewport_location", secondary_viewport_location)
+	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "xr_secondary_viewport_location", xr_secondary_viewport_location)
 
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "primary_viewport_size_multiplier", primary_viewport_size_multiplier)
 
