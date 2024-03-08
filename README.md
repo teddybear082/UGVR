@@ -47,6 +47,8 @@ Not presently intended for regular users as this tool is in heavy development / 
 
 -JulianTodd and Decacis for figuring out a way for 2D UI in 3D games to work "universally" in VR with input, and Bastiaan Olij for a fix to get CanvasLayer elements to appear in VR as well as code for example of CharacterBody3D driven XR origin.  Check out JulianTodd's game TunnelVR on Sidequest: https://sidequestvr.com/app/1630/tunnelvr
 
+-Lejar for radial menu code again: https://github.com/lejar 
+
 -Godot XR Tools team - going to be heavily leveraging scripts from Godot XR Tools
 
  -Check out MalcolmNixon's Youtube here: https://www.youtube.com/@MalcolmANixon
