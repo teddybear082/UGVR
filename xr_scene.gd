@@ -78,14 +78,8 @@ var gesture_load_action_map_button = "by_button"
 # Button to set height with gesture (temporary, should eventually be GUI) - Needs to be included in config file
 var gesture_set_user_height_button = "by_button"
 
-# Button to activate dpad alternative binding for joystick
+# Button to activate dpad alternative binding for joystick, start and select buttons
 var dpad_activation_button = "primary_touch"
-
-# Button to activate start button
-var start_activation_button = "primary_touch"
-
-# Button to activate select button
-var select_activation_button = "primary_touch"
 
 # Start button (when toggle active)
 var start_button = "primary_click"
@@ -124,9 +118,7 @@ enum XR_RADIAL_TYPE {
 	KEYBOARD = 1,
 	ACTION = 2
 }
-
 var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
-
 var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
 
 # Decacis Stick Turning Variables
@@ -136,16 +128,17 @@ enum TurningType {
 	NONE = 2
 }
 
-const DEADZONE : float = 0.65
+var turning_type : TurningType = TurningType.SNAP
+var turning_speed : float = 90.0
+var turning_degrees : float = 30.0
+var stick_turn_controller : String = "primary_controller"
 
+# Internal variables used for Decacis stick turning
+const DEADZONE : float = 0.65
 var last_stick_val : Vector2 = Vector2.ZERO
 var current_controller = null
 var currently_rotating : bool = false
 var already_performed_rotation : bool = false
-
-var turning_type : TurningType = TurningType.SNAP
-var turning_speed : float = 90.0
-var turning_degrees : float = 30.0
 
 # Variables for moving viewport2din3d nodes - they start as childed to the origin and then moved as necessary
 enum XR_VIEWPORT_LOCATION {
@@ -153,7 +146,6 @@ enum XR_VIEWPORT_LOCATION {
 	PRIMARY_CONTROLLER = 1,
 	SECONDARY_CONTROLLER = 2
 }
-
 var xr_main_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 var xr_secondary_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 
@@ -367,9 +359,11 @@ func map_xr_controllers_to_action_map():
 	primary_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
 	secondary_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
 	primary_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
-	primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
-	# Will be a configurable option which stick turns, for now assume primary
-	#secondary_controller.connect("input_vector2_changed", Callable(self, "secondary_stick_moved"))
+	if stick_turn_controller == "primary_controller":
+		primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
+	else:
+		print("Using secondary controller for stick turn based on user config.")
+		secondary_controller.connect("input_vector2_changed", Callable(self, "secondary_stick_moved"))
 	
 	# Map xr button input to joypad inputs
 	
@@ -427,16 +421,10 @@ func handle_primary_xr_inputs(button):
 	# If user just pressed activation button, activate special combo buttons
 	if button == dpad_activation_button:
 		dpad_toggle_active = true
-		print("dpad toggle active")
-		
-	if button == start_activation_button:
 		start_toggle_active = true
-		print("start toggle active")
-		
-	if button == select_activation_button:
 		select_toggle_active = true
-		print("select toggle active")
-	
+		#print("dpad toggle active")
+		
 	# Finally pass through remaining gamepad emulation input
 	if primary_action_map.has(button):
 		var event = InputEventJoypadButton.new()
@@ -444,60 +432,22 @@ func handle_primary_xr_inputs(button):
 		event.pressed = true
 		Input.parse_input_event(event)
 	
-	# Saved code to handle other ways of triggering input in case later we allow game custom action mapping
-	#print("pressed button",button)
-	#if button == "ax_button":
-		#print("detected ax button press")
-		#var ax_event = InputEventJoypadButton.new()
-		#ax_event.button_index = 0
-		#ax_event.pressed = true
-		#Input.parse_input_event(ax_event)
-		# If there was action mapping, which may be a good alternative option to allow someday, this is how it would work:
-		#Input.action_press(&"jump")
-	#if button == "by_button":
-		#print("detected by button press")
-		#var by_event = InputEventJoypadButton.new()
-		#by_event.button_index = JOY_BUTTON_B
-		#by_event.pressed = true
-		#Input.parse_input_event(by_event)
-		#Input.action_press(&"shoot")
-
+	
 # Handle release of buttons on primary controller
 func handle_primary_xr_release(button):
 	#print("primary button released: ", button)
 	if button == dpad_activation_button:
 		dpad_toggle_active = false
-		print("dpad toggle off")
-		
-	if button == start_activation_button:
 		start_toggle_active = false
-		print("start toggle off")
-		
-	if button == select_activation_button:
 		select_toggle_active = false
-		print("select toggle off")
+		#print("dpad toggle off")
 	
 	if primary_action_map.has(button):
 		var event = InputEventJoypadButton.new()
 		event.button_index = primary_action_map[button]
 		event.pressed = false
 		Input.parse_input_event(event)
-	
-	#print("released button", button)
-	#if button == "ax_button":
-		# If there was action mapping, which may be a good alternative option to allow someday, this is how it would work:
-		#Input.action_release(&"jump")
-		#var ax_event = InputEventJoypadButton.new()
-		#ax_event.button_index = 0
-		#ax_event.pressed = false
-		#Input.parse_input_event(ax_event)
-	
-	#if button == "by_button":
-		#Input.action_release(&"shoot")
-		#var by_event = InputEventJoypadButton.new()
-		#by_event.button_index = JoyButton.JOY_BUTTON_B
-		#by_event.pressed = false
-		#Input.parse_input_event(by_event)
+		
 
 # Handle button presses on VR Controller assigned as secondary
 func handle_secondary_xr_inputs(button):
@@ -653,10 +603,13 @@ func process_joystick_inputs():
 # Decacis Smooth / Stick turning code
 
 
-# Again could include option to use secondary stick someday but turning off for now
-#func secondary_stick_moved(stick_name : String, value : Vector2) -> void:
-	#_stick_handler(secondary_controller, stick_name, value)
-			
+# Option to use secondary stick if user config - off by default
+func secondary_stick_moved(stick_name : String, value : Vector2) -> void:
+	# If turning type is none, do not process stick turn movement
+	if not turning_type == TurningType.NONE:
+		_stick_handler(secondary_controller, stick_name, value)
+
+# User primary controller thumbstick for stick turn (default)			
 func primary_stick_moved(stick_name : String, value : Vector2) -> void:
 	# If turning type is none, do not process stick turn movement
 	if not turning_type == TurningType.NONE:
@@ -732,6 +685,7 @@ func _handle_rotation(angle : float) -> void:
 	rot = rot.rotated(Vector3(0.0, -1.0, 0.0), angle) ## <-- this is the rotation around the camera
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
 
+# Handle selection of entries in XR Radial menu
 func _on_xr_radial_menu_entry_selected(entry : String):
 	if xr_radial_menu_mode == XR_RADIAL_TYPE.GAMEPAD:
 		var gamepad_event : InputEventJoypadButton = InputEventJoypadButton.new()
@@ -762,6 +716,7 @@ func _on_xr_radial_menu_entry_selected(entry : String):
 		await get_tree().create_timer(0.2).timeout
 		Input.action_release(entry)
 
+# Handle initiation of xr
 func _on_xr_started():
 	# Only set up once not every time user goes in and out of VR
 	if already_set_up:
@@ -770,42 +725,46 @@ func _on_xr_started():
 	# Once set up, don't do it again during session
 	already_set_up = true
 	
-	# Turn off v-sync!
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	# Set up viewports
+	_setup_viewports()
 	
-	xr_interface = XRServer.find_interface("OpenXR")
+	
+	# Turn off v-sync!
+	#DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	
+	#xr_interface = XRServer.find_interface("OpenXR")
 		
 	# Set viewport2din3d to correct size
-	var vp_size = xr_interface.get_render_target_size()
-	print("Viewport size: ", vp_size)
+	#var vp_size = xr_interface.get_render_target_size()
+	#print("Viewport size: ", vp_size)
 	# Should the following be disabled? Seems so from testing, probably rely on user config instead
 	#xr_main_viewport2d_in_3d.set_viewport_size(vp_size)
 		
 	# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport, this allows 2D UI to appear in VR
-	if disable_2d_ui == false:
-		print("Viewport world2d: ", get_viewport().world_2d)
+	#if disable_2d_ui == false:
+		#print("Viewport world2d: ", get_viewport().world_2d)
 		# Possible future options but seem to be unnecessary for now
 		#get_viewport().vrs_mode = Viewport.VRS_DISABLED
 		#get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 		#get_viewport().use_hdr_2d = false
 		#get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
-		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
-		xr_main_viewport2d_in_3d._update_render()
+		#xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
+		#xr_main_viewport2d_in_3d._update_render()
 
-	if gui_embed_subwindows == true:
-		get_viewport().gui_embed_subwindows = true
+	#if gui_embed_subwindows == true:
+		#get_viewport().gui_embed_subwindows = true
 	
-	else:
-		get_viewport().gui_embed_subwindows = false
+	#else:
+		#get_viewport().gui_embed_subwindows = false
 	
 	# Enable input calculations on main viewport 2D UI with Viewport2Din3D node
-	print("xr viewport ", get_viewport())
-	print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
-	xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
-	print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+	#print("xr viewport ", get_viewport())
+	#print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
+	#xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
+	#print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 
 	# Setup secondary viewport for use with canvaslayer node contents, if any found
-	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
+	#xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
 		
 	# Set up xr controllers to emulate gamepad
 	map_xr_controllers_to_action_map()
@@ -822,10 +781,10 @@ func _on_xr_started():
 	#xr_secondary_viewport2d_in_3d.screen_size *= xr_world_scale 
 	
 	# Place viewports at proper location based on user config
-	if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
-	if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
+	#if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		#reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
+	#if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		#reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
 
 	
 	set_process(true)
@@ -907,6 +866,9 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
 	xr_radial_menu = xr_origin_3d.get_node("XRRadialMenu")
 	xr_black_out = xr_camera_3d.get_node("BlackOut")
+	
+	# Set XR worldscale (eventually user configurable)
+	xr_origin_3d.world_scale = xr_world_scale
 	
 	_setup_viewports()
 	map_xr_controllers_to_action_map()

@@ -174,26 +174,26 @@ var turning_style : TurningType = TurningType.SNAP
 # Stick turning options
 var turning_speed : float = 90.0
 var turning_degrees : float = 30.0
+var stick_turn_controller : String = "primary_controller"
 
 # UGVR specific special button maps
 var ugvr_menu_toggle_combo : Dictionary = {"primary_controller" : ["primary_click"], "secondary_controller": ["primary_click"]}
 
-var gesture_pointer_activation_button : String = "trigger_click"
+var pointer_gesture_toggle_button : String = "trigger_click"
+
+var gesture_load_action_map_button : String = "by_button"
+
+var gesture_set_user_height_button : String = "by_button"
 
 var dpad_activation_button : String = "primary_touch" 
 
+# Primary controller: controller that is mapped by default to right thumbstick, A & X buttons, right trigger and right RB; controller has dpad/start/select activation button and is used for set height gesture toggle
 var primary_controller : String = "right"
 
 var start_button : String = "primary_click"
 
 var select_button : String = "by_button"
 
-# Have to decide if these should be left/right or primary/secondary
-var controller_for_dpad_activation_button : String = "primary"
-
-var controller_for_start_button : String = "secondary"
-
-var controller_for_select_button : String = "secondary"
 
 # Radial menu options in ACTION MAP options
 var use_xr_radial_menu : bool = false
@@ -212,7 +212,7 @@ var jog_triggers_sprint : bool = false
 
 ## CAMERA Config Options
 
-var vr_world_scale : float = 1.0
+var xr_world_scale : float = 1.0
 
 var camera_offset : Vector3 = Vector3(0,0,0)
 
@@ -316,7 +316,7 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 		return false
 
 	# Load camera options
-	vr_world_scale = game_options_cfg_file.get_value("CAMERA_OPTIONS", "vr_world_scale", vr_world_scale)
+	xr_world_scale = game_options_cfg_file.get_value("CAMERA_OPTIONS", "xr_world_scale", xr_world_scale)
 	camera_offset = game_options_cfg_file.get_value("CAMERA_OPTIONS", "camera_offset", camera_offset)
 	experimental_passthrough = game_options_cfg_file.get_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
 
@@ -359,7 +359,7 @@ func save_game_options_cfg_file(file_path):
 	
 	# Save camera options
 	
-	game_options_cfg_file.set_value("CAMERA_OPTIONS", "vr_world_scale", vr_world_scale)
+	game_options_cfg_file.set_value("CAMERA_OPTIONS", "xr_world_scale", xr_world_scale)
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "camera_offset", camera_offset)
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
 
@@ -554,22 +554,18 @@ func save_game_control_map_cfg_file(file_path):
 		printerr("Error saving game control map config: ", err)
 		return
 
-
+	# Set primary control map buttons
 
 	for key in primary_action_map:	
 		game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", key, default_gamepad_button_names[primary_action_map[key]])
 
-	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "trigger", "Joypad RightTrigger")
-
-	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "thumbstick", "Joypad RightStick")
-
+	# Set secondary control map buttons
+	
 	for key in secondary_action_map:
 		game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", key, default_gamepad_button_names[secondary_action_map[key]])
 
-	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "trigger", "Joypad LeftTrigger")
-
-	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "thumbstick", "Joypad LeftStick")
-
+	# Set mouse emulation options
+	
 	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "stick_emulate_mouse_movement", stick_emulate_mouse_movement)
 	
 	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "head_emulate_mouse_movement", head_emulate_mouse_movement)
@@ -582,11 +578,15 @@ func save_game_control_map_cfg_file(file_path):
 	
 	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_deadzone", emulated_mouse_deadzone)
 	
+	# Set other control options
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_speed", turning_speed)
 	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_degrees", turning_degrees)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "stick_turn_controller", stick_turn_controller)
 	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "grip_deadzone", grip_deadzone)
 	
@@ -594,17 +594,15 @@ func save_game_control_map_cfg_file(file_path):
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
 	
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button", gesture_pointer_activation_button)
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "pointer_gesture_toggle_button", pointer_gesture_toggle_button)
 
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button", controller_for_dpad_activation_button)
-
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_load_action_map_button", gesture_load_action_map_button) 
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_set_user_height_button", gesture_set_user_height_button)
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "dpad_activation_button", dpad_activation_button)
 
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_start_button", controller_for_start_button)
-
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "start_button", start_button)
-
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_select_button", controller_for_select_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "select_button", select_button)
 	
@@ -631,15 +629,6 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			var button_index = default_gamepad_button_names.find(button_name)
 			if button_index != -1:
 				primary_action_map[key] = button_index
-			# Need to set analogue values for triggers and sticks separately
-			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
-				pass
-			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
-				pass
-			elif button_name == "Joypad RightStick" and key == "thumbstick":
-				pass
-			elif button_name == "Joypad LeftStick" and key == "thumbstick":
-				pass
 			else:	
 				printerr("Primary controller button mapping error, assigned key not recognized: ", button_name)
 
@@ -650,15 +639,6 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			var button_index = default_gamepad_button_names.find(button_name)
 			if button_index != -1:
 				secondary_action_map[key] = button_index
-			# Need to set analogue values for triggers and sticks separately
-			elif button_name == "Joypad RightTrigger" and key != "thumbstick":
-				pass
-			elif button_name == "Joypad LeftTrigger" and key != "thumbstick":
-				pass
-			elif button_name == "Joypad RightStick" and key == "thumbstick":
-				pass
-			elif button_name == "Joypad LeftStick" and key == "thumbstick":
-				pass
 			else:
 				printerr("Secondary controller button mapping error, assigned key not recognized: ", button_name)
 	
@@ -681,13 +661,16 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 		turning_style = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_style")
 	
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_speed"):
-		game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_speed")
+		turning_speed = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_speed")
 	
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_degrees"):
-		game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_degrees")
+		turning_degrees = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_degrees")
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "stick_turn_controller"):
+		stick_turn_controller = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "stick_turn_controller")
 	
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "grip_deadzone"):
-		game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "grip_deadzone")
+		grip_deadzone = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "grip_deadzone")
 		
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "primary_controller"):
 		primary_controller = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "primary_controller")
@@ -695,23 +678,20 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo"):
 		ugvr_menu_toggle_combo = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo")
 	
-	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button"):
-		gesture_pointer_activation_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button")
-
-	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button"):
-		controller_for_dpad_activation_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button")
-
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "pointer_gesture_toggle_button"):
+		pointer_gesture_toggle_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "pointer_gesture_toggle_button")
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "gesture_load_action_map_button"):
+		gesture_load_action_map_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "gesture_load_action_map_button")
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "gesture_set_user_height_button"):
+		gesture_set_user_height_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "gesture_set_user_height_button")
+	
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "dpad_activation_button"):
 		dpad_activation_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "dpad_activation_button")
 
-	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "controller_for_start_button"):
-		controller_for_start_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "controller_for_start_button")
-
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "start_button"):
 		start_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "start_button")
-
-	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "controller_for_select_button"):
-		controller_for_select_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "controller_for_select_button")
 
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "select_button"):
 		select_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "select_button")
@@ -731,21 +711,16 @@ func create_game_control_map_cfg_file(file_path):
 	if err != OK:
 		printerr("Error saving game control map config: ", err)
 		return
-
+	
+	# Create primary control map buttons
 	for key in primary_action_map:	
 		game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", key, default_gamepad_button_names[primary_action_map[key]])
 
-	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "trigger", "Joypad RightTrigger")
-
-	game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", "thumbstick", "Joypad RightStick")
-
+	# Create secondary control map buttons
 	for key in secondary_action_map:
 		game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", key, default_gamepad_button_names[secondary_action_map[key]])
 
-	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "trigger", "Joypad LeftTrigger")
-
-	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "thumbstick", "Joypad LeftStick")
-
+	# Create mouse emulation options
 	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "stick_emulate_mouse_movement", stick_emulate_mouse_movement)
 	
 	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "head_emulate_mouse_movement", head_emulate_mouse_movement)
@@ -758,11 +733,14 @@ func create_game_control_map_cfg_file(file_path):
 	
 	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_deadzone", emulated_mouse_deadzone)
 	
+	# Create other control options
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_speed", turning_speed)
 	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_degrees", turning_degrees)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "stick_turn_controller", stick_turn_controller)
 	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "grip_deadzone", grip_deadzone)
 	
@@ -770,17 +748,15 @@ func create_game_control_map_cfg_file(file_path):
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
 	
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_pointer_activation_button", gesture_pointer_activation_button)
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "pointer_gesture_toggle_button", pointer_gesture_toggle_button)
 
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_dpad_activation_button", controller_for_dpad_activation_button)
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_load_action_map_button", gesture_load_action_map_button)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "gesture_set_user_height_button", gesture_set_user_height_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "dpad_activation_button", dpad_activation_button)
 
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_start_button", controller_for_start_button)
-
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "start_button", start_button)
-
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_select_button", controller_for_select_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "select_button", select_button)
 
