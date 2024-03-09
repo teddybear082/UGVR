@@ -120,6 +120,7 @@ enum XR_RADIAL_TYPE {
 }
 var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
 var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
+var open_radial_menu_button : String = "by_button"
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -396,6 +397,7 @@ func map_xr_controllers_to_action_map():
 	if use_xr_radial_menu:
 		xr_radial_menu.set_enabled(true)
 		xr_radial_menu.set_controller(primary_controller)
+		xr_radial_menu.set_open_radial_menu_button(open_radial_menu_button)
 		xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
 	
 	# Enable arm swing jog or jump movement if enabled by the user

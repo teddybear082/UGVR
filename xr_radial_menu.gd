@@ -143,5 +143,8 @@ func _process(delta) -> void:
 func set_controller(controller_node : XRController3D):
 	xr_controller = controller_node
 
+func set_open_radial_menu_button(new_button : String):
+	open_radial_menu_button = new_button
+
 func set_enabled(setting : bool):
 	enabled = setting
