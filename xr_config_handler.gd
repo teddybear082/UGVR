@@ -148,7 +148,7 @@ enum TurningType {
 	NONE = 2
 }
 
-# NEW - needs config file mapping - option if user will use only a physical gamepad, deactivates rest of motion control emulation
+# option if user will use only a physical gamepad, deactivates rest of motion control emulation
 var use_physical_gamepad_only : bool = false
 
 # Maybe unnecessary; maybe we always use gamepad emulation, but still might want to turn this off if someone built a more robust game-specific mod
@@ -157,7 +157,7 @@ var use_gamepad_emulation : bool = true
 # Maybe just use action mapping to assign joypad binds instead of ever "emulating" keyboard? LIKELY DELETE
 var use_keyboard_emulation : bool = false
 
-# NEW - needs config mapping - mouse emulation options
+# Mouse emulation options
 var stick_emulate_mouse_movement : bool = false
 var head_emulate_mouse_movement : bool = false
 var primary_controller_emulate_mouse_movement : bool = false
@@ -165,13 +165,13 @@ var secondary_controller_emulate_mouse_movement : bool = false
 var emulated_mouse_sensitivity_multiplier : int = 10
 var emulated_mouse_deadzone : float = 0.25
 
-# NEW - needs config mapping - grip deazone
+# Grip deazone
 var grip_deadzone : float = 0.7
 
 # Stick turning style for camera
 var turning_style : TurningType = TurningType.SNAP
 
-# More stick turning options - need to be added to config
+# Stick turning options
 var turning_speed : float = 90.0
 var turning_degrees : float = 30.0
 
@@ -184,29 +184,24 @@ var dpad_activation_button : String = "primary_touch"
 
 var primary_controller : String = "right"
 
-var controller_mapping: String = "default" # Think this is no longer needed
-
-var custom_action_map : Dictionary = {} # Think this is no longer needed
-
 var start_button : String = "primary_click"
 
 var select_button : String = "by_button"
 
 # Have to decide if these should be left/right or primary/secondary
-var controller_for_dpad_activation_button : String = "right"
+var controller_for_dpad_activation_button : String = "primary"
 
-var controller_for_start_button : String = "left"
+var controller_for_start_button : String = "secondary"
 
-var controller_for_select_button : String = "left"
+var controller_for_select_button : String = "secondary"
 
-# Radial menu options in CONTROL options - need to be added to config
+# Radial menu options in ACTION MAP options
 var use_xr_radial_menu : bool = false
-
 var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
-
 var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
+var open_radial_menu_button : String = "by_button"
 
-# Roomscale menu options in CONTROL options - need to be added to config - maybe add "Roomscale" subheader
+# Roomscale menu options in GAME options
 var use_roomscale : bool = false
 var roomscale_height_adjustment : float = 0.0
 var attempt_to_use_camera_to_set_roomscale_height : bool = false
@@ -217,17 +212,19 @@ var jog_triggers_sprint : bool = false
 
 ## CAMERA Config Options
 
-enum XR_VIEWPORT_LOCATION {
-	CAMERA = 0,
-	PRIMARY_CONTROLLER = 1,
-	SECONDARY_CONTROLLER = 2
-}
-
 var vr_world_scale : float = 1.0
 
 var camera_offset : Vector3 = Vector3(0,0,0)
 
 var experimental_passthrough : bool = false
+
+## VIEWPORTS Config Options
+
+enum XR_VIEWPORT_LOCATION {
+	CAMERA = 0,
+	PRIMARY_CONTROLLER = 1,
+	SECONDARY_CONTROLLER = 2
+}
 
 var xr_main_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 
@@ -248,7 +245,7 @@ var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 ## AUTOSAVE OPTIONS
 var autosave_action_map_duration_in_secs : int = 0 # Off by default
 
-## OTHER GAME OPTIONS - needs config file mapping
+## XR INJECTOR GUI OPTIONS
 var show_welcome_label : bool = true
 
 
@@ -331,8 +328,20 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	primary_viewport_offset = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "primary_viewport_offset", primary_viewport_offset)
 	secondary_viewport_offset = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "secondary_viewport_offset", secondary_viewport_offset)
 
+	# Load roomscale options
+	use_roomscale = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_roomscale", use_roomscale)
+	roomscale_height_adjustment = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "roomscale_height_adjustment", roomscale_height_adjustment)
+	attempt_to_use_camera_to_set_roomscale_height = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "attempt_to_use_camera_to_set_roomscale_height", attempt_to_use_camera_to_set_roomscale_height)
+	reverse_roomscale_direction = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "reverse_roomscale_direction", reverse_roomscale_direction)
+	use_arm_swing_jump = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_arm_swing_jump", use_arm_swing_jump)
+	use_jog_movement = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_jog_movement", use_jog_movement)
+	jog_triggers_sprint = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "jog_triggers_sprint", jog_triggers_sprint)
+	
 	# Load autosave options
 	autosave_action_map_duration_in_secs = game_options_cfg_file.get_value("AUTOSAVE_OPTIONS", "autosave_action_map_duration_in_secs", autosave_action_map_duration_in_secs)
+	
+	# Load xr injector GUI options
+	show_welcome_label = game_options_cfg_file.get_value("XR_INJECTOR_GUI_OPTIONS", "show_welcome_label", show_welcome_label)
 	
 	emit_signal("xr_game_options_cfg_loaded", file_path)
 	print("Xr game options config loaded")
@@ -347,26 +356,42 @@ func save_game_options_cfg_file(file_path):
 		printerr("Error saving game options config file!  Error: ", err)
 		return false
 
+	
+	# Save camera options
+	
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "vr_world_scale", vr_world_scale)
-
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "camera_offset", camera_offset)
-
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
 
+	# Save viewport options
+	
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "xr_main_viewport_location", xr_main_viewport_location)
-
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "xr_secondary_viewport_location", xr_secondary_viewport_location)
-
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "primary_viewport_size_multiplier", primary_viewport_size_multiplier)
-
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "secondary_viewport_size_multiplier", secondary_viewport_size_multiplier)
-
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "primary_viewport_offset", primary_viewport_offset)
-
 	game_options_cfg_file.set_value("VIEWPORTS_OPTIONS", "secondary_viewport_offset", secondary_viewport_offset)
 
+	# Save roomscale options
+	
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_roomscale", use_roomscale)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "roomscale_height_adjustment", roomscale_height_adjustment)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "attempt_to_use_camera_to_set_roomscale_height", attempt_to_use_camera_to_set_roomscale_height)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "reverse_roomscale_direction", reverse_roomscale_direction)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_arm_swing_jump", use_arm_swing_jump)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_jog_movement", use_jog_movement)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "jog_triggers_sprint", jog_triggers_sprint)
+	
+	# Save autosave options
+	
 	game_options_cfg_file.set_value("AUTOSAVE_OPTIONS", "autosave_action_map_duration_in_secs", autosave_action_map_duration_in_secs)
 	
+	
+	# Save XR Injector GUI options
+	
+	game_options_cfg_file.set_value("XR_INJECTOR_GUI_OPTIONS", "show_welcome_label", show_welcome_label)
+	
+	# Now save config file itself
 	err = game_options_cfg_file.save(file_path)
 	
 	emit_signal("xr_game_options_cfg_saved", file_path)
@@ -402,6 +427,13 @@ func create_action_map_cfg_file(file_path):
 				elif event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, [default_joystick_axis_names[event.axis], event.axis_value])
 					event_already_set_for_action = true
+	
+	# Now create radial menu options
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "use_xr_radial_menu", use_xr_radial_menu)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_mode", xr_radial_menu_mode)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_entries", xr_radial_menu_entries)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "open_radial_menu_button", open_radial_menu_button)
+	
 	# Save config file
 	err = action_map_cfg_file.save(file_path)
 	
@@ -438,6 +470,13 @@ func save_action_map_cfg_file(file_path):
 				elif event is InputEventJoypadMotion:
 					action_map_cfg_file.set_value("GAME_ACTIONS", action, [default_joystick_axis_names[event.axis], event.axis_value])
 					event_already_set_for_action = true
+	
+	# Now save radial menu options
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "use_xr_radial_menu", use_xr_radial_menu)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_mode", xr_radial_menu_mode)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_entries", xr_radial_menu_entries)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "open_radial_menu_button", open_radial_menu_button)
+	
 	# Save config file
 	err = action_map_cfg_file.save(file_path)
 	
@@ -495,6 +534,12 @@ func load_action_map_file(file_path: String) -> bool:
 			else:
 				printerr("Error in user action map config file - value is not recognized: ", value)
 
+	# Now load radial menu options
+	use_xr_radial_menu = action_map_cfg_file.get_value("RADIAL_MENU_OPTIONS", "use_xr_radial_menu", use_xr_radial_menu)
+	xr_radial_menu_mode = action_map_cfg_file.get_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_mode", xr_radial_menu_mode)
+	xr_radial_menu_entries = action_map_cfg_file.get_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_entries", xr_radial_menu_entries)
+	open_radial_menu_button = action_map_cfg_file.get_value("RADIAL_MENU_OPTIONS", "open_radial_menu_button", open_radial_menu_button)
+	
 	emit_signal("xr_game_action_map_cfg_loaded", file_path)
 	
 	print("finished loading action map")
@@ -508,6 +553,8 @@ func save_game_control_map_cfg_file(file_path):
 	if err != OK:
 		printerr("Error saving game control map config: ", err)
 		return
+
+
 
 	for key in primary_action_map:	
 		game_control_map_cfg_file.set_value("PRIMARY_CONTROLLER", key, default_gamepad_button_names[primary_action_map[key]])
@@ -523,8 +570,26 @@ func save_game_control_map_cfg_file(file_path):
 
 	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "thumbstick", "Joypad LeftStick")
 
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "stick_emulate_mouse_movement", stick_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "head_emulate_mouse_movement", head_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "primary_controller_emulate_mouse_movement", primary_controller_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "secondary_controller_emulate_mouse_movement", secondary_controller_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_sensitivity_multiplier", emulated_mouse_sensitivity_multiplier)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_deadzone", emulated_mouse_deadzone)
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
 
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_speed", turning_speed)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_degrees", turning_degrees)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "grip_deadzone", grip_deadzone)
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
@@ -542,6 +607,8 @@ func save_game_control_map_cfg_file(file_path):
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "controller_for_select_button", controller_for_select_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "select_button", select_button)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only", use_physical_gamepad_only)
 
 	err = game_control_map_cfg_file.save(file_path)
 
@@ -595,10 +662,33 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 			else:
 				printerr("Secondary controller button mapping error, assigned key not recognized: ", button_name)
 	
+	# Load mouse emulation options
+	stick_emulate_mouse_movement = game_control_map_cfg_file.get_value("MOUSE_EMULATION_OPTIONS", "stick_emulate_mouse_movement", stick_emulate_mouse_movement)
+	
+	head_emulate_mouse_movement = game_control_map_cfg_file.get_value("MOUSE_EMULATION_OPTIONS", "head_emulate_mouse_movement", head_emulate_mouse_movement)
+	
+	primary_controller_emulate_mouse_movement = game_control_map_cfg_file.get_value("MOUSE_EMULATION_OPTIONS", "primary_controller_emulate_mouse_movement", primary_controller_emulate_mouse_movement)
+	
+	secondary_controller_emulate_mouse_movement = game_control_map_cfg_file.get_value("MOUSE_EMULATION_OPTIONS", "secondary_controller_emulate_mouse_movement", secondary_controller_emulate_mouse_movement)
+	
+	emulated_mouse_sensitivity_multiplier = game_control_map_cfg_file.get_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_sensitivity_multiplier", emulated_mouse_sensitivity_multiplier)
+	
+	emulated_mouse_deadzone = game_control_map_cfg_file.get_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_deadzone", emulated_mouse_deadzone)
+	
+	
 	# Load other control options
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_style"):
 		turning_style = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_style")
-
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_speed"):
+		game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_speed")
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_degrees"):
+		game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_degrees")
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "grip_deadzone"):
+		game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "grip_deadzone")
+		
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "primary_controller"):
 		primary_controller = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "primary_controller")
 
@@ -625,6 +715,9 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "select_button"):
 		select_button = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "select_button")
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only"):
+		use_physical_gamepad_only = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only")
 
 	emit_signal("xr_game_control_map_cfg_loaded", file_path)
 	print("xr game control map cfg loaded")
@@ -653,8 +746,26 @@ func create_game_control_map_cfg_file(file_path):
 
 	game_control_map_cfg_file.set_value("SECONDARY_CONTROLLER", "thumbstick", "Joypad LeftStick")
 
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "stick_emulate_mouse_movement", stick_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "head_emulate_mouse_movement", head_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "primary_controller_emulate_mouse_movement", primary_controller_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "secondary_controller_emulate_mouse_movement", secondary_controller_emulate_mouse_movement)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_sensitivity_multiplier", emulated_mouse_sensitivity_multiplier)
+	
+	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_deadzone", emulated_mouse_deadzone)
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
 
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_speed", turning_speed)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_degrees", turning_degrees)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "grip_deadzone", grip_deadzone)
+	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
@@ -673,6 +784,8 @@ func create_game_control_map_cfg_file(file_path):
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "select_button", select_button)
 
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only", use_physical_gamepad_only)
+	
 	err = game_control_map_cfg_file.save(file_path)
 
 	emit_signal("xr_game_control_map_cfg_saved", file_path)
