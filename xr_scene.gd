@@ -155,10 +155,18 @@ var grip_deadzone : float = 0.7
 
 func _ready() -> void:
 	set_process(false)
+	
+	# Set relevant node signals
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
 	xr_autosave_timer.connect("timeout", Callable(self, "_on_xr_autosave_timer_timeout"))
 	xr_physical_movement_controller.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
 	xr_radial_menu.connect("entry_selected", Callable(self, "_on_xr_radial_menu_entry_selected"))
+	xr_config_handler.connect("xr_game_options_cfg_loaded", Callable(self, "_on_xr_config_handler_xr_game_options_cfg_loaded"))
+	xr_config_handler.connect("xr_game_control_map_cfg_loaded", Callable(self, "_on_xr_config_handler_xr_game_control_map_cfg_loaded"))
+	xr_config_handler.connect("xr_game_action_map_cfg_loaded", Callable(self, "_on_xr_config_handler_xr_game_action_map_cfg_loaded"))
+	xr_config_handler.connect("xr_game_options_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_options_cfg_saved"))
+	xr_config_handler.connect("xr_game_control_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_control_map_cfg_saved"))
+	xr_config_handler.connect("xr_game_action_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_action_map_cfg_saved"))
 	
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -936,3 +944,39 @@ func reparent_viewport(viewport_node, viewport_location):
 		viewport_node.transform.origin = Vector3(0,0,0)
 		if viewport_node == xr_main_viewport2d_in_3d:
 			viewport_node.transform.origin = Vector3(0,0.005,0)
+
+# Function to pull current state of config handler game options variables to set same xr scene variables based on user config
+func set_xr_game_options():
+	pass
+
+# Function to pull current state of config handler control options variables to set same xr scene variables based on user config	
+func set_xr_control_options():
+	pass
+
+# Function to pull current state of config handler action map variables to set same xr scene variables based on user config	
+func set_xr_action_map_options():
+	pass
+
+# Receiver function for config file signal that game options have been loaded
+func _on_xr_config_handler_xr_game_options_cfg_loaded(_path_to_file : String):
+	set_xr_game_options()
+	
+# Reciever function for config file signal that control options have been loaded
+func _on_xr_config_handler_xr_game_control_map_cfg_loaded(_path_to_file : String):
+	set_xr_control_options()
+
+# Reciever function for config file signal that action map options have been loaded	
+func _on_xr_config_handler_xr_game_action_map_cfg_loaded(_path_to_file : String):
+	set_xr_action_map_options()
+	
+# Receiver function for config file signal that game options have been saved
+func _on_xr_config_handler_xr_game_options_cfg_saved(_path_to_file : String):
+	set_xr_game_options()
+	
+# Reciever function for config file signal that control options have been saved
+func _on_xr_config_handler_xr_game_control_map_cfg_saved(_path_to_file : String):
+	set_xr_control_options()
+
+# Reciever function for config file signal that action map options have been saved	
+func _on_xr_config_handler_xr_game_action_map_cfg_saved(_path_to_file : String):
+	set_xr_action_map_options()
