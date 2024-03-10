@@ -23,6 +23,10 @@
 
 -Allow user to convert to roomscale mode, intended for FPS games, to reparent the XR elements to the player CharacterBody3D, and walk around in room and turn freely while having in game character reflect those movements (may have unintended effects in third person mode, not tested)
 
+-Allow user to change the location of the viewports where game 2D elements / Canvas layer appear
+
+-Allow user to change the resolution of the viewports where game 2D elements / Canvas layer appear
+
 ## Presently not working / Roadmap:
 
 -Implement options menu GUI
@@ -30,10 +34,6 @@
 -Allow user to save game options config
 
 -Allow user to remap controls in interface 
-
-
--Allow user to change the location of the viewports where game 2D elements / Canvas layer appear
-
 
 -Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element, child nodes to controller locations
 
