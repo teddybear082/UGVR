@@ -920,6 +920,7 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	setup_viewports()
 	map_xr_controllers_to_action_map()
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
+	xr_physical_movement_controller.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
 	xr_radial_menu.set_controller(primary_controller)
 	xr_origin_reparented = false
 	current_roomscale_character_body = null
