@@ -169,7 +169,7 @@ var emulated_mouse_deadzone : float = 0.25
 var grip_deadzone : float = 0.7
 
 # Stick turning style for camera
-var turning_style : TurningType = TurningType.SNAP
+var turning_type : TurningType = TurningType.SNAP
 
 # Stick turning options
 var turning_speed : float = 90.0
@@ -188,7 +188,7 @@ var gesture_set_user_height_button : String = "by_button"
 var dpad_activation_button : String = "primary_touch" 
 
 # Primary controller: controller that is mapped by default to right thumbstick, A & X buttons, right trigger and right RB; controller has dpad/start/select activation button and is used for set height gesture toggle
-var primary_controller : String = "right"
+var primary_controller_selection : String = "right"
 
 var start_button : String = "primary_click"
 
@@ -291,20 +291,20 @@ func _ready():
 	if not FileAccess.file_exists(game_options_cfg_path):
 		FileAccess.open(game_options_cfg_path, FileAccess.WRITE)
 		var complete = save_game_options_cfg_file(game_options_cfg_path)
-	else:
-		var complete = load_game_options_cfg_file(game_options_cfg_path)	
+	#else:
+		#var complete = load_game_options_cfg_file(game_options_cfg_path)	
 	
 	if not FileAccess.file_exists(game_action_map_cfg_path):
 		FileAccess.open(game_action_map_cfg_path, FileAccess.WRITE)
 		var complete = create_action_map_cfg_file(game_action_map_cfg_path)
-	else:
-		var complete = load_action_map_file(game_action_map_cfg_path)
+	#else:
+		#var complete = load_action_map_file(game_action_map_cfg_path)
 		
 	if not FileAccess.file_exists(game_control_map_cfg_path):
 		FileAccess.open(game_control_map_cfg_path, FileAccess.WRITE)
 		var complete = create_game_control_map_cfg_file(game_control_map_cfg_path)
-	else:
-		var complete = load_game_control_map_cfg_file(game_control_map_cfg_path)
+	#else:
+		#var complete = load_game_control_map_cfg_file(game_control_map_cfg_path)
 
 
 func load_game_options_cfg_file(file_path: String) -> bool:
@@ -580,7 +580,7 @@ func save_game_control_map_cfg_file(file_path):
 	
 	# Set other control options
 	
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_type", turning_type)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_speed", turning_speed)
 	
@@ -590,7 +590,7 @@ func save_game_control_map_cfg_file(file_path):
 	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "grip_deadzone", grip_deadzone)
 	
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller_selection", primary_controller_selection)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
 	
@@ -657,8 +657,8 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 	
 	
 	# Load other control options
-	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_style"):
-		turning_style = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_style")
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_type"):
+		turning_type = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_type")
 	
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "turning_speed"):
 		turning_speed = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "turning_speed")
@@ -672,8 +672,8 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "grip_deadzone"):
 		grip_deadzone = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "grip_deadzone")
 		
-	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "primary_controller"):
-		primary_controller = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "primary_controller")
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "primary_controller_selection"):
+		primary_controller_selection = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "primary_controller_selection")
 
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo"):
 		ugvr_menu_toggle_combo = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo")
@@ -734,7 +734,7 @@ func create_game_control_map_cfg_file(file_path):
 	game_control_map_cfg_file.set_value("MOUSE_EMULATION_OPTIONS", "emulated_mouse_deadzone", emulated_mouse_deadzone)
 	
 	# Create other control options
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_style", turning_style)
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_type", turning_type)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "turning_speed", turning_speed)
 	
@@ -744,7 +744,7 @@ func create_game_control_map_cfg_file(file_path):
 	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "grip_deadzone", grip_deadzone)
 	
-	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller", primary_controller)
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "primary_controller_selection", primary_controller_selection)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "ugvr_menu_toggle_combo", ugvr_menu_toggle_combo)
 	

@@ -38,13 +38,13 @@ func _ready():
 
 func set_menu_entries(entries : Array) -> void:
 	# Prevent doing this more than once per session
-	if already_added_meshes:
-		return
+	#if already_added_meshes:
+		#return
 	# Set up menu entries list and associated meshes around radial menu
 	menu_entries = entries
 	for entry in menu_entries:
 		add_entry(entry)
-	already_added_meshes = true
+	#already_added_meshes = true
 
 func add_entry(entry : String) -> void:
 	#print("Made it to add entry function in xr radial menu")

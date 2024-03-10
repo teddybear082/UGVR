@@ -67,7 +67,7 @@ var already_set_up : bool = false
 var user_height : float = 0.0
 var xr_origin_reparented : bool = false
 var backup_xr_origin : XROrigin3D = null
-
+var welcome_label_already_shown : bool = false
 # User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
@@ -87,10 +87,15 @@ var start_button = "primary_click"
 # Select button (when toggle active)
 var select_button = "by_button"
 
+# UGVR menu button combo - not presently used
+var ugvr_menu_toggle_combo : Dictionary = {}
+
+# Selected side for primary controller - left / right
+var primary_controller_selection : String = "right"
 
 # Additional user config variables
 var xr_world_scale : float = 1.0
-var enable_passthrough : bool = false
+var experimental_passthrough : bool = false
 var disable_2d_ui : bool = false  # Not presently in config - ever give option?
 var gui_embed_subwindows : bool = false # Not presently in config - ever give option?
 var show_welcome_label : bool = true
@@ -153,6 +158,15 @@ var xr_secondary_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION
 # Variable for grip deadzone
 var grip_deadzone : float = 0.7
 
+# Variables in configs but not implemented yet
+# Game options config
+var camera_offset : Vector3 = Vector3(0,0,0)
+var primary_viewport_size_multiplier : float = 1.0
+var secondary_viewport_size_multiplier : float = 1.0
+var primary_viewport_offset : Vector3 = Vector3(0,0,0)
+var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
+var autosave_action_map_duration_in_secs : int = 0
+
 func _ready() -> void:
 	set_process(false)
 	
@@ -167,6 +181,13 @@ func _ready() -> void:
 	xr_config_handler.connect("xr_game_options_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_options_cfg_saved"))
 	xr_config_handler.connect("xr_game_control_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_control_map_cfg_saved"))
 	xr_config_handler.connect("xr_game_action_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_action_map_cfg_saved"))
+	
+	# Load config files
+	var loaded : bool = false
+	loaded = xr_config_handler.load_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
+	loaded = xr_config_handler.load_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
+	loaded = xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
+	
 	
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -269,14 +290,14 @@ func _eval_tree_new() -> void:
 		world_environment.camera_attributes.dof_blur_far_enabled = false
 				
 		# NOT PRESENTLY WORKING, NEEDS MORE THOUGHT: if user enabled passthrough mode, try to enable it by finding world environment and setting sky to passthrough color
-		if enable_passthrough and xr_interface.is_passthrough_supported():
+		if experimental_passthrough and xr_interface.is_passthrough_supported():
 			var passthrough_color = Color(0,0,0,0.2)
 			print("trying passthrough setup")
 			var environment : Environment = world_environment.get_environment()
 			environment.set_bg_color(passthrough_color)
 			environment.set_background(Environment.BG_COLOR)
 		
-			enable_passthrough = xr_interface.start_passthrough()
+			experimental_passthrough = xr_interface.start_passthrough()
 
 	xr_camera_3d.attributes.dof_blur_near_enabled = false
 	xr_camera_3d.attributes.dof_blur_far_enabled = false
@@ -342,12 +363,28 @@ func _eval_tree_new() -> void:
 func map_xr_controllers_to_action_map():
 	print("mapping controls")
 	
-	primary_controller = xr_right_controller
-	primary_detection_area = right_gesture_detection_area
-	secondary_controller = xr_left_controller
-	secondary_detection_area = left_gesture_detection_area
-	primary_pointer = right_xr_pointer
-	secondary_pointer = left_xr_pointer
+	if primary_controller_selection.to_lower() == "right":
+		primary_controller = xr_right_controller
+		primary_detection_area = right_gesture_detection_area
+		secondary_controller = xr_left_controller
+		secondary_detection_area = left_gesture_detection_area
+		primary_pointer = right_xr_pointer
+		secondary_pointer = left_xr_pointer
+	elif primary_controller_selection.to_lower() == "left":
+		primary_controller = xr_left_controller
+		primary_detection_area = left_gesture_detection_area
+		secondary_controller = xr_right_controller
+		secondary_detection_area = right_gesture_detection_area
+		primary_pointer = left_xr_pointer
+		secondary_pointer = right_xr_pointer
+	else:
+		print("Error: primary_controller_selection in control config file is neither set to right nor left, defaulting to right.")
+		primary_controller = xr_right_controller
+		primary_detection_area = right_gesture_detection_area
+		secondary_controller = xr_left_controller
+		secondary_detection_area = left_gesture_detection_area
+		primary_pointer = right_xr_pointer
+		secondary_pointer = left_xr_pointer
 	
 	print("secondary controller: ", secondary_controller)
 	print("primary controller: ", primary_controller)
@@ -368,7 +405,7 @@ func map_xr_controllers_to_action_map():
 	primary_controller.connect("button_released", Callable(self,"handle_primary_xr_release"))
 	secondary_controller.connect("input_float_changed", Callable(self, "handle_secondary_xr_float"))
 	primary_controller.connect("input_float_changed", Callable(self, "handle_primary_xr_float"))
-	if stick_turn_controller == "primary_controller":
+	if stick_turn_controller.to_lower() == "primary_controller":
 		primary_controller.connect("input_vector2_changed", Callable(self, "primary_stick_moved"))
 	else:
 		print("Using secondary controller for stick turn based on user config.")
@@ -402,14 +439,14 @@ func map_xr_controllers_to_action_map():
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 	
 	# Enable and set up radial menu if using it
-	if use_xr_radial_menu:
-		xr_radial_menu.set_enabled(true)
-		xr_radial_menu.set_controller(primary_controller)
-		xr_radial_menu.set_open_radial_menu_button(open_radial_menu_button)
-		xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
+	#if use_xr_radial_menu:
+		#xr_radial_menu.set_enabled(true)
+		#xr_radial_menu.set_controller(primary_controller)
+		#xr_radial_menu.set_open_radial_menu_button(open_radial_menu_button)
+		#xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
 	
 	# Enable arm swing jog or jump movement if enabled by the user
-	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
+	#xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 
 
 # Handle button presses on VR controller assigned as primary
@@ -777,10 +814,10 @@ func _on_xr_started():
 	#xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
 		
 	# Set up xr controllers to emulate gamepad
-	map_xr_controllers_to_action_map()
+	#map_xr_controllers_to_action_map()
 		
 	# Set XR worldscale (eventually user configurable)
-	xr_origin_3d.world_scale = xr_world_scale
+	#xr_origin_3d.world_scale = xr_world_scale
 		
 	# Print final viewport and window of xr camera
 	print("XR Camera's viewport is: ", xr_camera_3d.get_viewport())
@@ -800,16 +837,16 @@ func _on_xr_started():
 	set_process(true)
 	
 	# Clear Welcome label (probably someday can make it a config not to show again)
-	if show_welcome_label:
-		welcome_label_3d.show()
-		await get_tree().create_timer(12.0).timeout
-		welcome_label_3d.hide()
+	#if show_welcome_label:
+		#welcome_label_3d.show()
+		#await get_tree().create_timer(12.0).timeout
+		#welcome_label_3d.hide()
 		
 	# Start autosave config timer, at some point only set this in the config file loaded or created signal but just for testing for now
 	# Setting to 0 will disable autosave
-	if xr_config_handler.autosave_action_map_duration_in_secs != 0:
-		xr_autosave_timer.wait_time = xr_config_handler.autosave_action_map_duration_in_secs
-		xr_autosave_timer.start()
+	#if xr_config_handler.autosave_action_map_duration_in_secs != 0:
+		#xr_autosave_timer.wait_time = xr_config_handler.autosave_action_map_duration_in_secs
+		#xr_autosave_timer.start()
 
 # When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu	
 func _on_xr_autosave_timer_timeout():
@@ -912,10 +949,10 @@ func _setup_viewports():
 	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
 	
 	# Place viewports at proper location based on user config
-	if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
-	if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
+	#if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		#reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
+	#if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		#reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
 
 
 func reparent_viewport(viewport_node, viewport_location):
@@ -945,17 +982,116 @@ func reparent_viewport(viewport_node, viewport_location):
 		if viewport_node == xr_main_viewport2d_in_3d:
 			viewport_node.transform.origin = Vector3(0,0.005,0)
 
+# Function to set radial menu
+func setup_radial_menu():
+	# Enable and set up radial menu if using it
+	if use_xr_radial_menu:
+		xr_radial_menu.set_enabled(true)
+		xr_radial_menu.set_controller(primary_controller)
+		xr_radial_menu.set_open_radial_menu_button(open_radial_menu_button)
+		xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
+	else:
+		xr_radial_menu.set_enabled(false)
+		xr_radial_menu.set_controller(null)
+		xr_radial_menu.set_open_radial_menu_button(open_radial_menu_button)
+		xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
+		
 # Function to pull current state of config handler game options variables to set same xr scene variables based on user config
 func set_xr_game_options():
-	pass
+	# Load camera options
+	xr_world_scale = xr_config_handler.xr_world_scale
+	camera_offset = xr_config_handler.camera_offset
+	experimental_passthrough = xr_config_handler.experimental_passthrough
 
+	# Load viewport options
+	xr_main_viewport_location = xr_config_handler.xr_main_viewport_location
+	xr_secondary_viewport_location = xr_config_handler.xr_secondary_viewport_location
+	primary_viewport_size_multiplier = xr_config_handler.primary_viewport_size_multiplier
+	secondary_viewport_size_multiplier = xr_config_handler.secondary_viewport_size_multiplier
+	primary_viewport_offset = xr_config_handler.primary_viewport_offset
+	secondary_viewport_offset = xr_config_handler.secondary_viewport_offset
+
+	# Load roomscale options
+	use_roomscale = xr_config_handler.use_roomscale
+	roomscale_height_adjustment = xr_config_handler.roomscale_height_adjustment
+	attempt_to_use_camera_to_set_roomscale_height = xr_config_handler.attempt_to_use_camera_to_set_roomscale_height
+	reverse_roomscale_direction = xr_config_handler.reverse_roomscale_direction
+	use_arm_swing_jump = xr_config_handler.use_arm_swing_jump
+	use_jog_movement = xr_config_handler.use_jog_movement
+	jog_triggers_sprint = xr_config_handler.jog_triggers_sprint
+	
+	# Load autosave options
+	autosave_action_map_duration_in_secs = xr_config_handler.autosave_action_map_duration_in_secs
+	
+	# Load xr injector GUI options
+	show_welcome_label = xr_config_handler.show_welcome_label
+	
+	# Set XR worldscale based on config
+	xr_origin_3d.world_scale = xr_world_scale
+	
+	# Place viewports at proper location based on user config
+	if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
+	if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
+		reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
+
+	# Enable arm swing jog or jump movement if enabled by the user
+	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
+
+	# Clear Welcome label (probably someday can make it a config not to show again)
+	if show_welcome_label and not welcome_label_already_shown:
+		welcome_label_3d.show()
+		await get_tree().create_timer(10.0).timeout
+		welcome_label_3d.hide()
+		welcome_label_already_shown = true
+		
+	# Start autosave config timer, at some point only set this in the config file loaded or created signal but just for testing for now
+	# Setting to 0 will disable autosave
+	if xr_config_handler.autosave_action_map_duration_in_secs != 0:
+		xr_autosave_timer.wait_time = xr_config_handler.autosave_action_map_duration_in_secs
+		if xr_autosave_timer.is_paused():
+			xr_autosave_timer.set_paused(false)
+		xr_autosave_timer.start()
+	else:
+		if not xr_autosave_timer.is_stopped():
+			xr_autosave_timer.set_paused(true)
+		
 # Function to pull current state of config handler control options variables to set same xr scene variables based on user config	
 func set_xr_control_options():
-	pass
+	# Load mouse emulation options
+	stick_emulate_mouse_movement = xr_config_handler.stick_emulate_mouse_movement
+	head_emulate_mouse_movement = xr_config_handler.head_emulate_mouse_movement
+	primary_controller_emulate_mouse_movement = xr_config_handler.primary_controller_emulate_mouse_movement
+	secondary_controller_emulate_mouse_movement = xr_config_handler.secondary_controller_emulate_mouse_movement
+	emulated_mouse_sensitivity_multiplier = xr_config_handler.emulated_mouse_sensitivity_multiplier
+	emulated_mouse_deadzone = xr_config_handler.emulated_mouse_deadzone
+	
+	# Load other control options
+	turning_type = xr_config_handler.turning_type
+	turning_speed = xr_config_handler.turning_speed
+	turning_degrees = xr_config_handler.turning_degrees
+	stick_turn_controller = xr_config_handler.stick_turn_controller
+	grip_deadzone = xr_config_handler.grip_deadzone
+	primary_controller_selection = xr_config_handler.primary_controller_selection
+	ugvr_menu_toggle_combo = xr_config_handler.ugvr_menu_toggle_combo
+	pointer_gesture_toggle_button = xr_config_handler.pointer_gesture_toggle_button
+	gesture_load_action_map_button = xr_config_handler.gesture_load_action_map_button
+	gesture_set_user_height_button = xr_config_handler.gesture_set_user_height_button
+	dpad_activation_button = xr_config_handler.dpad_activation_button
+	start_button = xr_config_handler.start_button
+	select_button = xr_config_handler.select_button
+	use_physical_gamepad_only = xr_config_handler.use_physical_gamepad_only
+	
+	# Set up xr controllers to emulate gamepad
+	map_xr_controllers_to_action_map()
 
 # Function to pull current state of config handler action map variables to set same xr scene variables based on user config	
 func set_xr_action_map_options():
-	pass
+	use_xr_radial_menu = xr_config_handler.use_xr_radial_menu
+	xr_radial_menu_mode = xr_config_handler.xr_radial_menu_mode
+	xr_radial_menu_entries = xr_config_handler.xr_radial_menu_entries
+	open_radial_menu_button = xr_config_handler.open_radial_menu_button
+	setup_radial_menu()
 
 # Receiver function for config file signal that game options have been loaded
 func _on_xr_config_handler_xr_game_options_cfg_loaded(_path_to_file : String):
