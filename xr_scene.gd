@@ -25,7 +25,7 @@ extends Node3D
 @onready var xr_autosave_timer : Timer = get_node("XRAutoSaveTimer")
 @onready var xr_roomscale_controller : Node = xr_origin_3d.get_node("XRRoomscaleController")
 @onready var xr_physical_movement_controller : Node = xr_origin_3d.get_node("XRPhysicalMovementController")
-@onready var xr_radial_menu : Node3D =  xr_origin_3d.get_node("XRRadialMenu")
+@onready var xr_radial_menu : Node3D =  get_node("XRRadialMenu")
 @onready var xr_black_out : Node3D = xr_camera_3d.get_node("BlackOut")
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
@@ -773,7 +773,7 @@ func _on_xr_started():
 	already_set_up = true
 	
 	# Set up viewports
-	_setup_viewports()
+	setup_viewports()
 	
 	
 	# Turn off v-sync!
@@ -911,18 +911,20 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
 	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
-	xr_radial_menu = xr_origin_3d.get_node("XRRadialMenu")
+	xr_radial_menu = get_node("XRRadialMenu")
 	xr_black_out = xr_camera_3d.get_node("BlackOut")
 	
 	# Set XR worldscale (eventually user configurable)
 	xr_origin_3d.world_scale = xr_world_scale
 	
-	_setup_viewports()
+	setup_viewports()
 	map_xr_controllers_to_action_map()
+	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
+	xr_radial_menu.set_controller(primary_controller)
 	xr_origin_reparented = false
 	current_roomscale_character_body = null
 	
-func _setup_viewports():
+func setup_viewports():
 	if disable_2d_ui == false:
 		print("Viewport world2d: ", get_viewport().world_2d)
 		# Possible future options but seem to be unnecessary for now
@@ -993,8 +995,6 @@ func setup_radial_menu():
 	else:
 		xr_radial_menu.set_enabled(false)
 		xr_radial_menu.set_controller(null)
-		xr_radial_menu.set_open_radial_menu_button(open_radial_menu_button)
-		xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
 		
 # Function to pull current state of config handler game options variables to set same xr scene variables based on user config
 func set_xr_game_options():

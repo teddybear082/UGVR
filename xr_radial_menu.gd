@@ -37,14 +37,20 @@ func _ready():
 	#print("Made it to after hide function in xr radial menu")
 
 func set_menu_entries(entries : Array) -> void:
-	# Prevent doing this more than once per session
-	#if already_added_meshes:
-		#return
-	# Set up menu entries list and associated meshes around radial menu
+	# If we're trying to set menu entries but they're the same as what we already have, skip
+	if entries == menu_entries:
+		return
+	# If it's a different list, clear the previous radial menu and start fresh
+	else:
+		if anchor.get_child_count(true) > 0:
+			var anchor_children = anchor.get_children(true)
+			for child in anchor_children:
+				remove_child(child)
+				child.queue_free()
+			menu_quads = []
 	menu_entries = entries
 	for entry in menu_entries:
 		add_entry(entry)
-	#already_added_meshes = true
 
 func add_entry(entry : String) -> void:
 	#print("Made it to add entry function in xr radial menu")
@@ -110,6 +116,9 @@ func _process(delta) -> void:
 	if xr_controller == null:
 		return
 	
+	if not is_instance_valid(xr_controller):
+		return
+		
 	if !enabled:
 		return
 		
