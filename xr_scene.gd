@@ -881,6 +881,16 @@ func setup_viewports():
 
 func reparent_viewport(viewport_node, viewport_location):
 	var viewport_parent = viewport_node.get_parent()
+	
+	# Check to see if node is already parented to the target parent, if so, nothing to do
+	if viewport_location == XR_VIEWPORT_LOCATION.CAMERA and viewport_parent == xr_camera_3d:
+		return
+	elif viewport_location == XR_VIEWPORT_LOCATION.PRIMARY_CONTROLLER and viewport_parent.get_parent() == primary_controller:
+		return
+	elif viewport_location == XR_VIEWPORT_LOCATION.SECONDARY_CONTROLLER and viewport_parent.get_parent() == secondary_controller:
+		return
+	
+	# If target is different than current parent, then reparent viewport
 	viewport_parent.remove_child(viewport_node)
 	
 	if viewport_location == XR_VIEWPORT_LOCATION.CAMERA:
@@ -952,11 +962,9 @@ func set_xr_game_options():
 	xr_origin_3d.world_scale = xr_world_scale
 	
 	# Place viewports at proper location based on user config
-	if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
-	if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
-
+	reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
+	reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
+	
 	# Enable arm swing jog or jump movement if enabled by the user
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 
