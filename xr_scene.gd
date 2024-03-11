@@ -154,6 +154,7 @@ enum XR_VIEWPORT_LOCATION {
 }
 var xr_main_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 var xr_secondary_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
+var xr_standard_viewport_size : Vector2i = Vector2i(1920, 1080)
 
 # Variable for grip deadzone
 var grip_deadzone : float = 0.7
@@ -872,8 +873,10 @@ func setup_viewports():
 	xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
 	print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
 
-	# Setup secondary viewport for use with canvaslayer node contents, if any found
-	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
+	# Setup secondary viewport for use with canvaslayer node contents, if any found and set sizes of primary and secondary viewports
+	xr_main_viewport2d_in_3d.set_viewport_size(xr_standard_viewport_size * primary_viewport_size_multiplier)
+	#xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
+	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_standard_viewport_size * secondary_viewport_size_multiplier)
 	
 
 func reparent_viewport(viewport_node, viewport_location):
