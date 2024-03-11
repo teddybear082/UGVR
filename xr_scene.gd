@@ -438,16 +438,6 @@ func map_xr_controllers_to_action_map():
 	dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 	
-	# Enable and set up radial menu if using it
-	#if use_xr_radial_menu:
-		#xr_radial_menu.set_enabled(true)
-		#xr_radial_menu.set_controller(primary_controller)
-		#xr_radial_menu.set_open_radial_menu_button(open_radial_menu_button)
-		#xr_radial_menu.set_menu_entries(xr_radial_menu_entries)
-	
-	# Enable arm swing jog or jump movement if enabled by the user
-	#xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
-
 
 # Handle button presses on VR controller assigned as primary
 func handle_primary_xr_inputs(button):
@@ -775,78 +765,12 @@ func _on_xr_started():
 	# Set up viewports
 	setup_viewports()
 	
-	
-	# Turn off v-sync!
-	#DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-	
-	#xr_interface = XRServer.find_interface("OpenXR")
-		
-	# Set viewport2din3d to correct size
-	#var vp_size = xr_interface.get_render_target_size()
-	#print("Viewport size: ", vp_size)
-	# Should the following be disabled? Seems so from testing, probably rely on user config instead
-	#xr_main_viewport2d_in_3d.set_viewport_size(vp_size)
-		
-	# Set xr viewport2d_in_3d's subviewport to the same world2d as the main viewport, this allows 2D UI to appear in VR
-	#if disable_2d_ui == false:
-		#print("Viewport world2d: ", get_viewport().world_2d)
-		# Possible future options but seem to be unnecessary for now
-		#get_viewport().vrs_mode = Viewport.VRS_DISABLED
-		#get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-		#get_viewport().use_hdr_2d = false
-		#get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
-		#xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
-		#xr_main_viewport2d_in_3d._update_render()
-
-	#if gui_embed_subwindows == true:
-		#get_viewport().gui_embed_subwindows = true
-	
-	#else:
-		#get_viewport().gui_embed_subwindows = false
-	
-	# Enable input calculations on main viewport 2D UI with Viewport2Din3D node
-	#print("xr viewport ", get_viewport())
-	#print("static body viewport before rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
-	#xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport = get_viewport()
-	#print("static body viewport after rewrite: ", xr_main_viewport2d_in_3d.get_node("StaticBody3D")._viewport)
-
-	# Setup secondary viewport for use with canvaslayer node contents, if any found
-	#xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
-		
-	# Set up xr controllers to emulate gamepad
-	#map_xr_controllers_to_action_map()
-		
-	# Set XR worldscale (eventually user configurable)
-	#xr_origin_3d.world_scale = xr_world_scale
-		
 	# Print final viewport and window of xr camera
 	print("XR Camera's viewport is: ", xr_camera_3d.get_viewport())
 	print("XR Camera's window is: ", xr_camera_3d.get_window()) 
 	
-	# Resize viewports based on world scale - doesnt quite work need to think more - appears too large when world scale high
-	#xr_main_viewport2d_in_3d.screen_size *= xr_world_scale
-	#xr_secondary_viewport2d_in_3d.screen_size *= xr_world_scale 
-	
-	# Place viewports at proper location based on user config
-	#if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		#reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
-	#if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		#reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
-
-	
 	set_process(true)
-	
-	# Clear Welcome label (probably someday can make it a config not to show again)
-	#if show_welcome_label:
-		#welcome_label_3d.show()
-		#await get_tree().create_timer(12.0).timeout
-		#welcome_label_3d.hide()
-		
-	# Start autosave config timer, at some point only set this in the config file loaded or created signal but just for testing for now
-	# Setting to 0 will disable autosave
-	#if xr_config_handler.autosave_action_map_duration_in_secs != 0:
-		#xr_autosave_timer.wait_time = xr_config_handler.autosave_action_map_duration_in_secs
-		#xr_autosave_timer.start()
+
 
 # When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu	
 func _on_xr_autosave_timer_timeout():
@@ -951,12 +875,6 @@ func setup_viewports():
 	# Setup secondary viewport for use with canvaslayer node contents, if any found
 	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
 	
-	# Place viewports at proper location based on user config
-	#if xr_main_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		#reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
-	#if xr_secondary_viewport_location != XR_VIEWPORT_LOCATION.CAMERA:
-		#reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
-
 
 func reparent_viewport(viewport_node, viewport_location):
 	var viewport_parent = viewport_node.get_parent()
