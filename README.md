@@ -27,11 +27,13 @@
 
 -Allow user to change the resolution of the viewports where game 2D elements / Canvas layer appear
 
+-Allow user to make changes to VR game options config so they are loaded and retained between game sessions
+
+-Allow user to use custom hand radial menu with either emulated buttons or emulated game actions 
+
 ## Presently not working / Roadmap:
 
--Implement options menu GUI
-
--Allow user to save game options config
+-Implement VR options menu GUI
 
 -Allow user to remap controls in interface 
 
