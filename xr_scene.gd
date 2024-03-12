@@ -413,19 +413,22 @@ func map_xr_controllers_to_action_map():
 		secondary_controller.connect("input_vector2_changed", Callable(self, "secondary_stick_moved"))
 	
 	# Map xr button input to joypad inputs
-	
-	primary_action_map = {
+	print("Primary action map: ", primary_action_map)
+	if primary_action_map == null:
+		primary_action_map = {
 		"grip_click":JOY_BUTTON_RIGHT_SHOULDER,
 		"primary_click":JOY_BUTTON_RIGHT_STICK,
 		"ax_button":JOY_BUTTON_A,
 		"by_button":JOY_BUTTON_X
-	}
-	secondary_action_map = {
+		}
+	print("Secondary action map: ", secondary_action_map)
+	if secondary_action_map == null:
+		secondary_action_map = {
 		"grip_click":JOY_BUTTON_LEFT_SHOULDER,
 		"primary_click":JOY_BUTTON_LEFT_STICK,
 		"ax_button":JOY_BUTTON_B,
 		"by_button":JOY_BUTTON_Y
-	}
+		}
 	
 	# Map xr controller joysticks to gamepad joysticks
 	secondary_x_axis.axis = JOY_AXIS_LEFT_X
@@ -988,6 +991,10 @@ func set_xr_game_options():
 		
 # Function to pull current state of config handler control options variables to set same xr scene variables based on user config	
 func set_xr_control_options():
+	# Load base control maps
+	primary_action_map = xr_config_handler.primary_action_map
+	secondary_action_map = xr_config_handler.secondary_action_map
+	
 	# Load mouse emulation options
 	stick_emulate_mouse_movement = xr_config_handler.stick_emulate_mouse_movement
 	head_emulate_mouse_movement = xr_config_handler.head_emulate_mouse_movement

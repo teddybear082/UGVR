@@ -173,14 +173,14 @@ func physics_movement(delta: float):
 		# Pick the speed in meters-per-second based on the current speed-mode.
 		var speed := 0.0
 		if _speed_mode == SpeedMode.SLOW:
-			print("slow speed detected")
+			#print("slow speed detected")
 			speed = slow_speed
 			if physically_sprinting:
 				sprint_action.pressed = false
 				Input.parse_input_event(sprint_action)
 				physically_sprinting = false
 		elif _speed_mode == SpeedMode.FAST:
-			print("fast speed detected")
+			#print("fast speed detected")
 			speed = fast_speed
 			if sprint_action != null and physically_sprinting == false:
 				sprint_action.pressed = true
