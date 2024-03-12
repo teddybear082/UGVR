@@ -287,8 +287,9 @@ func _eval_tree_new() -> void:
 		world_environment = get_node("/root").find_child("*environment*", true, false)
 	#If we found the world environment set its camera attributes to blur enabled false
 	if world_environment and world_environment.is_class("WorldEnvironment"):
-		world_environment.camera_attributes.dof_blur_near_enabled = false
-		world_environment.camera_attributes.dof_blur_far_enabled = false
+		if world_environment.camera_attributes != null:
+			world_environment.camera_attributes.dof_blur_near_enabled = false
+			world_environment.camera_attributes.dof_blur_far_enabled = false
 				
 		# NOT PRESENTLY WORKING, NEEDS MORE THOUGHT: if user enabled passthrough mode, try to enable it by finding world environment and setting sky to passthrough color
 		if experimental_passthrough and xr_interface.is_passthrough_supported():
