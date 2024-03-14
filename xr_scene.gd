@@ -68,6 +68,9 @@ var user_height : float = 0.0
 var xr_origin_reparented : bool = false
 var backup_xr_origin : XROrigin3D = null
 var welcome_label_already_shown : bool = false
+var cursor_3d : MeshInstance3D = MeshInstance3D.new()
+var cursor_3d_sphere : SphereMesh = SphereMesh.new()
+
 # User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
@@ -155,6 +158,8 @@ enum XR_VIEWPORT_LOCATION {
 var xr_main_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 var xr_secondary_viewport_location : XR_VIEWPORT_LOCATION = XR_VIEWPORT_LOCATION.CAMERA
 var xr_standard_viewport_size : Vector2i = Vector2i(1920, 1080)
+var primary_viewport_size_multiplier : float = 1.0
+var secondary_viewport_size_multiplier : float = 1.0
 
 # Variable for grip deadzone
 var grip_deadzone : float = 0.7
@@ -162,11 +167,12 @@ var grip_deadzone : float = 0.7
 # Variables in configs but not implemented yet
 # Game options config
 var camera_offset : Vector3 = Vector3(0,0,0)
-var primary_viewport_size_multiplier : float = 1.0
-var secondary_viewport_size_multiplier : float = 1.0
 var primary_viewport_offset : Vector3 = Vector3(0,0,0)
 var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 var autosave_action_map_duration_in_secs : int = 0
+
+# variable not yet in configs, not yet implemented, testing for 3D cursor
+var use_roomscale_3d_cursor : bool = true
 
 func _ready() -> void:
 	set_process(false)
@@ -189,6 +195,12 @@ func _ready() -> void:
 	loaded = xr_config_handler.load_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
 	loaded = xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
 	
+	# Set up 3D cursor
+	cursor_3d_sphere.radius = 0.01 * xr_world_scale
+	cursor_3d_sphere.height = 2 * cursor_3d_sphere.radius
+	cursor_3d.mesh = cursor_3d_sphere
+	cursor_3d.visible = false
+	cursor_3d.name = "Cursor3D"
 	
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -237,6 +249,11 @@ func _eval_tree_new() -> void:
 				camera.add_child(remote_t)
 				# If user has already set height at some point in session, adjust height by same for any new cameras that enter scene later
 				remote_t.transform.origin.y -= (user_height * xr_world_scale)
+				# Add cursor mesh
+				var cursor = cursor_3d.duplicate()
+				camera.add_child(cursor)
+				cursor.transform.origin.z = -2.0
+				
 			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
 			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport() and current_roomscale_character_body == null:
 				print("Found a current camera that is not xr camera_3d: ", camera)
@@ -263,7 +280,15 @@ func _eval_tree_new() -> void:
 		# Set last camera as current camera to avoid running through this special loop every iteration
 		if available_cameras != null and available_cameras.size() >= 1:
 			current_camera = available_cameras[-1]
-
+	
+	# If using roomscale 3D cursor, make the cursor visible on the active camera (someday for performance should condense the get_tree().get_nodes_in_group("possible_xr_cameras") to only call it once and then use that variable for all the various checks		
+	if use_roomscale_3d_cursor == true:
+		var possible_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
+		for camera in possible_cameras:
+			if camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
+				camera.get_node("Cursor3D").visible = true
+			else:
+				camera.get_node("Cursor3D").visible = false
 	# Find canvas layer and display it
 	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled
 	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
