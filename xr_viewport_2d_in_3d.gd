@@ -377,6 +377,10 @@ func _update_render() -> void:
 					_DIRTY_ALPHA_SCISSOR |	\
 					_DIRTY_UNSHADED |		\
 					_DIRTY_FILTERED
+			
+			# Teddybear change: Set to always appear on top of rest of 3D world
+			_screen_material.no_depth_test = true
+			_screen_material.render_priority = 1
 
 		# Ensure new material renders viewport onto surface
 		_dirty |= _DIRTY_ALBEDO | _DIRTY_SURFACE

@@ -70,6 +70,7 @@ var backup_xr_origin : XROrigin3D = null
 var welcome_label_already_shown : bool = false
 var cursor_3d : MeshInstance3D = MeshInstance3D.new()
 var cursor_3d_sphere : SphereMesh = SphereMesh.new()
+var unshaded_material : StandardMaterial3D = StandardMaterial3D.new()
 
 # User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
@@ -115,6 +116,7 @@ var use_roomscale : bool = false
 var roomscale_height_adjustment : float = 0.0
 var attempt_to_use_camera_to_set_roomscale_height : bool = false
 var reverse_roomscale_direction : bool = false
+var use_roomscale_3d_cursor : bool = false
 var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
@@ -171,9 +173,6 @@ var primary_viewport_offset : Vector3 = Vector3(0,0,0)
 var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 var autosave_action_map_duration_in_secs : int = 0
 
-# variable not yet in configs, not yet implemented, testing for 3D cursor
-var use_roomscale_3d_cursor : bool = true
-
 func _ready() -> void:
 	set_process(false)
 	
@@ -195,12 +194,29 @@ func _ready() -> void:
 	loaded = xr_config_handler.load_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
 	loaded = xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
 	
-	# Set up 3D cursor
-	cursor_3d_sphere.radius = 0.01 * xr_world_scale
+	# Set up unshaded material for pointers and cursor3D objects
+	unshaded_material.disable_ambient_light = true
+	unshaded_material.disable_receive_shadows = true
+	unshaded_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# should we use render priority and no depth test here? Needs testing
+	unshaded_material.no_depth_test = true
+	unshaded_material.render_priority = 2
+	
+	# Set up cursor3D
+	cursor_3d_sphere.radius = 0.01
 	cursor_3d_sphere.height = 2 * cursor_3d_sphere.radius
 	cursor_3d.mesh = cursor_3d_sphere
+	cursor_3d.material_override = unshaded_material
 	cursor_3d.visible = false
 	cursor_3d.name = "Cursor3D"
+	
+	# Set up pointer materials with unshaded material
+	left_xr_pointer.laser_material = unshaded_material
+	left_xr_pointer.laser_hit_material = unshaded_material
+	left_xr_pointer.target_material = unshaded_material
+	right_xr_pointer.laser_material = unshaded_material
+	right_xr_pointer.laser_hit_material = unshaded_material
+	right_xr_pointer.target_material = unshaded_material
 	
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -284,11 +300,16 @@ func _eval_tree_new() -> void:
 	# If using roomscale 3D cursor, make the cursor visible on the active camera (someday for performance should condense the get_tree().get_nodes_in_group("possible_xr_cameras") to only call it once and then use that variable for all the various checks		
 	if use_roomscale_3d_cursor == true:
 		var possible_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
-		for camera in possible_cameras:
-			if camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
-				camera.get_node("Cursor3D").visible = true
-			else:
-				camera.get_node("Cursor3D").visible = false
+		# If there's only one camera, assume it's our active camera and add the 3D cursor
+		if possible_cameras.size() == 1:
+			possible_cameras[0].get_node("Cursor3D").visible = true
+		# Otherwise find the active camera
+		else:
+			for camera in possible_cameras:
+				if camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
+					camera.get_node("Cursor3D").visible = true
+				else:
+					camera.get_node("Cursor3D").visible = false
 	# Find canvas layer and display it
 	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled
 	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
@@ -868,7 +889,7 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_radial_menu = get_node("XRRadialMenu")
 	xr_black_out = xr_camera_3d.get_node("BlackOut")
 	
-	# Set XR worldscale (eventually user configurable)
+	# Set XR worldscale
 	xr_origin_3d.world_scale = xr_world_scale
 	
 	setup_viewports()
@@ -878,6 +899,14 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_radial_menu.set_controller(primary_controller)
 	xr_origin_reparented = false
 	current_roomscale_character_body = null
+	
+	# Set up pointer materials with unshaded material
+	left_xr_pointer.laser_material = unshaded_material
+	left_xr_pointer.laser_hit_material = unshaded_material
+	left_xr_pointer.target_material = unshaded_material
+	right_xr_pointer.laser_material = unshaded_material
+	right_xr_pointer.laser_hit_material = unshaded_material
+	right_xr_pointer.target_material = unshaded_material
 	
 func setup_viewports():
 	if disable_2d_ui == false:
@@ -977,6 +1006,7 @@ func set_xr_game_options():
 	roomscale_height_adjustment = xr_config_handler.roomscale_height_adjustment
 	attempt_to_use_camera_to_set_roomscale_height = xr_config_handler.attempt_to_use_camera_to_set_roomscale_height
 	reverse_roomscale_direction = xr_config_handler.reverse_roomscale_direction
+	use_roomscale_3d_cursor = xr_config_handler.use_roomscale_3d_cursor
 	use_arm_swing_jump = xr_config_handler.use_arm_swing_jump
 	use_jog_movement = xr_config_handler.use_jog_movement
 	jog_triggers_sprint = xr_config_handler.jog_triggers_sprint
