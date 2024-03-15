@@ -70,6 +70,8 @@ var backup_xr_origin : XROrigin3D = null
 var welcome_label_already_shown : bool = false
 var cursor_3d : MeshInstance3D = MeshInstance3D.new()
 var cursor_3d_sphere : SphereMesh = SphereMesh.new()
+var long_range_cursor_3d : MeshInstance3D = MeshInstance3D.new()
+var long_range_cursor_3d_sphere : SphereMesh = SphereMesh.new()
 var unshaded_material : StandardMaterial3D = StandardMaterial3D.new()
 
 # User control configs
@@ -117,6 +119,9 @@ var roomscale_height_adjustment : float = 0.0
 var attempt_to_use_camera_to_set_roomscale_height : bool = false
 var reverse_roomscale_direction : bool = false
 var use_roomscale_3d_cursor : bool = false
+var use_long_range_3d_cursor : bool = false
+var roomscale_3d_cursor_distance_from_camera : float = 2.0
+var roomscale_long_range_3d_cursor_distance_from_camera : float = 20.0
 var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
@@ -210,6 +215,14 @@ func _ready() -> void:
 	cursor_3d.visible = false
 	cursor_3d.name = "Cursor3D"
 	
+	# Set up long range cursor3D
+	long_range_cursor_3d_sphere.radius = 0.1
+	long_range_cursor_3d_sphere.height = 2 * cursor_3d_sphere.radius
+	long_range_cursor_3d.mesh = cursor_3d_sphere
+	long_range_cursor_3d.material_override = unshaded_material
+	long_range_cursor_3d.visible = false
+	long_range_cursor_3d.name = "LongRangeCursor3D"
+	
 	# Set up pointer materials with unshaded material
 	left_xr_pointer.laser_material = unshaded_material
 	left_xr_pointer.laser_hit_material = unshaded_material
@@ -268,7 +281,10 @@ func _eval_tree_new() -> void:
 				# Add cursor mesh
 				var cursor = cursor_3d.duplicate()
 				camera.add_child(cursor)
-				cursor.transform.origin.z = -2.0
+				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
+				var long_range_cursor = long_range_cursor_3d.duplicate()
+				camera.add_child(long_range_cursor)
+				long_range_cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
 				
 			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
 			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport() and current_roomscale_character_body == null:
@@ -298,18 +314,25 @@ func _eval_tree_new() -> void:
 			current_camera = available_cameras[-1]
 	
 	# If using roomscale 3D cursor, make the cursor visible on the active camera (someday for performance should condense the get_tree().get_nodes_in_group("possible_xr_cameras") to only call it once and then use that variable for all the various checks		
-	if use_roomscale_3d_cursor == true:
+	if use_roomscale_3d_cursor == true or use_long_range_3d_cursor == true:
 		var possible_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
 		# If there's only one camera, assume it's our active camera and add the 3D cursor
 		if possible_cameras.size() == 1:
-			possible_cameras[0].get_node("Cursor3D").visible = true
+			if use_roomscale_3d_cursor == true:
+				possible_cameras[0].get_node("Cursor3D").visible = true
+			if use_long_range_3d_cursor == true:
+				possible_cameras[0].get_node("LongRangeCursor3D").visible = true
 		# Otherwise find the active camera
 		else:
 			for camera in possible_cameras:
 				if camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
-					camera.get_node("Cursor3D").visible = true
+					if use_roomscale_3d_cursor == true:
+						camera.get_node("Cursor3D").visible = true
+					if use_long_range_3d_cursor == true:
+						camera.get_node("LongRangeCursor3D").visible = true
 				else:
 					camera.get_node("Cursor3D").visible = false
+					camera.get_node("LongRangeCursor3D").visible = false
 	# Find canvas layer and display it
 	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled
 	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
@@ -1007,6 +1030,9 @@ func set_xr_game_options():
 	attempt_to_use_camera_to_set_roomscale_height = xr_config_handler.attempt_to_use_camera_to_set_roomscale_height
 	reverse_roomscale_direction = xr_config_handler.reverse_roomscale_direction
 	use_roomscale_3d_cursor = xr_config_handler.use_roomscale_3d_cursor
+	use_long_range_3d_cursor = xr_config_handler.use_long_range_3d_cursor
+	roomscale_3d_cursor_distance_from_camera = xr_config_handler.roomscale_3d_cursor_distance_from_camera
+	roomscale_long_range_3d_cursor_distance_from_camera = xr_config_handler.roomscale_long_range_3d_cursor_distance_from_camera
 	use_arm_swing_jump = xr_config_handler.use_arm_swing_jump
 	use_jog_movement = xr_config_handler.use_jog_movement
 	jog_triggers_sprint = xr_config_handler.jog_triggers_sprint

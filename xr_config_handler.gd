@@ -207,6 +207,9 @@ var roomscale_height_adjustment : float = 0.0
 var attempt_to_use_camera_to_set_roomscale_height : bool = false
 var reverse_roomscale_direction : bool = false
 var use_roomscale_3d_cursor : bool = false
+var use_long_range_3d_cursor : bool = false
+var roomscale_3d_cursor_distance_from_camera : float = 2.0
+var roomscale_long_range_3d_cursor_distance_from_camera : float = 20.0
 var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
@@ -335,6 +338,9 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	attempt_to_use_camera_to_set_roomscale_height = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "attempt_to_use_camera_to_set_roomscale_height", attempt_to_use_camera_to_set_roomscale_height)
 	reverse_roomscale_direction = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "reverse_roomscale_direction", reverse_roomscale_direction)
 	use_roomscale_3d_cursor = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_roomscale_3d_cursor", use_roomscale_3d_cursor)
+	use_long_range_3d_cursor = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_long_range_3d_cursor", use_long_range_3d_cursor)
+	roomscale_3d_cursor_distance_from_camera = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "roomscale_3d_cursor_distance_from_camera", roomscale_3d_cursor_distance_from_camera)
+	roomscale_long_range_3d_cursor_distance_from_camera = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "roomscale_long_range_3d_cursor_distance_from_camera", roomscale_long_range_3d_cursor_distance_from_camera)
 	use_arm_swing_jump = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_arm_swing_jump", use_arm_swing_jump)
 	use_jog_movement = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_jog_movement", use_jog_movement)
 	jog_triggers_sprint = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "jog_triggers_sprint", jog_triggers_sprint)
@@ -381,6 +387,9 @@ func save_game_options_cfg_file(file_path):
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "attempt_to_use_camera_to_set_roomscale_height", attempt_to_use_camera_to_set_roomscale_height)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "reverse_roomscale_direction", reverse_roomscale_direction)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_roomscale_3d_cursor", use_roomscale_3d_cursor)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_long_range_3d_cursor", use_long_range_3d_cursor)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "roomscale_3d_cursor_distance_from_camera", roomscale_3d_cursor_distance_from_camera)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "roomscale_long_range_3d_cursor_distance_from_camera", roomscale_long_range_3d_cursor_distance_from_camera)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_arm_swing_jump", use_arm_swing_jump)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_jog_movement", use_jog_movement)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "jog_triggers_sprint", jog_triggers_sprint)
