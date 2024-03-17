@@ -2,8 +2,9 @@
  A mod to transform Godot 4 games from 3D to VR
 
 ## IN DEVELOPMENT.
+![thumb](https://github.com/teddybear082/UGVR/assets/87204721/2a7b55f6-605f-47ab-9964-d838c543f3a6)
 
-<img src="https://vimeo.com/924331826?share=copy" width="640" height="564" />
+![Godot VR Injector Development Update - Click to Watch]((https://vimeo.com/924331826 "UGVR - Click to Watch!")
 
 ## Presently working:
 
