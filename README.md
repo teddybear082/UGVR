@@ -4,7 +4,7 @@
 ## IN DEVELOPMENT.
 ![thumb](https://github.com/teddybear082/UGVR/assets/87204721/2a7b55f6-605f-47ab-9964-d838c543f3a6)
 
-![Godot VR Injector Development Update - Click to Watch](https://vimeo.com/924331826 "UGVR - Click to Watch!")
+https://vimeo.com/924331826
 
 ## Presently working:
 
