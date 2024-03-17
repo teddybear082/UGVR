@@ -73,7 +73,7 @@ var cursor_3d_sphere : SphereMesh = SphereMesh.new()
 var long_range_cursor_3d : MeshInstance3D = MeshInstance3D.new()
 var long_range_cursor_3d_sphere : SphereMesh = SphereMesh.new()
 var unshaded_material : StandardMaterial3D = StandardMaterial3D.new()
-
+var target_xr_viewport : Viewport = null
 # User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
@@ -248,8 +248,11 @@ func _process(_delta : float) -> void:
 
 # Constantly checks for current camera 3D or roomscale body (if roomscale enabled)
 func _eval_tree_new() -> void:
-	# Check to make sure main viewport still uses xr
-	get_viewport().use_xr = true
+	# Check to make sure main viewport still uses xr; use target_xr_viewport instead of get_viewport directly to account for when roomscale xr origin is reparented under a subviewport in the flat screen game (e.g., retro FPS shooters)
+	if not is_instance_valid(target_xr_viewport):
+		target_xr_viewport = get_viewport()
+	
+	target_xr_viewport.use_xr = true
 	
 	# Ensure Vsync stays OFF!
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -430,9 +433,11 @@ func _eval_tree_new() -> void:
 			current_camera = null
 			current_camera_remote_transform = null
 			xr_origin_reparented = true
-
+			target_xr_viewport.use_xr = false
+			target_xr_viewport = xr_origin_3d.get_viewport()
+			
 # Function to set up VR Controllers to emulate gamepad
-func map_xr_controllers_to_action_map():
+func map_xr_controllers_to_action_map() -> bool:
 	print("mapping controls")
 	
 	if primary_controller_selection.to_lower() == "right":
@@ -513,7 +518,8 @@ func map_xr_controllers_to_action_map():
 	dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 	
-
+	return true
+	
 # Handle button presses on VR controller assigned as primary
 func handle_primary_xr_inputs(button):
 	#print("primary contoller button pressed: ", button)
@@ -888,7 +894,7 @@ func _on_xr_origin_exiting_tree():
 		xr_roomscale_controller.set_characterbody3D(null)
 		xr_origin_reparented = false
 		backup_xr_origin = xr_origin_3d.duplicate()
-		
+		target_xr_viewport = get_viewport()
 
 func _setup_new_xr_origin(new_origin : XROrigin3D):
 	add_child(new_origin)
@@ -896,10 +902,6 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_origin_3d.current = true
 	xr_start = xr_origin_3d.get_node("StartXR")
 	xr_camera_3d = xr_origin_3d.get_node("XRCamera3D")
-	xr_main_viewport2d_in_3d = xr_camera_3d.get_node("XRMainViewport2Din3D")
-	xr_main_viewport2d_in_3d_subviewport = xr_main_viewport2d_in_3d.get_node("Viewport")
-	xr_secondary_viewport2d_in_3d = xr_camera_3d.get_node("XRSecondaryViewport2Din3D")
-	xr_secondary_viewport2d_in_3d_subviewport = xr_secondary_viewport2d_in_3d.get_node("Viewport")
 	xr_left_controller = xr_origin_3d.get_node("XRController3D")
 	xr_right_controller = xr_origin_3d.get_node("XRController3D2")
 	gesture_area = xr_camera_3d.get_node("GestureArea")
@@ -916,11 +918,34 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	# Set XR worldscale
 	xr_origin_3d.world_scale = xr_world_scale
 	
+	# Reset controls
+	var finished = map_xr_controllers_to_action_map()
+	
+	# Look for viewports at their proper location, else registers as null if reparented
+	if xr_main_viewport_location == XR_VIEWPORT_LOCATION.CAMERA:
+		xr_main_viewport2d_in_3d = xr_camera_3d.get_node("XRMainViewport2Din3D")
+	elif xr_main_viewport_location == XR_VIEWPORT_LOCATION.PRIMARY_CONTROLLER:
+		xr_main_viewport2d_in_3d = primary_controller.get_node("XRViewportHolder").get_node("XRMainViewport2Din3D")
+	elif xr_main_viewport_location == XR_VIEWPORT_LOCATION.SECONDARY_CONTROLLER:
+		xr_main_viewport2d_in_3d = secondary_controller.get_node("XRViewportHolder").get_node("XRMainViewport2Din3D")
+	xr_main_viewport2d_in_3d_subviewport = xr_main_viewport2d_in_3d.get_node("Viewport")
+	
+	if xr_secondary_viewport_location == XR_VIEWPORT_LOCATION.CAMERA:
+		xr_secondary_viewport2d_in_3d = xr_camera_3d.get_node("XRSecondaryViewport2Din3D")
+	elif xr_secondary_viewport_location == XR_VIEWPORT_LOCATION.PRIMARY_CONTROLLER:
+		xr_secondary_viewport2d_in_3d = primary_controller.get_node("XRViewportHolder").get_node("XRSecondaryViewport2Din3D")
+	elif xr_secondary_viewport_location == XR_VIEWPORT_LOCATION.SECONDARY_CONTROLLER:
+		xr_secondary_viewport2d_in_3d = secondary_controller.get_node("XRViewportHolder").get_node("XRSecondaryViewport2Din3D")
+	xr_secondary_viewport2d_in_3d_subviewport = xr_secondary_viewport2d_in_3d.get_node("Viewport")
+	
+	# Set up the rest of viewports
 	setup_viewports()
-	map_xr_controllers_to_action_map()
+	
+	# Reset other nodes
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 	xr_physical_movement_controller.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
 	xr_radial_menu.set_controller(primary_controller)
+	
 	xr_origin_reparented = false
 	current_roomscale_character_body = null
 	
@@ -1103,7 +1128,7 @@ func set_xr_control_options():
 	use_physical_gamepad_only = xr_config_handler.use_physical_gamepad_only
 	
 	# Set up xr controllers to emulate gamepad
-	map_xr_controllers_to_action_map()
+	var finished = map_xr_controllers_to_action_map()
 
 # Function to pull current state of config handler action map variables to set same xr scene variables based on user config	
 func set_xr_action_map_options():
