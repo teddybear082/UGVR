@@ -1,0 +1,239 @@
+[gd_scene load_steps=3 format=3 uid="uid://x0xxleun8ha0"]
+
+[sub_resource type="Gradient" id="Gradient_blkw1"]
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_sov8w"]
+gradient = SubResource("Gradient_blkw1")
+width = 20
+height = 20
+
+[node name="VROptionsMenu" type="PanelContainer"]
+custom_minimum_size = Vector2(1920, 1080)
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="TabContainer" type="TabContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+
+[node name="VR General Information" type="MarginContainer" parent="MarginContainer/TabContainer"]
+layout_mode = 2
+
+[node name="VR Action Map Options" type="MarginContainer" parent="MarginContainer/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/TabContainer/VR Action Map Options"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="HSplitContainer" type="HSplitContainer" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 24
+dragger_visibility = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="RichTextLabel" type="RichTextLabel" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.737255, 0.823529, 1, 1)
+theme_override_font_sizes/normal_font_size = 28
+text = "RADIAL MENU OPTIONS"
+fit_content = true
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RichTextLabel2" type="RichTextLabel" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 24
+text = "Use XR Radial Menu"
+fit_content = true
+
+[node name="RichTextLabel3" type="RichTextLabel" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 24
+text = "XR Radial Menu Mode"
+fit_content = true
+
+[node name="RichTextLabel4" type="RichTextLabel" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 24
+text = "XR Radial Menu Entries"
+fit_content = true
+
+[node name="RichTextLabel5" type="RichTextLabel" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 24
+text = "XR Radial Menu Activation Button"
+fit_content = true
+
+[node name="Spacer" type="Control" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="RichTextLabel6" type="RichTextLabel" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.737255, 0.823529, 1, 1)
+theme_override_font_sizes/normal_font_size = 28
+text = "GAME ACTION MAPPING"
+fit_content = true
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ActionPlaceholder" type="RichTextLabel" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 24
+text = "Action Placeholder"
+fit_content = true
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+theme_override_constants/separation = 12
+
+[node name="Spacer" type="Control" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+
+[node name="CheckBox" type="CheckBox" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_icons/unchecked = SubResource("GradientTexture2D_sov8w")
+
+[node name="OptionButton" type="OptionButton" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 0
+tooltip_text = "Gamepad: Radial menu triggers gamepad button presses
+
+Keyboard: Not presently working.
+
+Action: Radial menu triggers game actions"
+theme_override_font_sizes/font_size = 24
+item_count = 3
+selected = 0
+allow_reselect = true
+popup/item_0/text = "Gamepad"
+popup/item_0/id = 0
+popup/item_1/text = "Keyboard"
+popup/item_1/id = 1
+popup/item_2/text = "Action"
+popup/item_2/id = 2
+
+[node name="MenuButton" type="MenuButton" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Click to make selections"
+alignment = 0
+
+[node name="OptionButton3" type="OptionButton" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 0
+tooltip_text = "The button on your primary controller to activate the radial menu."
+theme_override_font_sizes/font_size = 24
+item_count = 4
+selected = 3
+allow_reselect = true
+popup/item_0/text = "grip_click"
+popup/item_0/id = 0
+popup/item_1/text = "primary_click"
+popup/item_1/id = 1
+popup/item_2/text = "ax_button"
+popup/item_2/id = 2
+popup/item_3/text = "by_button"
+popup/item_3/id = 3
+
+[node name="Spacer2" type="Control" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+custom_minimum_size = Vector2(0, 113)
+layout_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+
+[node name="GamePadOptionButton" type="OptionButton" parent="MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+item_count = 26
+selected = 25
+popup/item_0/text = "Joypad A/Cross"
+popup/item_0/id = 0
+popup/item_1/text = "Joypad B/Circle"
+popup/item_1/id = 1
+popup/item_2/text = "Joypad X/Square"
+popup/item_2/id = 2
+popup/item_3/text = "Joypad Y/Triangle"
+popup/item_3/id = 3
+popup/item_4/text = "Joypad Back/Select"
+popup/item_4/id = 4
+popup/item_5/text = "Joypad Home/PS"
+popup/item_5/id = 5
+popup/item_6/text = "Joypad Start"
+popup/item_6/id = 6
+popup/item_7/text = "Joypad L3"
+popup/item_7/id = 7
+popup/item_8/text = "Joypad R3"
+popup/item_8/id = 8
+popup/item_9/text = "Joypad LB"
+popup/item_9/id = 9
+popup/item_10/text = "Joypad RB"
+popup/item_10/id = 10
+popup/item_11/text = "Joypad DpadUp"
+popup/item_11/id = 11
+popup/item_12/text = "Joypad DpadDown"
+popup/item_12/id = 12
+popup/item_13/text = "Joypad DpadLeft"
+popup/item_13/id = 13
+popup/item_14/text = "Joypad DpadRight"
+popup/item_14/id = 14
+popup/item_15/text = "[\"Joypad LeftTrigger\", 1.0]"
+popup/item_15/id = 15
+popup/item_16/text = "[\"Joypad RightTrigger\", 1.0]"
+popup/item_16/id = 16
+popup/item_17/text = "[\"Joypad LeftStickX\", -1.0]"
+popup/item_17/id = 17
+popup/item_18/text = "[\"Joypad LeftStickX\", 1.0]"
+popup/item_18/id = 18
+popup/item_19/text = "[\"Joypad LeftStickY\", -1.0]"
+popup/item_19/id = 19
+popup/item_20/text = "[\"Joypad LeftStickY\", 1.0]"
+popup/item_20/id = 20
+popup/item_21/text = "[\"Joypad RightStickX\", -1.0]"
+popup/item_21/id = 21
+popup/item_22/text = "[\"Joypad RightStickX\", 1.0]"
+popup/item_22/id = 22
+popup/item_23/text = "[\"Joypad RightStickY\", -1.0]"
+popup/item_23/id = 23
+popup/item_24/text = "[\"Joypad RightStickY\", -1.0]"
+popup/item_24/id = 24
+popup/item_25/text = "needs_joypad_mapping"
+popup/item_25/id = 25
+
+[node name="VR Control Options" type="MarginContainer" parent="MarginContainer/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="VR Game Options" type="MarginContainer" parent="MarginContainer/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="VR Advanced Options" type="MarginContainer" parent="MarginContainer/TabContainer"]
+visible = false
+layout_mode = 2

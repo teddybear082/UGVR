@@ -27,6 +27,9 @@ extends Node3D
 @onready var xr_physical_movement_controller : Node = xr_origin_3d.get_node("XRPhysicalMovementController")
 @onready var xr_radial_menu : Node3D =  get_node("XRRadialMenu")
 @onready var xr_black_out : Node3D = xr_camera_3d.get_node("BlackOut")
+@onready var ugvr_menu_viewport : Node3D = get_node("XRMenuViewport2Din3D")
+@onready var ugvr_menu_2d = ugvr_menu_viewport.get_scene_instance()
+
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
 var secondary_action_map : Dictionary
@@ -193,6 +196,11 @@ func _ready() -> void:
 	xr_config_handler.connect("xr_game_control_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_control_map_cfg_saved"))
 	xr_config_handler.connect("xr_game_action_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_action_map_cfg_saved"))
 	
+	# Set up config handler to use ugvr menu 2d scene, and ugvr menu 2d scene to recognize config handler
+	xr_config_handler.set_ugvr_gui_menu_2d(ugvr_menu_2d)
+	xr_config_handler.set_ugvr_menu_viewport(ugvr_menu_viewport)
+	#ugvr_menu_2d.set_config_handler(xr_config_handler) # Not working yet, no script attached to ugvr menu yet
+	
 	# Load config files
 	var loaded : bool = false
 	loaded = xr_config_handler.load_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
@@ -230,6 +238,8 @@ func _ready() -> void:
 	right_xr_pointer.laser_material = unshaded_material
 	right_xr_pointer.laser_hit_material = unshaded_material
 	right_xr_pointer.target_material = unshaded_material
+	
+ 
 	
 func _process(_delta : float) -> void:
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
@@ -528,6 +538,8 @@ func handle_primary_xr_inputs(button):
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(primary_detection_area):
 		primary_pointer.set_enabled(!primary_pointer.enabled)
 		secondary_pointer.set_enabled(!secondary_pointer.enabled)
+		
+		
 	
 	# (Temporary) Set user height if user presses designated button while doing gesture
 	if button == gesture_set_user_height_button and gesture_area.overlaps_area(primary_detection_area):
@@ -571,10 +583,15 @@ func handle_primary_xr_release(button):
 func handle_secondary_xr_inputs(button):
 	#print("secondary button pressed: ", button)
 
-	# If pressing pointer activation button and making gesture, toggle pointer
+	# If pressing pointer activation button and making gesture, toggle UGVR menu
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
-		primary_pointer.set_enabled(!primary_pointer.enabled)
-		secondary_pointer.set_enabled(!secondary_pointer.enabled)
+		#primary_pointer.set_enabled(!primary_pointer.enabled)
+		#secondary_pointer.set_enabled(!secondary_pointer.enabled)
+		ugvr_menu_viewport.global_transform = xr_camera_3d.global_transform
+		ugvr_menu_viewport.global_transform.origin -= xr_camera_3d.transform.basis.z.normalized() * 1.25
+		ugvr_menu_viewport.global_transform.origin -= xr_camera_3d.transform.basis.y.normalized()*.5
+		ugvr_menu_viewport.rotation.z = 0
+		ugvr_menu_viewport.visible = !ugvr_menu_viewport.visible
 	
 	# If button is assigned to load action map (temporary,this should be a GUI option) and making gesture, load action map
 	if button == gesture_load_action_map_button and gesture_area.overlaps_area(secondary_detection_area):

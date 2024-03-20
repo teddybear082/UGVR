@@ -270,6 +270,11 @@ var game_action_map_cfg_path : String
 # Used to store config base path
 var cfg_base_path : String
 
+# Variable to store UGVR UI scene to allow GUI to configure config handler variables
+var ugvr_menu_2d = null
+var ugvr_menu_viewport = null
+
+
 # Set up files for configs
 func _ready():
 	var game_name : String = ProjectSettings.get_setting("application/config/name")
@@ -512,6 +517,17 @@ func load_action_map_file(file_path: String) -> bool:
 			var value = action_map_cfg_file.get_value("GAME_ACTIONS", action)
 			if typeof(value) == TYPE_STRING or typeof(value) == TYPE_STRING_NAME:
 				# Button mapping
+				if value == needs_mapping_phrase and ugvr_menu_2d:
+					var action_template_label = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer/ActionPlaceholder")
+					var action_options = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer")
+					var action_settings = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2")
+					var settings_template = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2/GamePadOptionButton")
+					var new_action_label = action_template_label.duplicate()
+					var new_settings_button = settings_template.duplicate()
+					new_action_label.text = action
+					action_options.add_child(new_action_label)
+					new_settings_button.selected = 25
+					action_settings.add_child(new_settings_button)
 				var button_index = default_gamepad_button_names.find(value)
 				if button_index != -1:
 					# If we have a valid button to assign, check whether there are already joypad events assigned to this action,and if so, delete them to avoid conflicting inputs
@@ -523,6 +539,17 @@ func load_action_map_file(file_path: String) -> bool:
 					var event = InputEventJoypadButton.new()
 					event.button_index = button_index
 					InputMap.action_add_event(action, event)
+					if ugvr_menu_2d:
+						var action_template_label = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer/ActionPlaceholder")
+						var action_options = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer")
+						var action_settings = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2")
+						var settings_template = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2/GamePadOptionButton")
+						var new_action_label = action_template_label.duplicate()
+						var new_settings_button = settings_template.duplicate()
+						new_action_label.text = action
+						action_options.add_child(new_action_label)
+						new_settings_button.selected = event.button_index
+						action_settings.add_child(new_settings_button)
 			elif typeof(value) == TYPE_ARRAY:
 				if value.size() != 2:
 					printerr("Array used for action map for action is wrong size!", action, value)
@@ -543,6 +570,19 @@ func load_action_map_file(file_path: String) -> bool:
 					event.axis_value = axis_value
 					#event.deadzone = 0.1
 					InputMap.action_add_event(action, event)
+					if ugvr_menu_2d:
+						var action_template_label = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer/ActionPlaceholder")
+						var action_options = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer")
+						var action_settings = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2")
+						var settings_template = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/MarginContainer/HSplitContainer/VBoxContainer2/GamePadOptionButton")
+						var new_action_label = action_template_label.duplicate()
+						var new_settings_button = settings_template.duplicate()
+						new_action_label.text = action
+						action_options.add_child(new_action_label)
+						for index in range(15, 25):
+							if new_settings_button.get_item_text(index).contains(axis_name) and new_settings_button.get_item_text(index).contains(str(axis_value)):
+								new_settings_button.selected = index
+								action_settings.add_child(new_settings_button)
 			else:
 				printerr("Error in user action map config file - value is not recognized: ", value)
 
@@ -555,6 +595,9 @@ func load_action_map_file(file_path: String) -> bool:
 	emit_signal("xr_game_action_map_cfg_loaded", file_path)
 	
 	print("finished loading action map")
+	
+	if ugvr_menu_viewport:
+		ugvr_menu_viewport._update_render()
 	
 	return true
 
@@ -779,3 +822,12 @@ func create_game_control_map_cfg_file(file_path):
 	emit_signal("xr_game_control_map_cfg_saved", file_path)
 	
 	return true
+
+func set_ugvr_gui_menu_2d(new_ugvr_menu_2d):
+	if new_ugvr_menu_2d == null or not is_instance_valid(new_ugvr_menu_2d):
+		print("Error setting ugvr menu 2d in config handler, is either null or not valid")
+		return
+	ugvr_menu_2d = new_ugvr_menu_2d
+
+func set_ugvr_menu_viewport(new_ugvr_menu_viewport):
+	ugvr_menu_viewport = new_ugvr_menu_viewport

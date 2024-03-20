@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=15 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_pointer.tscn" id="2_l282w"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://xr_config_handler.gd" id="5_jiibt"]
 [ext_resource type="Script" path="res://xr_physical_movement_controller.gd" id="6_1wyxn"]
 [ext_resource type="Script" path="res://xr_radial_menu.gd" id="7_hw5k1"]
+[ext_resource type="PackedScene" uid="uid://x0xxleun8ha0" path="res://vr_options_menu.tscn" id="10_cjn2i"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_pnlj8"]
 resource_local_to_scene = true
@@ -27,6 +28,7 @@ process_mode = 3
 script = ExtResource("1_fmh2y")
 
 [node name="XROrigin3D" type="XROrigin3D" parent="."]
+process_mode = 3
 current = true
 
 [node name="StartXR" parent="XROrigin3D" instance=ExtResource("2_rrkev")]
@@ -80,6 +82,7 @@ width = 1500.0
 [node name="BlackOut" parent="XROrigin3D/XRCamera3D" instance=ExtResource("4_ny8kq")]
 
 [node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
+process_mode = 3
 tracker = &"left_hand"
 pose = &"aim"
 
@@ -99,6 +102,7 @@ shape = SubResource("SphereShape3D_iwxk1")
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.1)
 
 [node name="XRController3D2" type="XRController3D" parent="XROrigin3D"]
+process_mode = 3
 tracker = &"right_hand"
 pose = &"aim"
 
@@ -130,3 +134,10 @@ wait_time = 180.0
 
 [node name="XRRadialMenu" type="Node3D" parent="."]
 script = ExtResource("7_hw5k1")
+
+[node name="XRMenuViewport2Din3D" parent="." instance=ExtResource("3_f316b")]
+visible = false
+scene = ExtResource("10_cjn2i")
+viewport_size = Vector2(1920, 1080)
+transparent = 0
+unshaded = true
