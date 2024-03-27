@@ -29,6 +29,8 @@ extends Node3D
 @onready var xr_black_out : Node3D = xr_camera_3d.get_node("BlackOut")
 @onready var ugvr_menu_viewport : Node3D = get_node("XRMenuViewport2Din3D")
 @onready var ugvr_menu_2d = ugvr_menu_viewport.get_scene_instance()
+@onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
+@onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
 # Variables to hold mapping other events necessary for gamepad emulation with motion controllers
 var primary_action_map : Dictionary
@@ -77,6 +79,9 @@ var long_range_cursor_3d : MeshInstance3D = MeshInstance3D.new()
 var long_range_cursor_3d_sphere : SphereMesh = SphereMesh.new()
 var unshaded_material : StandardMaterial3D = StandardMaterial3D.new()
 var target_xr_viewport : Viewport = null
+var xr_reparenting_active : bool = false
+var xr_two_handed_aim : bool = false
+
 # User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
@@ -180,6 +185,10 @@ var camera_offset : Vector3 = Vector3(0,0,0)
 var primary_viewport_offset : Vector3 = Vector3(0,0,0)
 var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 var autosave_action_map_duration_in_secs : int = 0
+var xr_reparented_object_180_degrees : bool = false
+
+# Experimental variables only - not for final mod
+var use_vostok_gun_finding_code : bool = true
 
 func _ready() -> void:
 	set_process(false)
@@ -239,9 +248,14 @@ func _ready() -> void:
 	right_xr_pointer.laser_hit_material = unshaded_material
 	right_xr_pointer.target_material = unshaded_material
 	
- 
+	# Set up reparenting node
+	xr_reparenting_node.set_as_top_level(true)
 	
 func _process(_delta : float) -> void:
+	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
+	if use_vostok_gun_finding_code:
+		_set_vostok_gun(_delta)
+		
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
 		if !is_instance_valid(xr_origin_3d):
@@ -819,6 +833,56 @@ func _handle_rotation(angle : float) -> void:
 	t2.origin = xr_camera_3d.transform.origin
 	rot = rot.rotated(Vector3(0.0, -1.0, 0.0), angle) ## <-- this is the rotation around the camera
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
+
+# Handle reparenting game elements
+func handle_node_reparenting(_delta : float, reparented_node : Node3D):
+
+	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
+		return
+	
+	if xr_reparenting_active and is_instance_valid(reparented_node):
+	
+		reparented_node.set_as_top_level(true)
+	
+		if secondary_controller.is_button_pressed("grip"):
+			xr_two_handed_aim = true
+		else:
+			xr_two_handed_aim = false
+	
+		if xr_two_handed_aim == true:
+			xr_reparenting_node.global_transform.origin = primary_controller.global_transform.origin
+			var dir = (secondary_controller.global_position - primary_controller.global_position).normalized()
+			xr_reparenting_node.global_transform.basis = xr_reparenting_node.global_transform.basis.looking_at(dir, Vector3.UP, true)
+		else:
+			xr_reparenting_node.global_transform = primary_controller.global_transform
+			
+		if xr_reparented_object_180_degrees and not xr_two_handed_aim:
+			xr_reparenting_node_holder.rotation_degrees = Vector3(0,180,0)
+		else:
+			xr_reparenting_node_holder.rotation_degrees = Vector3(0,0,0)
+
+		reparented_node.global_transform = xr_reparenting_node_holder.global_transform
+
+# Test only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
+
+func _set_vostok_gun(delta):
+
+	if is_instance_valid(xr_roomscale_controller.camera_3d):
+		var vostok_weapons_node = xr_roomscale_controller.camera_3d.find_child("Weapons", false, false)
+		if vostok_weapons_node != null:
+			if vostok_weapons_node.get_child_count(true) > 0:
+				var vostok_weapon = vostok_weapons_node.get_child(0, true)
+				#print(vostok_weapon)
+				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				#print(vostok_weapon_mesh)
+				#vostok_weapon_mesh.set_as_top_level(true)
+				var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
+				if vostok_arms:
+					vostok_arms.visible = false
+				xr_reparenting_active = true
+				xr_reparented_object_180_degrees = true
+				handle_node_reparenting(delta, vostok_weapon_mesh)
+		
 
 # Handle selection of entries in XR Radial menu
 func _on_xr_radial_menu_entry_selected(entry : String):

@@ -13,7 +13,6 @@ var xr_neck_position_3D : Node3D = null
 var camera_3d : Camera3D = null
 # Node for blacking out screen when player walks to where they should not in roomscale
 var black_out : Node3D = null
-var xr_controller_remote_transform : RemoteTransform3D = null
 # Node driving the player movement
 var current_characterbody3D : CharacterBody3D = null
 
@@ -121,22 +120,6 @@ func _process_on_physical_movement(delta) -> bool:
 func _physics_process(delta):
 	var is_colliding = _process_on_physical_movement(delta)
 
-func _process(delta):
-	if is_instance_valid(camera_3d):
-		var vostok_weapons_node = camera_3d.find_child("Weapons", false,false)
-		if vostok_weapons_node != null:
-			if vostok_weapons_node.get_child_count(true) > 0:
-				var vostok_weapon = vostok_weapons_node.get_child(0, true)
-				#print(vostok_weapon)
-				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
-				#print(vostok_weapon_mesh)
-				vostok_weapon_mesh.set_as_top_level(true)
-				xr_controller_remote_transform.remote_path = vostok_weapon_mesh.get_path()
-				var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
-				if vostok_arms:
-					vostok_arms.visible = false
-				#print(xr_controller_remote_transform.remote_path)
-
 # Function used to set current flat screen game camera3D in case it isn't available yet at the time roomscale mode is activated	
 func set_current_camera(new_camera3D : Camera3D):
 	camera_3d = new_camera3D
@@ -164,7 +147,6 @@ func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false, current
 		xr_neck_position_3D = xr_camera_3D.get_node("Neck")
 		black_out = xr_camera_3D.get_node("BlackOut")
 		camera_3d = current_camera
-		xr_controller_remote_transform = xr_origin_3D.get_node("XRController3D2/RemoteTransform3D")
 		roomscale_height_adjustment = height_adjustment
 	enabled = value
 	set_process(value)

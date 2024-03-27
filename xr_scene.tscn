@@ -15,6 +15,7 @@
 resource_local_to_scene = true
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_10cyd"]
+margin = 0.01
 radius = 0.3
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_iwxk1"]
@@ -50,7 +51,7 @@ viewport_size = Vector2(1920, 1080)
 unshaded = true
 
 [node name="GestureArea" type="Area3D" parent="XROrigin3D/XRCamera3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 collision_layer = 0
 collision_mask = 32768
 
@@ -121,9 +122,6 @@ shape = SubResource("SphereShape3D_8i68g")
 [node name="XRViewportHolder" type="Node3D" parent="XROrigin3D/XRController3D2"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.1)
 
-[node name="RemoteTransform3D" type="RemoteTransform3D" parent="XROrigin3D/XRController3D2"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
-
 [node name="XRRoomscaleController" type="Node" parent="XROrigin3D"]
 script = ExtResource("5_1018u")
 
@@ -145,3 +143,7 @@ scene = ExtResource("10_cjn2i")
 viewport_size = Vector2(1920, 1080)
 transparent = 0
 unshaded = true
+
+[node name="XRReparentingNode" type="Node3D" parent="."]
+
+[node name="XRReparentingNodeHolder" type="Node3D" parent="XRReparentingNode"]
