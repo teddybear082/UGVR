@@ -201,7 +201,7 @@ func _ready() -> void:
 	xr_config_handler.set_ugvr_menu_viewport(ugvr_menu_viewport)
 	#ugvr_menu_2d.set_config_handler(xr_config_handler) # Not working yet, no script attached to ugvr menu yet
 	
-	# Load config files
+	# Load config files - maybe move this to after xr starts so we don't mess with the control map until xr starts
 	var loaded : bool = false
 	loaded = xr_config_handler.load_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
 	loaded = xr_config_handler.load_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
