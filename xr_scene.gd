@@ -18,8 +18,7 @@ extends Node3D
 @onready var gesture_area : Area3D = xr_camera_3d.get_node("GestureArea")
 @onready var left_gesture_detection_area : Area3D = xr_left_controller.get_node("GestureDetectionArea")
 @onready var right_gesture_detection_area : Area3D = xr_right_controller.get_node("GestureDetectionArea")
-@onready var left_xr_pointer : Node3D = xr_left_controller.get_node("XRPointer")
-@onready var right_xr_pointer : Node3D = xr_right_controller.get_node("XRPointer")
+@onready var xr_pointer : Node3D = xr_origin_3d.get_node("XRPointer")
 @onready var welcome_label_3d : Label3D = xr_camera_3d.get_node("WelcomeLabel3D")
 @onready var xr_config_handler : Node = get_node("XRConfigHandler")
 @onready var xr_autosave_timer : Timer = get_node("XRAutoSaveTimer")
@@ -60,8 +59,6 @@ var primary_controller : XRController3D
 var primary_detection_area : Area3D
 var secondary_controller = XRController3D
 var secondary_detection_area : Area3D
-var primary_pointer : Node3D = null
-var secondary_pointer : Node3D = null
 
 # Internal variables to store states of active camera following/roomscale status
 var current_camera : Camera3D = null
@@ -241,12 +238,9 @@ func _ready() -> void:
 	long_range_cursor_3d.name = "LongRangeCursor3D"
 	
 	# Set up pointer materials with unshaded material
-	left_xr_pointer.laser_material = unshaded_material
-	left_xr_pointer.laser_hit_material = unshaded_material
-	left_xr_pointer.target_material = unshaded_material
-	right_xr_pointer.laser_material = unshaded_material
-	right_xr_pointer.laser_hit_material = unshaded_material
-	right_xr_pointer.target_material = unshaded_material
+	xr_pointer.laser_material = unshaded_material
+	xr_pointer.laser_hit_material = unshaded_material
+	xr_pointer.target_material = unshaded_material
 	
 	# Set up reparenting node
 	xr_reparenting_node.set_as_top_level(true)
@@ -469,23 +463,17 @@ func map_xr_controllers_to_action_map() -> bool:
 		primary_detection_area = right_gesture_detection_area
 		secondary_controller = xr_left_controller
 		secondary_detection_area = left_gesture_detection_area
-		primary_pointer = right_xr_pointer
-		secondary_pointer = left_xr_pointer
 	elif primary_controller_selection.to_lower() == "left":
 		primary_controller = xr_left_controller
 		primary_detection_area = left_gesture_detection_area
 		secondary_controller = xr_right_controller
 		secondary_detection_area = right_gesture_detection_area
-		primary_pointer = left_xr_pointer
-		secondary_pointer = right_xr_pointer
 	else:
 		print("Error: primary_controller_selection in control config file is neither set to right nor left, defaulting to right.")
 		primary_controller = xr_right_controller
 		primary_detection_area = right_gesture_detection_area
 		secondary_controller = xr_left_controller
 		secondary_detection_area = left_gesture_detection_area
-		primary_pointer = right_xr_pointer
-		secondary_pointer = left_xr_pointer
 	
 	print("secondary controller: ", secondary_controller)
 	print("primary controller: ", primary_controller)
@@ -550,10 +538,7 @@ func handle_primary_xr_inputs(button):
 	
 	# Toggle pointers if user holds primary hand over their head and presses toggle button
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(primary_detection_area):
-		primary_pointer.set_enabled(!primary_pointer.enabled)
-		secondary_pointer.set_enabled(!secondary_pointer.enabled)
-		
-		
+		xr_pointer.set_enabled(!xr_pointer.enabled)
 	
 	# (Temporary) Set user height if user presses designated button while doing gesture
 	if button == gesture_set_user_height_button and gesture_area.overlaps_area(primary_detection_area):
@@ -599,8 +584,6 @@ func handle_secondary_xr_inputs(button):
 
 	# If pressing pointer activation button and making gesture, toggle UGVR menu
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
-		#primary_pointer.set_enabled(!primary_pointer.enabled)
-		#secondary_pointer.set_enabled(!secondary_pointer.enabled)
 		ugvr_menu_viewport.global_transform = xr_camera_3d.global_transform
 		ugvr_menu_viewport.global_transform.origin -= xr_camera_3d.transform.basis.z.normalized() * 1.25
 		ugvr_menu_viewport.global_transform.origin -= xr_camera_3d.transform.basis.y.normalized()*.5
@@ -988,8 +971,7 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	gesture_area = xr_camera_3d.get_node("GestureArea")
 	left_gesture_detection_area = xr_left_controller.get_node("GestureDetectionArea")
 	right_gesture_detection_area = xr_right_controller.get_node("GestureDetectionArea")
-	left_xr_pointer = xr_left_controller.get_node("XRPointer")
-	right_xr_pointer = xr_right_controller.get_node("XRPointer")
+	xr_pointer = xr_origin_3d.get_node("XRPointer")
 	welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
 	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
@@ -1031,12 +1013,9 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	current_roomscale_character_body = null
 	
 	# Set up pointer materials with unshaded material
-	left_xr_pointer.laser_material = unshaded_material
-	left_xr_pointer.laser_hit_material = unshaded_material
-	left_xr_pointer.target_material = unshaded_material
-	right_xr_pointer.laser_material = unshaded_material
-	right_xr_pointer.laser_hit_material = unshaded_material
-	right_xr_pointer.target_material = unshaded_material
+	xr_pointer.laser_material = unshaded_material
+	xr_pointer.laser_hit_material = unshaded_material
+	xr_pointer.target_material = unshaded_material
 	
 func setup_viewports():
 	if disable_2d_ui == false:
@@ -1186,8 +1165,7 @@ func set_worldscale_for_xr_nodes(new_xr_world_scale):
 	gesture_area.get_node("GestureAreaShape").shape.margin = 0.1 * new_xr_world_scale
 	welcome_label_3d.position = Vector3(0, -0.3, -2) * new_xr_world_scale
 	welcome_label_3d.scale = Vector3(1,1,1) * new_xr_world_scale
-	left_xr_pointer.distance = 10 * new_xr_world_scale
-	right_xr_pointer.distance = 10 * new_xr_world_scale
+	xr_pointer.distance = 10 * new_xr_world_scale
 	left_gesture_detection_area.get_node("ControllerGestureShape").shape.radius = 0.2 * new_xr_world_scale
 	left_gesture_detection_area.get_node("ControllerGestureShape").shape.margin = 0.04 * new_xr_world_scale
 	right_gesture_detection_area.get_node("ControllerGestureShape").shape.radius = 0.2 * new_xr_world_scale
