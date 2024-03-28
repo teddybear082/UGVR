@@ -589,7 +589,9 @@ func handle_secondary_xr_inputs(button):
 		ugvr_menu_viewport.global_transform.origin -= xr_camera_3d.transform.basis.y.normalized()*.5
 		ugvr_menu_viewport.rotation.z = 0
 		ugvr_menu_viewport.visible = !ugvr_menu_viewport.visible
-	
+		ugvr_menu_viewport.set_enabled(!ugvr_menu_viewport.enabled)
+
+
 	# If button is assigned to load action map (temporary,this should be a GUI option) and making gesture, load action map
 	if button == gesture_load_action_map_button and gesture_area.overlaps_area(secondary_detection_area):
 		xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
