@@ -188,7 +188,7 @@ var autosave_action_map_duration_in_secs : int = 0
 var xr_reparented_object_180_degrees : bool = false
 
 # Experimental variables only - not for final mod
-var use_vostok_gun_finding_code : bool = true
+var use_vostok_gun_finding_code : bool = false
 
 func _ready() -> void:
 	set_process(false)
