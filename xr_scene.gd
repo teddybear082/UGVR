@@ -1021,7 +1021,7 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	
 	# Set up the rest of viewports
 	setup_viewports()
-	
+	set_worldscale_for_xr_nodes(xr_world_scale)
 	# Reset other nodes
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 	xr_physical_movement_controller.connect("tree_exiting", Callable(self, "_on_xr_origin_exiting_tree"))
@@ -1082,27 +1082,27 @@ func reparent_viewport(viewport_node, viewport_location):
 	viewport_parent.remove_child(viewport_node)
 	
 	if viewport_location == XR_VIEWPORT_LOCATION.CAMERA:
-		viewport_node.set_screen_size(Vector2(3.0,2.0))
+		viewport_node.set_screen_size(Vector2(3.0,2.0)) * xr_world_scale
 		viewport_node.transform.origin = Vector3(0,0,0)
 		xr_camera_3d.add_child(viewport_node)
 		if viewport_node == xr_main_viewport2d_in_3d:
-			viewport_node.transform.origin = Vector3(0,-0.3,-2.8)
+			viewport_node.transform.origin = Vector3(0,-0.3,-2.8) * xr_world_scale
 		else:
-			viewport_node.transform.origin = Vector3(0,-0.3,-3.2)
+			viewport_node.transform.origin = Vector3(0,-0.3,-3.2) * xr_world_scale
 		
 	elif viewport_location == XR_VIEWPORT_LOCATION.PRIMARY_CONTROLLER:
 		primary_controller.get_node("XRViewportHolder").add_child(viewport_node)
-		viewport_node.set_screen_size(Vector2(0.5, 0.33))
+		viewport_node.set_screen_size(Vector2(0.5, 0.33)) * xr_world_scale
 		viewport_node.transform.origin = Vector3(0,0,0)
 		if viewport_node == xr_main_viewport2d_in_3d:
-			viewport_node.transform.origin = Vector3(0,0.005,0)
+			viewport_node.transform.origin = Vector3(0,0.005,0) * xr_world_scale
 	
 	elif viewport_location == XR_VIEWPORT_LOCATION.SECONDARY_CONTROLLER:
 		secondary_controller.get_node("XRViewportHolder").add_child(viewport_node)
-		viewport_node.set_screen_size(Vector2(0.5, 0.33))
+		viewport_node.set_screen_size(Vector2(0.5, 0.33)) * xr_world_scale
 		viewport_node.transform.origin = Vector3(0,0,0)
 		if viewport_node == xr_main_viewport2d_in_3d:
-			viewport_node.transform.origin = Vector3(0,0.005,0)
+			viewport_node.transform.origin = Vector3(0,0.005,0) * xr_world_scale
 
 # Function to set radial menu
 func setup_radial_menu():
@@ -1152,6 +1152,7 @@ func set_xr_game_options():
 	
 	# Set XR worldscale based on config
 	xr_origin_3d.world_scale = xr_world_scale
+	set_worldscale_for_xr_nodes(xr_world_scale)
 	
 	# Place viewports at proper location based on user config
 	reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
@@ -1177,7 +1178,21 @@ func set_xr_game_options():
 	else:
 		if not xr_autosave_timer.is_stopped():
 			xr_autosave_timer.set_paused(true)
-		
+
+# Function to set proper world scale for various nodes that depend on sizes and distances
+func set_worldscale_for_xr_nodes(new_xr_world_scale):
+	gesture_area.transform.origin.y = 0.45 * new_xr_world_scale
+	gesture_area.get_node("GestureAreaShape").shape.radius = 0.3 * new_xr_world_scale
+	gesture_area.get_node("GestureAreaShape").shape.margin = 0.1 * new_xr_world_scale
+	welcome_label_3d.position = Vector3(0, -0.3, -2) * new_xr_world_scale
+	welcome_label_3d.scale = Vector3(1,1,1) * new_xr_world_scale
+	left_xr_pointer.distance = 10 * new_xr_world_scale
+	right_xr_pointer.distance = 10 * new_xr_world_scale
+	left_gesture_detection_area.get_node("ControllerGestureShape").shape.radius = 0.2 * new_xr_world_scale
+	left_gesture_detection_area.get_node("ControllerGestureShape").shape.margin = 0.04 * new_xr_world_scale
+	right_gesture_detection_area.get_node("ControllerGestureShape").shape.radius = 0.2 * new_xr_world_scale
+	right_gesture_detection_area.get_node("ControllerGestureShape").shape.margin = 0.04 * new_xr_world_scale
+	
 # Function to pull current state of config handler control options variables to set same xr scene variables based on user config	
 func set_xr_control_options():
 	# Load base control maps
