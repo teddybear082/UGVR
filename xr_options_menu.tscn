@@ -1,4 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://x0xxleun8ha0"]
+[gd_scene load_steps=4 format=3 uid="uid://x0xxleun8ha0"]
+
+[ext_resource type="Script" path="res://xr_options_menu.gd" id="1_mafs4"]
 
 [sub_resource type="Gradient" id="Gradient_blkw1"]
 
@@ -11,6 +13,7 @@ height = 20
 custom_minimum_size = Vector2(1920, 1080)
 offset_right = 40.0
 offset_bottom = 40.0
+script = ExtResource("1_mafs4")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2

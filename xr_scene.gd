@@ -1213,7 +1213,8 @@ func set_xr_action_map_options():
 	xr_radial_menu_entries = xr_config_handler.xr_radial_menu_entries
 	open_radial_menu_button = xr_config_handler.open_radial_menu_button
 	setup_radial_menu()
-
+	ugvr_menu_2d.connect_option_button_chidren_signals()
+	
 # Receiver function for config file signal that game options have been loaded
 func _on_xr_config_handler_xr_game_options_cfg_loaded(_path_to_file : String):
 	set_xr_game_options()

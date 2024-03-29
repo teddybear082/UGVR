@@ -9,7 +9,7 @@
 [ext_resource type="Script" path="res://xr_config_handler.gd" id="5_jiibt"]
 [ext_resource type="Script" path="res://xr_physical_movement_controller.gd" id="6_1wyxn"]
 [ext_resource type="Script" path="res://xr_radial_menu.gd" id="7_hw5k1"]
-[ext_resource type="PackedScene" uid="uid://x0xxleun8ha0" path="res://vr_options_menu.tscn" id="10_cjn2i"]
+[ext_resource type="PackedScene" uid="uid://x0xxleun8ha0" path="res://xr_options_menu.tscn" id="10_cjn2i"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_pnlj8"]
 resource_local_to_scene = true
