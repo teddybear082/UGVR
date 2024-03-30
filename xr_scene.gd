@@ -245,6 +245,19 @@ func _ready() -> void:
 	# Set up reparenting node
 	xr_reparenting_node.set_as_top_level(true)
 	
+	# Set up smoothing for reparenting node
+	var OneEuroFilter = load("res://xr_node_smoothing.gd")
+	var allowed_jitter : float = 1.0
+	var lag_reduction : float = 5.0
+	var args := {
+		"cutoff": allowed_jitter,
+		"beta": lag_reduction,
+	}
+	x_filter = OneEuroFilter.new(args)
+	y_filter = OneEuroFilter.new(args)
+	z_filter = OneEuroFilter.new(args)
+
+	
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
 	if use_vostok_gun_finding_code:
@@ -424,6 +437,10 @@ func _eval_tree_new() -> void:
 							for body in potential_character_bodies:
 								if body.is_ancestor_of(current_camera):
 									print("Winning characterbody from recursive search found: ", body)
+									current_roomscale_character_body = body
+									break
+								elif body.name.to_lower().contains("player") or body.name.to_lower().contains("controller"):
+									print("Winning characterbody from recursive search with name search found: ", body)
 									current_roomscale_character_body = body
 									break
 					else:
@@ -820,7 +837,7 @@ func _handle_rotation(angle : float) -> void:
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
 
 # Handle reparenting game elements
-func handle_node_reparenting(_delta : float, reparented_node : Node3D):
+func handle_node_reparenting(delta : float, reparented_node : Node3D):
 
 	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
 		return
@@ -846,7 +863,22 @@ func handle_node_reparenting(_delta : float, reparented_node : Node3D):
 		else:
 			xr_reparenting_node_holder.rotation_degrees = Vector3(0,0,0)
 
-		reparented_node.global_transform = xr_reparenting_node_holder.global_transform
+		#reparented_node.global_transform = xr_reparenting_node_holder.global_transform
+		handle_reparented_node_smoothing(delta, xr_reparenting_node_holder, reparented_node)
+
+var x_filter
+var y_filter
+var z_filter		
+# Try to smooth movement of reparented node to minimize jitter
+func handle_reparented_node_smoothing(delta : float, source_node : Node3D, destination_node : Node3D):
+	if is_instance_valid(source_node) and is_instance_valid(destination_node):
+		var origin: Vector3 = source_node.global_transform.origin - xr_origin_3d.global_transform.origin
+		var x: float = x_filter.filter(origin.x, delta)
+		var y: float = y_filter.filter(origin.y, delta)
+		var z: float = z_filter.filter(origin.z, delta)
+
+		destination_node.global_transform = Transform3D(source_node.global_transform.basis, xr_origin_3d.global_transform.origin + Vector3(x, y, z))
+
 
 # Test only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
 
@@ -867,7 +899,21 @@ func _set_vostok_gun(delta):
 				xr_reparenting_active = true
 				xr_reparented_object_180_degrees = true
 				handle_node_reparenting(delta, vostok_weapon_mesh)
-		
+	elif is_instance_valid(current_camera):
+		var vostok_weapons_node = current_camera.find_child("Weapons", false, false)
+		if vostok_weapons_node != null:
+			if vostok_weapons_node.get_child_count(true) > 0:
+				var vostok_weapon = vostok_weapons_node.get_child(0, true)
+				#print(vostok_weapon)
+				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				#print(vostok_weapon_mesh)
+				#vostok_weapon_mesh.set_as_top_level(true)
+				var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
+				if vostok_arms:
+					vostok_arms.visible = false
+				xr_reparenting_active = true
+				xr_reparented_object_180_degrees = true
+				handle_node_reparenting(delta, vostok_weapon_mesh)
 
 # Handle selection of entries in XR Radial menu
 func _on_xr_radial_menu_entry_selected(entry : String):
