@@ -62,4 +62,8 @@ Not presently intended for regular users as this tool is in heavy development / 
 
  -Check out DigitalNightmare's Steam Page here: https://store.steampowered.com/developer/DNeU and Youtube here: https://www.youtube.com/@DigitalN8m4r3
 
+-Avat / patrykkalinowski for the node smoothing code found in his MIT licensed github repo here: https://github.com/patrykkalinowski/godot-xr-kit/tree/master/addons/xr-kit/smooth-input-filter
+
+-Brane from BRANEGAMES for help with godot 2d UI for the UGVR UI. Check out his games on steam here: https://store.steampowered.com/publisher/brane
+
 -Praydog for concept of universal VR mod (for Unreal Engine - UEVR) and providing advice about potential methods to display 2D UI in VR
