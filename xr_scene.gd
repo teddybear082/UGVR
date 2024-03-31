@@ -78,7 +78,8 @@ var unshaded_material : StandardMaterial3D = StandardMaterial3D.new()
 var target_xr_viewport : Viewport = null
 var xr_reparenting_active : bool = false
 var xr_two_handed_aim : bool = false
-
+var manually_set_camera : bool = false
+var manual_set_possible_xr_cameras_idx : int = 0
 # User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
@@ -88,6 +89,9 @@ var gesture_load_action_map_button = "by_button"
 
 # Button to set height with gesture (temporary, should eventually be GUI) - Needs to be included in config file
 var gesture_set_user_height_button = "by_button"
+
+# Button to manually toggle to next potential active camera with head gesture
+var gesture_toggle_active_camera_button = "ax_button"
 
 # Button to activate dpad alternative binding for joystick, start and select buttons
 var dpad_activation_button = "primary_touch"
@@ -321,7 +325,7 @@ func _eval_tree_new() -> void:
 				long_range_cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
 				
 			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
-			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport() and current_roomscale_character_body == null:
+			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport() and current_roomscale_character_body == null and not manually_set_camera:
 				print("Found a current camera that is not xr camera_3d: ", camera)
 				print("Camera's viewport is: ", camera.get_viewport())
 				print("Camera's window is: ", camera.get_window())
@@ -338,7 +342,7 @@ func _eval_tree_new() -> void:
 					current_camera.attributes.dof_blur_far_enabled = false
 
 	# If for some reason we haven't found a current camera after cycling through all cameras in scene, fall back to setting remote path of available cameras to xr_origin_3d
-	if current_camera == null and current_roomscale_character_body == null:
+	if current_camera == null and current_roomscale_character_body == null and not manually_set_camera:
 		var available_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
 		for available_camera in available_cameras:
 			var available_camera_remote_transform = available_camera.find_child("*XRRemoteTransform",false,false)
@@ -563,6 +567,24 @@ func handle_primary_xr_inputs(button):
 		user_height = xr_camera_3d.transform.origin.y
 		print("User height: ", user_height)
 		apply_user_height(user_height)
+	
+	# Temporary : Try toggling active camera for xr camera to follow manually	
+	if button == gesture_toggle_active_camera_button and gesture_area.overlaps_area(primary_detection_area):
+		print("Now manually toggling active camera")
+		manually_set_camera = true
+		# Get all cameras we have found
+		var active_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
+		# If current index is too high wrap back around to 0
+		#if manual_set_possible_xr_cameras_idx > (active_cameras.size()-1):
+			#manual_set_possible_xr_cameras_idx = 0
+		if manual_set_possible_xr_cameras_idx <= 0:
+			manual_set_possible_xr_cameras_idx = active_cameras.size()-1
+		var selected_camera = active_cameras[manual_set_possible_xr_cameras_idx]
+		# Assuming camera still exists, use it
+		if is_instance_valid(selected_camera):
+			set_camera_as_current(selected_camera)
+		# Increase index for next time button is pressed
+		manual_set_possible_xr_cameras_idx -=1
 	
 	# If user just pressed activation button, activate special combo buttons
 	if button == dpad_activation_button:
@@ -1142,6 +1164,24 @@ func setup_radial_menu():
 	else:
 		xr_radial_menu.set_enabled(false)
 		xr_radial_menu.set_controller(null)
+
+
+# Manually set current camera to follow
+func set_camera_as_current(camera : Camera3D):
+	print("Setting a new current camera manually: ", camera)
+	print("Camera's viewport is: ", camera.get_viewport())
+	print("Camera's window is: ", camera.get_window())
+	if current_camera_remote_transform != null:
+		print("Clearing previous remote transform")
+		current_camera_remote_transform.remote_path = ""
+	current_camera_remote_transform = camera.find_child("*XRRemoteTransform*",false,false)
+	print("Current camera remote transform: ", current_camera_remote_transform)
+	current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
+	current_camera = camera
+	# Try to turn off blur on all cameras by default
+	if current_camera.attributes != null:
+		current_camera.attributes.dof_blur_near_enabled = false
+		current_camera.attributes.dof_blur_far_enabled = false
 		
 # Function to pull current state of config handler game options variables to set same xr scene variables based on user config
 func set_xr_game_options():
