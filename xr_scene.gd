@@ -190,6 +190,7 @@ var xr_reparented_object_180_degrees : bool = false
 
 # Experimental variables only - not for final mod
 var use_vostok_gun_finding_code : bool = false
+var use_beton_gun_finding_code : bool = false
 
 func _ready() -> void:
 	set_process(false)
@@ -266,7 +267,10 @@ func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
 	if use_vostok_gun_finding_code:
 		_set_vostok_gun(_delta)
-		
+	
+	if use_beton_gun_finding_code:
+		_set_beton_gun(_delta)
+	
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
 		if !is_instance_valid(xr_origin_3d):
@@ -937,6 +941,13 @@ func _set_vostok_gun(delta):
 				xr_reparenting_active = true
 				xr_reparented_object_180_degrees = true
 				handle_node_reparenting(delta, vostok_weapon_mesh)
+
+# Same, just experimental
+func _set_beton_gun(delta : float):
+	var gun_node = get_tree().get_root().get_node_or_null("LowresRoot/LowResViewport/Player/RotPoint")
+	if gun_node != null and xr_origin_reparented:
+		xr_reparenting_active = true
+		handle_node_reparenting(delta, gun_node)
 
 # Handle selection of entries in XR Radial menu
 func _on_xr_radial_menu_entry_selected(entry : String):
