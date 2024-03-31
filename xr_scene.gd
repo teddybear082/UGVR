@@ -921,6 +921,7 @@ func _set_vostok_gun(delta):
 				xr_reparenting_active = true
 				xr_reparented_object_180_degrees = true
 				handle_node_reparenting(delta, vostok_weapon_mesh)
+				
 	elif is_instance_valid(current_camera):
 		var vostok_weapons_node = current_camera.find_child("Weapons", false, false)
 		if vostok_weapons_node != null:
@@ -1131,7 +1132,7 @@ func reparent_viewport(viewport_node, viewport_location):
 	viewport_parent.remove_child(viewport_node)
 	
 	if viewport_location == XR_VIEWPORT_LOCATION.CAMERA:
-		viewport_node.set_screen_size(Vector2(3.0,2.0)) * xr_world_scale
+		viewport_node.set_screen_size(Vector2(3.0,2.0) * xr_world_scale)
 		viewport_node.transform.origin = Vector3(0,0,0)
 		xr_camera_3d.add_child(viewport_node)
 		if viewport_node == xr_main_viewport2d_in_3d:
@@ -1140,15 +1141,17 @@ func reparent_viewport(viewport_node, viewport_location):
 			viewport_node.transform.origin = Vector3(0,-0.3,-3.2) * xr_world_scale
 		
 	elif viewport_location == XR_VIEWPORT_LOCATION.PRIMARY_CONTROLLER:
+		viewport_node.set_screen_size(Vector2(0.5, 0.33) * xr_world_scale)
+		viewport_node.transform.origin = Vector3(0,0,0)
 		primary_controller.get_node("XRViewportHolder").add_child(viewport_node)
-		viewport_node.set_screen_size(Vector2(0.5, 0.33)) * xr_world_scale
 		viewport_node.transform.origin = Vector3(0,0,0)
 		if viewport_node == xr_main_viewport2d_in_3d:
 			viewport_node.transform.origin = Vector3(0,0.005,0) * xr_world_scale
 	
 	elif viewport_location == XR_VIEWPORT_LOCATION.SECONDARY_CONTROLLER:
+		viewport_node.set_screen_size(Vector2(0.5, 0.33) * xr_world_scale)
+		viewport_node.transform.origin = Vector3(0,0,0)
 		secondary_controller.get_node("XRViewportHolder").add_child(viewport_node)
-		viewport_node.set_screen_size(Vector2(0.5, 0.33)) * xr_world_scale
 		viewport_node.transform.origin = Vector3(0,0,0)
 		if viewport_node == xr_main_viewport2d_in_3d:
 			viewport_node.transform.origin = Vector3(0,0.005,0) * xr_world_scale
