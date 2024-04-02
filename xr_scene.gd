@@ -224,12 +224,6 @@ func _ready() -> void:
 	xr_config_handler.set_ugvr_menu_viewport(ugvr_menu_viewport)
 	#ugvr_menu_2d.set_config_handler(xr_config_handler) # Not working yet, no script attached to ugvr menu yet
 	
-	# Load config files - maybe move this to after xr starts so we don't mess with the control map until xr starts
-	var loaded : bool = false
-	loaded = xr_config_handler.load_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
-	loaded = xr_config_handler.load_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
-	loaded = xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
-	
 	# Set up unshaded material for pointers and cursor3D objects
 	unshaded_material.disable_ambient_light = true
 	unshaded_material.disable_receive_shadows = true
@@ -289,16 +283,16 @@ func _process(_delta : float) -> void:
 			_setup_new_xr_origin(backup_xr_origin)
 		
 		if is_instance_valid(xr_origin_3d) and is_instance_valid(xr_camera_3d):
-			_eval_tree_new()
+			_eval_tree()
 	
 	# If controllers aren't found, skip processing inputs
 	if !is_instance_valid(xr_left_controller) or !is_instance_valid(xr_right_controller) or use_physical_gamepad_only:
 		return
-	# Process emulated joypad inputs, someday maybe this could be a toggle in the event someone wants to use gamepad only controls
+	# Process emulated joypad inputs
 	process_joystick_inputs()
 
-# Constantly checks for current camera 3D or roomscale body (if roomscale enabled)
-func _eval_tree_new() -> void:
+# Constantly checks for current camera 3D, canvaslayers, world environment and roomscale body (if roomscale enabled)
+func _eval_tree() -> void:
 	# Check to make sure main viewport still uses xr; use target_xr_viewport instead of get_viewport directly to account for when roomscale xr origin is reparented under a subviewport in the flat screen game (e.g., retro FPS shooters)
 	if not is_instance_valid(target_xr_viewport):
 		target_xr_viewport = get_viewport()
@@ -312,161 +306,39 @@ func _eval_tree_new() -> void:
 	Engine.set_max_fps(144)
 	
 	# Get active camera3D by looking for an array of Camera3D nodes in the scene tree
-	var remote_t : RemoteTransform3D = null
-	var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
-	#print(cameras)
-	# For each camera, check if it's not our XR Camera
-	for camera in cameras:
-		if camera != xr_camera_3d:
-			# If we haven't found camera before, add it to our group for possible group functions someday, and add a remote transform
-			if not camera.is_in_group("possible_xr_cameras"):
-				camera.add_to_group("possible_xr_cameras")
-				print("New camera found: ", camera)
-				print("Camera's viewport is: ", camera.get_viewport())
-				print("Camera's window is: ", camera.get_window())
-				remote_t = RemoteTransform3D.new()
-				remote_t.name = "XRRemoteTransform"
-				remote_t.update_rotation = false
-				remote_t.update_scale = false
-				remote_t.remote_path = ""
-				camera.add_child(remote_t)
-				# If user has already set height at some point in session, adjust height by same for any new cameras that enter scene later
-				remote_t.transform.origin.y -= (user_height * xr_world_scale)
-				# Add cursor mesh
-				var cursor = cursor_3d.duplicate()
-				camera.add_child(cursor)
-				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
-				var long_range_cursor = long_range_cursor_3d.duplicate()
-				camera.add_child(long_range_cursor)
-				long_range_cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
-				
-			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
-			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport() and current_roomscale_character_body == null and not manually_set_camera:
-				print("Found a current camera that is not xr camera_3d: ", camera)
-				print("Camera's viewport is: ", camera.get_viewport())
-				print("Camera's window is: ", camera.get_window())
-				if current_camera_remote_transform != null:
-					print("Clearing previous remote transform")
-					current_camera_remote_transform.remote_path = ""
-				current_camera_remote_transform = camera.find_child("*XRRemoteTransform*",false,false)
-				print("Current camera remote transform: ", current_camera_remote_transform)
-				current_camera_remote_transform.remote_path = xr_origin_3d.get_path()
-				current_camera = camera
-				# Try to turn off blur on all cameras by default
-				if current_camera.attributes != null:
-					current_camera.attributes.dof_blur_near_enabled = false
-					current_camera.attributes.dof_blur_far_enabled = false
-
-	# If for some reason we haven't found a current camera after cycling through all cameras in scene, fall back to setting remote path of available cameras to xr_origin_3d
-	if current_camera == null and current_roomscale_character_body == null and not manually_set_camera:
-		var available_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
-		for available_camera in available_cameras:
-			var available_camera_remote_transform = available_camera.find_child("*XRRemoteTransform",false,false)
-			available_camera_remote_transform.remote_path = xr_origin_3d.get_path()
-			current_camera_remote_transform = available_camera_remote_transform
-		# Set last camera as current camera to avoid running through this special loop every iteration
-		if available_cameras != null and available_cameras.size() >= 1:
-			current_camera = available_cameras[-1]
+	find_and_set_active_camera_3d()
 	
-	# If using roomscale 3D cursor, make the cursor visible on the active camera (someday for performance should condense the get_tree().get_nodes_in_group("possible_xr_cameras") to only call it once and then use that variable for all the various checks		
-	if use_roomscale_3d_cursor == true or use_long_range_3d_cursor == true:
-		var possible_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
-		# If there's only one camera, assume it's our active camera and add the 3D cursor
-		if possible_cameras.size() == 1:
-			if use_roomscale_3d_cursor == true:
-				possible_cameras[0].get_node("Cursor3D").visible = true
-			if use_long_range_3d_cursor == true:
-				possible_cameras[0].get_node("LongRangeCursor3D").visible = true
-		# Otherwise find the active camera
-		else:
-			for camera in possible_cameras:
-				if camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
-					if use_roomscale_3d_cursor == true:
-						camera.get_node("Cursor3D").visible = true
-					if use_long_range_3d_cursor == true:
-						camera.get_node("LongRangeCursor3D").visible = true
-				else:
-					camera.get_node("Cursor3D").visible = false
-					camera.get_node("LongRangeCursor3D").visible = false
 	# Find canvas layer and display it
-	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled, but this can be fixed by setting the viewport size with user configs
-	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
-	#print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
+	# Setting the viewport size with user configs can fix if the layer displays too small or too large
+	find_and_set_canvas_layers()
 	
-	if potential_canvas_layer_nodes != []:
-		
-		for canvas_layer in potential_canvas_layer_nodes:
-			if canvas_layer.visible == true and not canvas_layer.is_in_group("active_canvas_layers"):
-				print("making canvas layer active: ", canvas_layer)
-				canvas_layer.add_to_group("active_canvas_layers")
-				canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
+	# Find active world environment node, if any
+	var active_world_environment = find_active_world_environment_or_null()
 	
-	# Turn off any world environment blur effects which work badly in VR. Only one WorldEnvironment node can be in the scene tree at one time so can hopefully stop after one child.
-	var world_environment = get_node("/root").find_child("*Environment*", true, false)
-	# If found node is not actually the WorldEnvironment, check its children, and use the first one:
-	if world_environment and not world_environment.is_class("WorldEnvironment"):
-		world_environment = world_environment.find_children("*", "WorldEnvironment", true, false)[0]
-	# If no node found or node is still not the WorldEnvironment, try running a search of lower case environment
-	if world_environment == null or not world_environment.is_class("WorldEnvironment"):
-		world_environment = get_node("/root").find_child("*environment*", true, false)
-	#If we found the world environment set its camera attributes to blur enabled false
-	if world_environment and world_environment.is_class("WorldEnvironment"):
-		if world_environment.camera_attributes != null:
-			world_environment.camera_attributes.dof_blur_near_enabled = false
-			world_environment.camera_attributes.dof_blur_far_enabled = false
+	# If active world environment found, and it has camera attributes, set any blurring to false, as blurring looks bad in VR
+	if active_world_environment:
+		if active_world_environment.camera_attributes != null:
+			active_world_environment.camera_attributes.dof_blur_near_enabled = false
+			active_world_environment.camera_attributes.dof_blur_far_enabled = false
 				
 		# NOT PRESENTLY WORKING, NEEDS MORE THOUGHT: if user enabled passthrough mode, try to enable it by finding world environment and setting sky to passthrough color
 		if experimental_passthrough and xr_interface.is_passthrough_supported():
 			var passthrough_color = Color(0,0,0,0.2)
 			print("trying passthrough setup")
-			var environment : Environment = world_environment.get_environment()
+			var environment : Environment = active_world_environment.get_environment()
 			environment.set_bg_color(passthrough_color)
 			environment.set_background(Environment.BG_COLOR)
 		
 			experimental_passthrough = xr_interface.start_passthrough()
-
+	
+	# Set XR camera 3d attributes to also disable any blurring in case this helps override any flat screen settings
 	xr_camera_3d.attributes.dof_blur_near_enabled = false
 	xr_camera_3d.attributes.dof_blur_far_enabled = false
 	
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
 	if !is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
-		var potential_character_body_node = null
-		# Only search for characterbody if we have a present camera in the scene driving the xr origin
-		if is_instance_valid(current_camera):
-			# First try non-recursive search for "typical" FPS setups
-			print("Trying to find characterbody 3D for roomscale....")
-			potential_character_body_node = current_camera.get_parent_node_3d()
-			# if parent of active camera not a Characterbody3D continue search
-			if is_instance_valid(potential_character_body_node):
-				if !potential_character_body_node.is_class("CharacterBody3D"):
-					print("parent of current camera is not CharacterBody3D, trying again")
-					potential_character_body_node = potential_character_body_node.get_parent_node_3d()
-					if is_instance_valid(potential_character_body_node) and !potential_character_body_node.is_class("CharacterBody3D"):
-						print("parent of parent of current camera is not CharacterBody3D, ending simple search.")
-						potential_character_body_node = null
-						var potential_character_bodies : Array = get_node("/root").find_children("*", "CharacterBody3D", true, false)
-						print("now checking all other character bodies")
-						print(potential_character_bodies)
-						if potential_character_bodies.size() == 1:
-							print("Only one characterbody3d found, assuming it's our player.")
-							current_roomscale_character_body = potential_character_bodies[0]
-						elif potential_character_bodies.size() > 1:
-							for body in potential_character_bodies:
-								if body.is_ancestor_of(current_camera):
-									print("Winning characterbody from recursive search found: ", body)
-									current_roomscale_character_body = body
-									break
-								elif body.name.to_lower().contains("player") or body.name.to_lower().contains("controller"):
-									print("Winning characterbody from recursive search with name search found: ", body)
-									current_roomscale_character_body = body
-									break
-					else:
-						print("Character body found as parent of parent of current camera, sending to roomscale node: ", potential_character_body_node)
-						current_roomscale_character_body = potential_character_body_node
-			else:
-				print("Character body found as parent to current camera, sending to roomscale node: ", potential_character_body_node)
-				current_roomscale_character_body = potential_character_body_node
-
+		current_roomscale_character_body = find_and_set_player_characterbody3d_or_null()
+		
 		# If we now found a roomscale body, reparent xr origin 3D to character body
 		if is_instance_valid(current_roomscale_character_body) and xr_origin_reparented == false:
 			current_camera_remote_transform.remote_path = ""
@@ -564,6 +436,8 @@ func map_xr_controllers_to_action_map() -> bool:
 	dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 	
+	
+	# Return true to alert that function is completed
 	return true
 	
 # Handle button presses on VR controller assigned as primary
@@ -913,80 +787,6 @@ func handle_reparented_node_smoothing(delta : float, source_node : Node3D, desti
 		destination_node.global_transform = Transform3D(source_node.global_transform.basis, xr_origin_3d.global_transform.origin + Vector3(x, y, z))
 
 
-# Test only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
-
-func _set_vostok_gun(delta):
-
-	if is_instance_valid(xr_roomscale_controller.camera_3d):
-		var vostok_weapons_node = xr_roomscale_controller.camera_3d.find_child("Weapons", false, false)
-		if vostok_weapons_node != null:
-			if vostok_weapons_node.get_child_count(true) > 0:
-				var vostok_weapon = vostok_weapons_node.get_child(0, true)
-				#print(vostok_weapon)
-				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
-				#print(vostok_weapon_mesh)
-				#vostok_weapon_mesh.set_as_top_level(true)
-				var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
-				if vostok_arms:
-					vostok_arms.visible = false
-				xr_reparenting_active = true
-				xr_reparented_object_180_degrees = true
-				handle_node_reparenting(delta, vostok_weapon_mesh)
-				
-	elif is_instance_valid(current_camera):
-		var vostok_weapons_node = current_camera.find_child("Weapons", false, false)
-		if vostok_weapons_node != null:
-			if vostok_weapons_node.get_child_count(true) > 0:
-				var vostok_weapon = vostok_weapons_node.get_child(0, true)
-				#print(vostok_weapon)
-				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
-				#print(vostok_weapon_mesh)
-				#vostok_weapon_mesh.set_as_top_level(true)
-				var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
-				if vostok_arms:
-					vostok_arms.visible = false
-				xr_reparenting_active = true
-				xr_reparented_object_180_degrees = true
-				handle_node_reparenting(delta, vostok_weapon_mesh)
-
-# Same, just experimental
-func _set_beton_gun(delta : float):
-	var gun_node = get_tree().get_root().get_node_or_null("LowresRoot/LowResViewport/Player/RotPoint")
-	if gun_node != null and xr_origin_reparented:
-		xr_reparenting_active = true
-		handle_node_reparenting(delta, gun_node)
-
-# Handle selection of entries in XR Radial menu
-func _on_xr_radial_menu_entry_selected(entry : String):
-	if xr_radial_menu_mode == XR_RADIAL_TYPE.GAMEPAD:
-		var gamepad_event : InputEventJoypadButton = InputEventJoypadButton.new()
-		var gamepad_button_index = xr_config_handler.default_gamepad_button_names.find(entry)
-		gamepad_event.button_index = gamepad_button_index
-		gamepad_event.pressed = true
-		Input.parse_input_event(gamepad_event)
-		#print("Pressed gamepad event from radial menu: ", entry)
-		await get_tree().create_timer(0.2).timeout
-		gamepad_event.pressed = false
-		Input.parse_input_event(gamepad_event)
-	
-	# Not presently working	because rest of code assumes entries are strings and keys only accept KEY int constants
-	elif xr_radial_menu_mode == XR_RADIAL_TYPE.KEYBOARD:
-		var keyboard_event : InputEventKey = InputEventKey.new()
-		#keyboard_event.keycode = entry
-		keyboard_event.pressed = true
-		Input.parse_input_event(keyboard_event)
-		#print("Pressed key from radial menu: ", str(entry))
-		await get_tree().create_timer(0.2).timeout
-		keyboard_event.pressed = false
-		Input.parse_input_event(keyboard_event)
-		
-	elif xr_radial_menu_mode == XR_RADIAL_TYPE.ACTION:
-		# Using parse input event with Action Events did not seem to work but this seems to
-		Input.action_press(entry)
-		#print("Pressed action from radial menu: ", entry)
-		await get_tree().create_timer(0.2).timeout
-		Input.action_release(entry)
-
 # Handle initiation of xr
 func _on_xr_started():
 	# Only set up once not every time user goes in and out of VR
@@ -1003,8 +803,13 @@ func _on_xr_started():
 	print("XR Camera's viewport is: ", xr_camera_3d.get_viewport())
 	print("XR Camera's window is: ", xr_camera_3d.get_window()) 
 	
+	# Load config files; if not using XR then do not use XR config files
+	var loaded : bool = false
+	loaded = xr_config_handler.load_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
+	loaded = xr_config_handler.load_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
+	loaded = xr_config_handler.load_action_map_file(xr_config_handler.game_action_map_cfg_path)
+	
 	set_process(true)
-
 
 # When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu	
 func _on_xr_autosave_timer_timeout():
@@ -1180,10 +985,109 @@ func setup_radial_menu():
 		xr_radial_menu.set_enabled(false)
 		xr_radial_menu.set_controller(null)
 
+# Handle selection of entries in XR Radial menu
+func _on_xr_radial_menu_entry_selected(entry : String):
+	if xr_radial_menu_mode == XR_RADIAL_TYPE.GAMEPAD:
+		var gamepad_event : InputEventJoypadButton = InputEventJoypadButton.new()
+		var gamepad_button_index = xr_config_handler.default_gamepad_button_names.find(entry)
+		gamepad_event.button_index = gamepad_button_index
+		gamepad_event.pressed = true
+		Input.parse_input_event(gamepad_event)
+		#print("Pressed gamepad event from radial menu: ", entry)
+		await get_tree().create_timer(0.2).timeout
+		gamepad_event.pressed = false
+		Input.parse_input_event(gamepad_event)
+	
+	# Not presently working	because rest of code assumes entries are strings and keys only accept KEY int constants
+	elif xr_radial_menu_mode == XR_RADIAL_TYPE.KEYBOARD:
+		var keyboard_event : InputEventKey = InputEventKey.new()
+		#keyboard_event.keycode = entry
+		keyboard_event.pressed = true
+		Input.parse_input_event(keyboard_event)
+		#print("Pressed key from radial menu: ", str(entry))
+		await get_tree().create_timer(0.2).timeout
+		keyboard_event.pressed = false
+		Input.parse_input_event(keyboard_event)
+		
+	elif xr_radial_menu_mode == XR_RADIAL_TYPE.ACTION:
+		# Using parse input event with Action Events did not seem to work but this seems to
+		Input.action_press(entry)
+		#print("Pressed action from radial menu: ", entry)
+		await get_tree().create_timer(0.2).timeout
+		Input.action_release(entry)
 
-# Manually set current camera to follow
+
+# Function used by eval_tree to find the camera3d that is presently active in the flatscreen game and use it to drive XR camera and cursor3D (if used)
+func find_and_set_active_camera_3d():
+	var remote_t : RemoteTransform3D = null
+	var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
+	#print(cameras)
+	# For each camera, check if it's not our XR Camera
+	for camera in cameras:
+		if camera != xr_camera_3d:
+			# If we haven't found camera before, add it to our group for possible group functions someday, and add a remote transform
+			if not camera.is_in_group("possible_xr_cameras"):
+				camera.add_to_group("possible_xr_cameras")
+				print("New camera found: ", camera)
+				print("Camera's viewport is: ", camera.get_viewport())
+				print("Camera's window is: ", camera.get_window())
+				remote_t = RemoteTransform3D.new()
+				remote_t.name = "XRRemoteTransform"
+				remote_t.update_rotation = false
+				remote_t.update_scale = false
+				remote_t.remote_path = ""
+				camera.add_child(remote_t)
+				# If user has already set height at some point in session, adjust height by same for any new cameras that enter scene later
+				remote_t.transform.origin.y -= (user_height * xr_world_scale)
+				# Add cursor mesh
+				var cursor = cursor_3d.duplicate()
+				camera.add_child(cursor)
+				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
+				var long_range_cursor = long_range_cursor_3d.duplicate()
+				camera.add_child(long_range_cursor)
+				long_range_cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
+				
+			# Regardless of whether we have found it before, if it's not the current camera driving the xr camera in the scene, but it is the current 3d camera on the same viewport, activate it
+			if camera != current_camera and camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport() and current_roomscale_character_body == null and not manually_set_camera:
+				set_camera_as_current(camera)
+
+	# Find the possible xr cameras for this iteration of the loop to use in subsequent calculations
+	var available_cameras = get_tree().get_nodes_in_group("possible_xr_cameras")
+	
+	# If for some reason we haven't found a current camera after cycling through all cameras in scene, fall back to setting remote path of available cameras to xr_origin_3d
+	if current_camera == null and current_roomscale_character_body == null and not manually_set_camera:
+		
+		for available_camera in available_cameras:
+			var available_camera_remote_transform = available_camera.find_child("*XRRemoteTransform",false,false)
+			available_camera_remote_transform.remote_path = xr_origin_3d.get_path()
+			current_camera_remote_transform = available_camera_remote_transform
+		# Set last camera as current camera to avoid running through this special loop every iteration
+		if available_cameras != null and available_cameras.size() >= 1:
+			current_camera = available_cameras[-1]
+	
+	# If using roomscale 3D cursor, make the cursor visible on the active camera (someday for performance should condense the get_tree().get_nodes_in_group("possible_xr_cameras") to only call it once and then use that variable for all the various checks		
+	if use_roomscale_3d_cursor == true or use_long_range_3d_cursor == true:
+		# If there's only one camera, assume it's our active camera and add the 3D cursor
+		if available_cameras.size() == 1:
+			if use_roomscale_3d_cursor == true:
+				available_cameras[0].get_node("Cursor3D").visible = true
+			if use_long_range_3d_cursor == true:
+				available_cameras[0].get_node("LongRangeCursor3D").visible = true
+		# Otherwise find the active camera
+		else:
+			for camera in available_cameras:
+				if camera.current == true and camera.get_viewport() == xr_camera_3d.get_viewport():
+					if use_roomscale_3d_cursor == true:
+						camera.get_node("Cursor3D").visible = true
+					if use_long_range_3d_cursor == true:
+						camera.get_node("LongRangeCursor3D").visible = true
+				else:
+					camera.get_node("Cursor3D").visible = false
+					camera.get_node("LongRangeCursor3D").visible = false
+	
+# Set current camera to follow, used by the find_and_set_active_camera_3d() function but can also be called independently, e.g., by a modder or developer, to manually set the active camera
 func set_camera_as_current(camera : Camera3D):
-	print("Setting a new current camera manually: ", camera)
+	print("Setting a new current camera: ", camera)
 	print("Camera's viewport is: ", camera.get_viewport())
 	print("Camera's window is: ", camera.get_window())
 	if current_camera_remote_transform != null:
@@ -1197,7 +1101,77 @@ func set_camera_as_current(camera : Camera3D):
 	if current_camera.attributes != null:
 		current_camera.attributes.dof_blur_near_enabled = false
 		current_camera.attributes.dof_blur_far_enabled = false
+
+# Function used to find canvas layers used in flatscreen game, which do not display in VR, and re-route their output to main viewport2din3d screen
+func find_and_set_canvas_layers():
+	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
+	#print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
+	
+	if potential_canvas_layer_nodes != []:
 		
+		for canvas_layer in potential_canvas_layer_nodes:
+			if canvas_layer.visible == true and not canvas_layer.is_in_group("active_canvas_layers"):
+				print("making canvas layer active: ", canvas_layer)
+				canvas_layer.add_to_group("active_canvas_layers")
+				canvas_layer.set_custom_viewport(xr_main_viewport2d_in_3d_subviewport)
+
+# Tries to find the active world environment and return it, or returns null if cannot find
+func find_active_world_environment_or_null():
+	var world_environment = get_node("/root").find_child("*Environment*", true, false)
+	# If found node is not actually the WorldEnvironment, check its children, and use the first one:
+	if world_environment and not world_environment.is_class("WorldEnvironment"):
+		world_environment = world_environment.find_children("*", "WorldEnvironment", true, false)[0]
+	# If no node found or node is still not the WorldEnvironment, try running a search of lower case environment
+	if world_environment == null or not world_environment.is_class("WorldEnvironment"):
+		world_environment = get_node("/root").find_child("*environment*", true, false)
+	# If we found the world environment, return it, else return null
+	if world_environment and world_environment.is_class("WorldEnvironment"):
+		return world_environment
+	else:
+		return null
+
+# Attempts to find the characterbody3d used in the flatscreen game by various methods and return it, or null if none is found
+func find_and_set_player_characterbody3d_or_null():
+	var potential_character_body_node = null
+	# Only search for characterbody if we have a present camera in the scene driving the xr origin
+	if is_instance_valid(current_camera):
+		# First try non-recursive search for "typical" FPS setups
+		print("Trying to find characterbody 3D for roomscale....")
+		potential_character_body_node = current_camera.get_parent_node_3d()
+		# if parent of active camera not a Characterbody3D continue search
+		if is_instance_valid(potential_character_body_node):
+			if !potential_character_body_node.is_class("CharacterBody3D"):
+				print("parent of current camera is not CharacterBody3D, trying again")
+				potential_character_body_node = potential_character_body_node.get_parent_node_3d()
+				if is_instance_valid(potential_character_body_node) and !potential_character_body_node.is_class("CharacterBody3D"):
+					print("parent of parent of current camera is not CharacterBody3D, ending simple search.")
+					potential_character_body_node = null
+					var potential_character_bodies : Array = get_node("/root").find_children("*", "CharacterBody3D", true, false)
+					print("now checking all other character bodies")
+					print(potential_character_bodies)
+					if potential_character_bodies.size() == 1:
+						print("Only one characterbody3d found, assuming it's our player.")
+						return potential_character_bodies[0]
+					elif potential_character_bodies.size() > 1:
+						for body in potential_character_bodies:
+							if body.is_ancestor_of(current_camera):
+								print("Winning characterbody from recursive search found: ", body)
+								return body
+								break
+							elif body.name.to_lower().contains("player") or body.name.to_lower().contains("controller"):
+								print("Winning characterbody from recursive search with name search found: ", body)
+								return body
+								break
+				else:
+					print("Character body found as parent of parent of current camera, sending to roomscale node: ", potential_character_body_node)
+					return potential_character_body_node
+		else:
+			print("Character body found as parent to current camera, sending to roomscale node: ", potential_character_body_node)
+			return potential_character_body_node
+	
+	# If no body has been returned at the end of everything, return null instead
+	return null
+
 # Function to pull current state of config handler game options variables to set same xr scene variables based on user config
 func set_xr_game_options():
 	# Load camera options
@@ -1339,3 +1313,52 @@ func _on_xr_config_handler_xr_game_control_map_cfg_saved(_path_to_file : String)
 # Reciever function for config file signal that action map options have been saved	
 func _on_xr_config_handler_xr_game_action_map_cfg_saved(_path_to_file : String):
 	set_xr_action_map_options()
+
+
+
+# -----------------------------------------------------
+# EXPERIMENTAL SECTION - NOT FOR FINAL INJECTOR
+
+# Tests only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
+func _set_vostok_gun(delta):
+
+	if is_instance_valid(xr_roomscale_controller.camera_3d):
+		var vostok_weapons_node = xr_roomscale_controller.camera_3d.find_child("Weapons", false, false)
+		if vostok_weapons_node != null:
+			if vostok_weapons_node.get_child_count(true) > 0:
+				var vostok_weapon = vostok_weapons_node.get_child(0, true)
+				#print(vostok_weapon)
+				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				#print(vostok_weapon_mesh)
+				#vostok_weapon_mesh.set_as_top_level(true)
+				var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
+				if vostok_arms:
+					vostok_arms.visible = false
+				xr_reparenting_active = true
+				xr_reparented_object_180_degrees = true
+				handle_node_reparenting(delta, vostok_weapon_mesh)
+				
+	elif is_instance_valid(current_camera):
+		var vostok_weapons_node = current_camera.find_child("Weapons", false, false)
+		if vostok_weapons_node != null:
+			if vostok_weapons_node.get_child_count(true) > 0:
+				var vostok_weapon = vostok_weapons_node.get_child(0, true)
+				#print(vostok_weapon)
+				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				#print(vostok_weapon_mesh)
+				#vostok_weapon_mesh.set_as_top_level(true)
+				var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
+				if vostok_arms:
+					vostok_arms.visible = false
+				xr_reparenting_active = true
+				xr_reparented_object_180_degrees = true
+				handle_node_reparenting(delta, vostok_weapon_mesh)
+
+# Same, just experimental
+func _set_beton_gun(delta : float):
+	var gun_node = get_tree().get_root().get_node_or_null("LowresRoot/LowResViewport/Player/RotPoint")
+	if gun_node != null and xr_origin_reparented:
+		xr_reparenting_active = true
+		handle_node_reparenting(delta, gun_node)
+
+
