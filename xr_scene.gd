@@ -31,11 +31,9 @@ extends Node3D
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
-# Variables to hold mapping other events necessary for gamepad emulation with motion controllers
-var primary_action_map : Dictionary
-var secondary_action_map : Dictionary
 
-# Variables to hold emulated gamepad/joypad events that are triggered by motion controllers
+
+# Internal variables to hold emulated gamepad/joypad events that are triggered by motion controllers
 var secondary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var secondary_y_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
 var primary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
@@ -45,16 +43,16 @@ var dpad_down : InputEventJoypadButton = InputEventJoypadButton.new()
 var dpad_left : InputEventJoypadButton = InputEventJoypadButton.new()
 var dpad_right : InputEventJoypadButton = InputEventJoypadButton.new()
 
-# Store state of dpad toggle
+# Internal variables to store state of dpad toggle
 var dpad_toggle_active : bool = false
 
-# Store state of start activation
+# Internal variables to store state of start activation
 var start_toggle_active : bool = false
 
-# Store state of select activation
+# Internal variables to store state of select activation
 var select_toggle_active : bool = false
 
-# Internal variables to prepare for eventual user configs to set primary and secondary controllers
+# Internal variables for user configs to set primary and secondary controllers
 var primary_controller : XRController3D
 var primary_detection_area : Area3D
 var secondary_controller = XRController3D
@@ -69,17 +67,34 @@ var already_set_up : bool = false
 var user_height : float = 0.0
 var xr_origin_reparented : bool = false
 var backup_xr_origin : XROrigin3D = null
-var welcome_label_already_shown : bool = false
+var manually_set_camera : bool = false
+var manual_set_possible_xr_cameras_idx : int = 0
+
+# Internal variables for using cursor3d (mesh attached to active flatscreen camera to enable easier object picking)
 var cursor_3d : MeshInstance3D = MeshInstance3D.new()
 var cursor_3d_sphere : SphereMesh = SphereMesh.new()
 var long_range_cursor_3d : MeshInstance3D = MeshInstance3D.new()
 var long_range_cursor_3d_sphere : SphereMesh = SphereMesh.new()
 var unshaded_material : StandardMaterial3D = StandardMaterial3D.new()
 var target_xr_viewport : Viewport = null
+
+# Internal variables used for reparenting nodes to controllers and smoothing motion
 var xr_reparenting_active : bool = false
 var xr_two_handed_aim : bool = false
-var manually_set_camera : bool = false
-var manual_set_possible_xr_cameras_idx : int = 0
+var x_filter # Should probably create a new one of each of these dynamically for each reparented object, as they track last location of object
+var y_filter
+var z_filter
+
+# Internal variables used for Decacis stick turning
+const DEADZONE : float = 0.65
+var last_stick_val : Vector2 = Vector2.ZERO
+var current_controller = null
+var currently_rotating : bool = false
+var already_performed_rotation : bool = false
+
+# Internal variable to store whether welcome screen already shown
+var welcome_label_already_shown : bool = false
+
 # User control configs
 # Button to toggle VR pointers with head gesture - eventually configurable
 var pointer_gesture_toggle_button = "trigger_click"
@@ -107,6 +122,10 @@ var ugvr_menu_toggle_combo : Dictionary = {}
 
 # Selected side for primary controller - left / right
 var primary_controller_selection : String = "right"
+
+# Variables to hold mapping other events necessary for gamepad emulation with motion controllers
+var primary_action_map : Dictionary
+var secondary_action_map : Dictionary
 
 # Additional user config variables
 var xr_world_scale : float = 1.0
@@ -158,13 +177,6 @@ var turning_speed : float = 90.0
 var turning_degrees : float = 30.0
 var stick_turn_controller : String = "primary_controller"
 
-# Internal variables used for Decacis stick turning
-const DEADZONE : float = 0.65
-var last_stick_val : Vector2 = Vector2.ZERO
-var current_controller = null
-var currently_rotating : bool = false
-var already_performed_rotation : bool = false
-
 # Variables for moving viewport2din3d nodes - they start as childed to the origin and then moved as necessary
 enum XR_VIEWPORT_LOCATION {
 	CAMERA = 0,
@@ -188,7 +200,7 @@ var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 var autosave_action_map_duration_in_secs : int = 0
 var xr_reparented_object_180_degrees : bool = false
 
-# Experimental variables only - not for final mod
+# Experimental variables only - not for final mod - use to test reparenting nodes to VR controllers
 var use_vostok_gun_finding_code : bool = false
 var use_beton_gun_finding_code : bool = false
 
@@ -222,7 +234,6 @@ func _ready() -> void:
 	unshaded_material.disable_ambient_light = true
 	unshaded_material.disable_receive_shadows = true
 	unshaded_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	# should we use render priority and no depth test here? Needs testing
 	unshaded_material.no_depth_test = true
 	unshaded_material.render_priority = 2
 	
@@ -258,6 +269,7 @@ func _ready() -> void:
 		"cutoff": allowed_jitter,
 		"beta": lag_reduction,
 	}
+	# Should probably create these dynamically for each reparented object, and pass them through to the smoothing function for better stability
 	x_filter = OneEuroFilter.new(args)
 	y_filter = OneEuroFilter.new(args)
 	z_filter = OneEuroFilter.new(args)
@@ -377,7 +389,7 @@ func _eval_tree_new() -> void:
 					camera.get_node("Cursor3D").visible = false
 					camera.get_node("LongRangeCursor3D").visible = false
 	# Find canvas layer and display it
-	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled
+	# This works, only remaining problem is canvas layer is too small in some games, likely because canvas layer or content have been downscaled, but this can be fixed by setting the viewport size with user configs
 	var potential_canvas_layer_nodes : Array = get_node("/root").find_children("*", "CanvasLayer", true, false)
 	#print("Potential canvas layer nodes: ", potential_canvas_layer_nodes)
 	
@@ -418,9 +430,6 @@ func _eval_tree_new() -> void:
 	
 	# If using roomscale, find current characterbody parent of camera, if any, then send to roomscale controller and enable it
 	if !is_instance_valid(current_roomscale_character_body) and use_roomscale == true:
-		# If no valid character body make sure xr roomscale controller is off
-		#xr_roomscale_controller.set_enabled(false)
-		#xr_roomscale_controller.set_characterbody3D(null)
 		var potential_character_body_node = null
 		# Only search for characterbody if we have a present camera in the scene driving the xr origin
 		if is_instance_valid(current_camera):
@@ -457,7 +466,7 @@ func _eval_tree_new() -> void:
 			else:
 				print("Character body found as parent to current camera, sending to roomscale node: ", potential_character_body_node)
 				current_roomscale_character_body = potential_character_body_node
-		#if current_roomscale_character_body != null:
+
 		# If we now found a roomscale body, reparent xr origin 3D to character body
 		if is_instance_valid(current_roomscale_character_body) and xr_origin_reparented == false:
 			current_camera_remote_transform.remote_path = ""
@@ -892,9 +901,7 @@ func handle_node_reparenting(delta : float, reparented_node : Node3D):
 		#reparented_node.global_transform = xr_reparenting_node_holder.global_transform
 		handle_reparented_node_smoothing(delta, xr_reparenting_node_holder, reparented_node)
 
-var x_filter
-var y_filter
-var z_filter		
+
 # Try to smooth movement of reparented node to minimize jitter
 func handle_reparented_node_smoothing(delta : float, source_node : Node3D, destination_node : Node3D):
 	if is_instance_valid(source_node) and is_instance_valid(destination_node):
@@ -1102,11 +1109,6 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 func setup_viewports():
 	if disable_2d_ui == false:
 		print("Viewport world2d: ", get_viewport().world_2d)
-		# Possible future options but seem to be unnecessary for now
-		#get_viewport().vrs_mode = Viewport.VRS_DISABLED
-		#get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-		#get_viewport().use_hdr_2d = false
-		#get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
 		xr_main_viewport2d_in_3d._update_render()
 
@@ -1124,7 +1126,6 @@ func setup_viewports():
 
 	# Setup secondary viewport for use with canvaslayer node contents, if any found and set sizes of primary and secondary viewports
 	xr_main_viewport2d_in_3d.set_viewport_size(xr_standard_viewport_size * primary_viewport_size_multiplier)
-	#xr_secondary_viewport2d_in_3d.set_viewport_size(xr_main_viewport2d_in_3d.viewport_size)
 	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_standard_viewport_size * secondary_viewport_size_multiplier)
 	
 
