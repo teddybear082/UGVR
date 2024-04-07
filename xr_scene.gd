@@ -203,6 +203,7 @@ var xr_reparented_object_180_degrees : bool = false
 # Experimental variables only - not for final mod - use to test reparenting nodes to VR controllers
 var use_vostok_gun_finding_code : bool = false
 var use_beton_gun_finding_code : bool = false
+var use_tar_object_picker_finding_code : bool = false
 
 func _ready() -> void:
 	set_process(false)
@@ -276,6 +277,9 @@ func _process(_delta : float) -> void:
 	
 	if use_beton_gun_finding_code:
 		_set_beton_gun(_delta)
+		
+	if use_tar_object_picker_finding_code:
+		_set_tar_object_picker(_delta)
 	
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
@@ -1104,7 +1108,7 @@ func set_camera_as_current(camera : Camera3D):
 	# Set XR Camera properties to current flatscreen camera3d properties
 	xr_camera_3d.cull_mask = current_camera.cull_mask
 	xr_camera_3d.doppler_tracking = current_camera.doppler_tracking
-	xr_camera_3d.environment = current_camera.environment
+	#xr_camera_3d.environment = current_camera.environment
 
 # Function used to find canvas layers used in flatscreen game, which do not display in VR, and re-route their output to main viewport2din3d screen
 func find_and_set_canvas_layers():
@@ -1365,4 +1369,12 @@ func _set_beton_gun(delta : float):
 		xr_reparenting_active = true
 		handle_node_reparenting(delta, gun_node)
 
-
+# Same, just experimental
+func _set_tar_object_picker(delta : float):
+	
+	if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
+		var object_picker_point = xr_roomscale_controller.current_characterbody3D.get_node_or_null("RotationHelper")
+		if is_instance_valid(object_picker_point) and xr_origin_reparented:
+			object_picker_point.get_node("PlayerEyes/obj_picker_point").transform.origin = Vector3(0,0,0)
+			xr_reparenting_active = true
+			handle_node_reparenting(delta, object_picker_point)
