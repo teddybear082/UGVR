@@ -660,8 +660,7 @@ func process_joystick_inputs():
 		mouse_move.relative = Vector2(primary_x_axis.axis_value, primary_y_axis.axis_value) * emulated_mouse_sensitivity_multiplier
 		Input.parse_input_event(mouse_move)
 
-# Decacis Smooth / Stick turning code
-
+# ------------------------Decacis Smooth / Stick turning code ----------------------------------------------------------
 
 # Option to use secondary stick if user config - off by default
 func secondary_stick_moved(stick_name : String, value : Vector2) -> void:
@@ -744,6 +743,7 @@ func _handle_rotation(angle : float) -> void:
 	t2.origin = xr_camera_3d.transform.origin
 	rot = rot.rotated(Vector3(0.0, -1.0, 0.0), angle) ## <-- this is the rotation around the camera
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
+# ---------------------END OF DECASIS STICK TURNING CODE -----------------------------------------------
 
 # Handle reparenting game elements
 func handle_node_reparenting(delta : float, reparented_node : Node3D):
@@ -933,7 +933,7 @@ func setup_viewports():
 	xr_main_viewport2d_in_3d.set_viewport_size(xr_standard_viewport_size * primary_viewport_size_multiplier)
 	xr_secondary_viewport2d_in_3d.set_viewport_size(xr_standard_viewport_size * secondary_viewport_size_multiplier)
 	
-
+# Used when setting viewport locations (camera, controllers)
 func reparent_viewport(viewport_node, viewport_location):
 	var viewport_parent = viewport_node.get_parent()
 	
@@ -973,7 +973,7 @@ func reparent_viewport(viewport_node, viewport_location):
 		if viewport_node == xr_main_viewport2d_in_3d:
 			viewport_node.transform.origin = Vector3(0,0.005,0) * xr_world_scale
 
-# Function to set radial menu
+# Function to setup radial menu
 func setup_radial_menu():
 	# Enable and set up radial menu if using it
 	if use_xr_radial_menu:
@@ -1101,6 +1101,10 @@ func set_camera_as_current(camera : Camera3D):
 	if current_camera.attributes != null:
 		current_camera.attributes.dof_blur_near_enabled = false
 		current_camera.attributes.dof_blur_far_enabled = false
+	# Set XR Camera properties to current flatscreen camera3d properties
+	xr_camera_3d.cull_mask = current_camera.cull_mask
+	xr_camera_3d.doppler_tracking = current_camera.doppler_tracking
+	xr_camera_3d.environment = current_camera.environment
 
 # Function used to find canvas layers used in flatscreen game, which do not display in VR, and re-route their output to main viewport2din3d screen
 func find_and_set_canvas_layers():
