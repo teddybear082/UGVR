@@ -1366,6 +1366,7 @@ func _set_vostok_gun(delta):
 func _set_beton_gun(delta : float):
 	var gun_node = get_tree().get_root().get_node_or_null("LowresRoot/LowResViewport/Player/RotPoint")
 	if gun_node != null and xr_origin_reparented:
+		gun_node.get_node("GunHold").transform.origin = Vector3(0,0,0)
 		xr_reparenting_active = true
 		handle_node_reparenting(delta, gun_node)
 
