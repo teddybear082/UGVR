@@ -205,6 +205,9 @@ var use_tar_object_picker_finding_code : bool = false
 
 func _ready() -> void:
 	set_process(false)
+	# Turn off FSR
+	get_tree().get_root().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	get_tree().get_root().scaling_3d_scale = 1.0
 	
 	# Set relevant node signals
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
@@ -288,6 +291,10 @@ func _eval_tree() -> void:
 		target_xr_viewport = get_viewport()
 	
 	target_xr_viewport.use_xr = true
+	
+	# Turn off FSR
+	get_tree().get_root().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	get_tree().get_root().scaling_3d_scale = 1.0
 	
 	# Ensure Vsync stays OFF!
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -826,6 +833,9 @@ func handle_reparented_node_smoothing(delta : float, source_node : Node3D, desti
 
 # Handle initiation of xr
 func _on_xr_started():
+	# Turn off FSR
+	get_tree().get_root().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	get_tree().get_root().scaling_3d_scale = 1.0
 	# Only set up once not every time user goes in and out of VR
 	if already_set_up:
 		return
@@ -892,6 +902,10 @@ func _on_xr_origin_exiting_tree():
 		target_xr_viewport = get_viewport()
 
 func _setup_new_xr_origin(new_origin : XROrigin3D):
+	# Turn off FSR
+	get_tree().get_root().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	get_tree().get_root().scaling_3d_scale = 1.0
+	
 	add_child(new_origin)
 	xr_origin_3d = new_origin
 	xr_origin_3d.current = true
