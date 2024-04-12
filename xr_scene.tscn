@@ -130,6 +130,7 @@ wait_time = 180.0
 script = ExtResource("7_hw5k1")
 
 [node name="XRMenuViewport2Din3D" parent="." instance=ExtResource("3_f316b")]
+process_mode = 3
 visible = false
 enabled = false
 scene = ExtResource("10_cjn2i")

@@ -70,6 +70,7 @@ var xr_origin_reparented : bool = false
 var backup_xr_origin : XROrigin3D = null
 var manually_set_camera : bool = false
 var manual_set_possible_xr_cameras_idx : int = 0
+var ugvr_menu_showing : bool = false
 
 # Internal variables for using cursor3d (mesh attached to active flatscreen camera to enable easier object picking)
 var cursor_3d : MeshInstance3D = MeshInstance3D.new()
@@ -276,7 +277,8 @@ func _process(_delta : float) -> void:
 	if !is_instance_valid(xr_left_controller) or !is_instance_valid(xr_right_controller) or use_physical_gamepad_only:
 		return
 	# Process emulated joypad inputs
-	process_joystick_inputs()
+	if !ugvr_menu_showing:
+		process_joystick_inputs()
 
 
 # Constantly checks for current camera 3D, canvaslayers, world environment and roomscale body (if roomscale enabled)
@@ -461,6 +463,9 @@ func handle_primary_xr_inputs(button):
 		# Increase index for next time button is pressed
 		manual_set_possible_xr_cameras_idx -=1
 	
+	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
+	if ugvr_menu_showing:
+		return
 	# If user just pressed activation button, activate special combo buttons
 	if button == dpad_activation_button:
 		dpad_toggle_active = true
@@ -478,6 +483,10 @@ func handle_primary_xr_inputs(button):
 	
 # Handle release of buttons on primary controller
 func handle_primary_xr_release(button):
+	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
+	if ugvr_menu_showing:
+		return
+	
 	#print("primary button released: ", button)
 	if button == dpad_activation_button:
 		dpad_toggle_active = false
@@ -501,6 +510,7 @@ func handle_secondary_xr_inputs(button):
 		ugvr_menu_viewport.global_transform = ugvr_menu_holder.global_transform
 		ugvr_menu_viewport.visible = !ugvr_menu_viewport.visible
 		ugvr_menu_viewport.set_enabled(!ugvr_menu_viewport.enabled)
+		ugvr_menu_showing = ugvr_menu_viewport.enabled
 
 
 	# If button is assigned to load action map (temporary,this should be a GUI option) and making gesture, load action map
@@ -511,6 +521,10 @@ func handle_secondary_xr_inputs(button):
 		if use_jog_movement:
 			xr_physical_movement_controller.detect_game_sprint_events()
 	
+	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
+	if ugvr_menu_showing:
+		return
+		
 	if start_toggle_active and button == start_button:
 		var event = InputEventJoypadButton.new()
 		event.button_index = JOY_BUTTON_START
@@ -531,6 +545,9 @@ func handle_secondary_xr_inputs(button):
 	
 # Handle release of buttons on VR Controller assigned as secondary	
 func handle_secondary_xr_release(button):
+	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
+	if ugvr_menu_showing:
+		return
 	#print("secondary button released: ", button)
 	if button == start_button:
 		var event = InputEventJoypadButton.new()
@@ -552,6 +569,9 @@ func handle_secondary_xr_release(button):
 
 # Handle analogue button presses on VR controller assigned as primary
 func handle_primary_xr_float(button, value):
+	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
+	if ugvr_menu_showing:
+		return
 	#print(button)
 	#print(value)
 	if button == "trigger":
@@ -571,6 +591,9 @@ func handle_primary_xr_float(button, value):
 
 # Handle analogue button presses on VR Controller assigned as secondary	 	
 func handle_secondary_xr_float(button, value):
+	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
+	if ugvr_menu_showing:
+		return
 	#print(button)
 	#print(value)
 	if button == "trigger":
