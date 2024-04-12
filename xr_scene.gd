@@ -28,6 +28,7 @@ extends Node3D
 @onready var xr_black_out : Node3D = xr_camera_3d.get_node("BlackOut")
 @onready var ugvr_menu_viewport : Node3D = get_node("XRMenuViewport2Din3D")
 @onready var ugvr_menu_2d = ugvr_menu_viewport.get_scene_instance()
+@onready var ugvr_menu_holder = xr_camera_3d.get_node("UGVRMenuHolder")
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
@@ -497,10 +498,7 @@ func handle_secondary_xr_inputs(button):
 
 	# If pressing pointer activation button and making gesture, toggle UGVR menu
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
-		ugvr_menu_viewport.global_transform = xr_camera_3d.global_transform
-		ugvr_menu_viewport.global_transform.origin -= xr_camera_3d.transform.basis.z.normalized() * 1.25
-		ugvr_menu_viewport.global_transform.origin -= xr_camera_3d.transform.basis.y.normalized()*.5
-		ugvr_menu_viewport.rotation.z = 0
+		ugvr_menu_viewport.global_transform = ugvr_menu_holder.global_transform
 		ugvr_menu_viewport.visible = !ugvr_menu_viewport.visible
 		ugvr_menu_viewport.set_enabled(!ugvr_menu_viewport.enabled)
 

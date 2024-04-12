@@ -50,6 +50,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -3.2)
 viewport_size = Vector2(1920, 1080)
 unshaded = true
 
+[node name="UGVRMenuHolder" type="Node3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -1.65)
+
 [node name="GestureArea" type="Area3D" parent="XROrigin3D/XRCamera3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 collision_layer = 0
