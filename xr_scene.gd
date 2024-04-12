@@ -511,7 +511,10 @@ func handle_secondary_xr_inputs(button):
 		ugvr_menu_viewport.visible = !ugvr_menu_viewport.visible
 		ugvr_menu_viewport.set_enabled(!ugvr_menu_viewport.enabled)
 		ugvr_menu_showing = ugvr_menu_viewport.enabled
-
+		if ugvr_menu_showing:
+			xr_pointer.collision_mask = 4194304 # layer 23 - layer ugvr menu is now on
+		else:
+			xr_pointer.collision_mask = 1048576 #  layer 21 - layer the other two viewports are now on
 
 	# If button is assigned to load action map (temporary,this should be a GUI option) and making gesture, load action map
 	if button == gesture_load_action_map_button and gesture_area.overlaps_area(secondary_detection_area):

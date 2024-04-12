@@ -133,6 +133,7 @@ script = ExtResource("7_hw5k1")
 process_mode = 3
 visible = false
 enabled = false
+collision_layer = 4194304
 scene = ExtResource("10_cjn2i")
 viewport_size = Vector2(1920, 1080)
 transparent = 0
