@@ -63,26 +63,19 @@ shape = SubResource("SphereShape3D_10cyd")
 
 [node name="WelcomeLabel3D" type="Label3D" parent="XROrigin3D/XRCamera3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -2)
-visible = false
 render_priority = 1
 modulate = Color(0.854902, 0.866667, 0.211765, 1)
-text = "Welcome to the earliest alpha of
-Godot Universal VR Injector! (UGVR)
+text = "Welcome to the earliest alpha of Godot Universal VR Injector! (UGVR)
 
--Special Keybinds:
-(Gesture) Place your hand over head 
-and press trigger to toggle menu pointers
 
-DPad, Start and Select Activation Button: 
-Hold your thumb on the right thumbstick
+Toggle your menu pointer by raising your right hand over your head and pressing trigger.
 
- --Dpad: Left thumbstick (when activated)
+Toggle the UGVR menu (WIP), which has more instructions, by raising your left hand over your head and pressing trigger.
 
---Start: Left Thumbstick Click (when activated)
-
---Select: Left B/Y button (when activated)"
+Have fun!"
 font_size = 14
-width = 1500.0
+autowrap_mode = 2
+width = 350.0
 
 [node name="BlackOut" parent="XROrigin3D/XRCamera3D" instance=ExtResource("4_ny8kq")]
 

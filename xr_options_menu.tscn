@@ -25,10 +25,8 @@ theme_override_constants/margin_bottom = 24
 [node name="TabContainer" type="TabContainer" parent="MarginContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-current_tab = 2
 
 [node name="VR General Information" type="MarginContainer" parent="MarginContainer/TabContainer"]
-visible = false
 layout_mode = 2
 
 [node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/TabContainer/VR General Information"]
@@ -57,26 +55,25 @@ fit_content = true
 layout_mode = 2
 theme_override_font_sizes/normal_font_size = 24
 text = "Here you can find all the options for configuring your VR experience.
+--------------------------------------------------------------------------------------------------------------
+Toggle your menu pointers:	Raise your primary hand over your head and press trigger.
 
-To toggle your menu pointers, raise your primary hand (default: right hand) over your head and press your controller trigger.
+Toggle this menu:	Raise your secondary hand over your head and press trigger.
 
-To toggle this menu, raise your secondary hand (default: left hand) over your head and press your controller trigger.
+Set your height:	Raise your primary hand over your head and press the B/Y button.
 
-Set your height by raising your primary hand over your head and pressing the B/Y button.
+Reload your VR custom control settings:	Raise your secondary hand over your head and press the B/Y button.
 
-Reload your VR custom control settings by raising your secondary hand over your head and pressing the B/Y button.
-
-These default gesture buttons and primary / secondary controllers can be configured in the VR Control Options tab.
-
+--------------------------------------------------------------------------------------------------------------
 By default, your motion controllers will emulate a PSX/XBox style gamepad.
 
-In the VR ACTION MAP OPTIONS tab, you will find options to configure an optional wrist radial menu and can map gamepad buttons to game actions.
+By default, hold your thumb on primary thumbstick as a hotkey to activate virtual dpad (secondary thumbstick directions), start (secondary thumbstick click) and select button (secondary b/y button)
 
-In the VR CONTROL OPTIONS tab, you can set the default gamepad face buttons assigned to motion controller buttons, assign gesture buttons, swap primary and secondary hands, and set hotkey/modifier bittons that will activate start, select and dpad gamepad buttons.
+VR ACTION MAP:	 Configure a wrist radial menu, map gamepad buttons to game actions.
 
-In the VR GAME OPTIONS tab, you can set the location of menus ( \" viewports\") in VR space, set their resolutions, set custom offsets, and enable roomscale movement for first person games as well as 3D cursors (short and long distance).
+VR CONTROL OPTIONS:	 Assign gamepad face buttons to motion controller buttons, assign gesture buttons, swap primary and secondary hands, and set hotkey/modifier buttons.
 
-In the VR ADVANCED OPTIONS tab, you can attempt to reparent game elements manually and explore ofher advanced or experimental features."
+VR GAME OPTIONS:	Set the location of menus ( \"viewports\") in VR space, and enable roomscale for FPS."
 fit_content = true
 
 [node name="VR Action Map Options" type="MarginContainer" parent="MarginContainer/TabContainer"]
@@ -290,6 +287,7 @@ popup/item_25/text = "needs_joypad_mapping"
 popup/item_25/id = 25
 
 [node name="VR Control Options" type="MarginContainer" parent="MarginContainer/TabContainer"]
+visible = false
 layout_mode = 2
 
 [node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/TabContainer/VR Control Options"]
