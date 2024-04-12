@@ -908,6 +908,7 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
 	xr_radial_menu = get_node("XRRadialMenu")
 	xr_black_out = xr_camera_3d.get_node("BlackOut")
+	ugvr_menu_holder = xr_camera_3d.get_node("UGVRMenuHolder")
 	
 	# Set XR worldscale
 	xr_origin_3d.world_scale = xr_world_scale
