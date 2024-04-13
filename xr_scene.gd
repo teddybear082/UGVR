@@ -314,6 +314,14 @@ func _eval_tree() -> void:
 	
 	# If active world environment found, and it has camera attributes, set any blurring to false, as blurring looks bad in VR
 	if active_world_environment:
+		# Turn off ssao,ssil, and ssr which are performance hogs
+		if active_world_environment.ssil_enabled == true:
+			active_world_environment.ssil_enabled = false
+		if active_world_environment.ssao_enabled == true:
+			active_world_environment.ssao_enabled = false
+		if active_world_environment.ssr_enabled == true:
+			active_world_environment.ssr_enabled = false
+		
 		if active_world_environment.camera_attributes != null:
 			active_world_environment.camera_attributes.dof_blur_near_enabled = false
 			active_world_environment.camera_attributes.dof_blur_far_enabled = false
