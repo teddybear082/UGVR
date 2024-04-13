@@ -54,7 +54,7 @@ Not presently intended for regular users as this tool is in heavy development / 
 
 -Lejar for radial menu code again: https://github.com/lejar 
 
--Godot XR Tools team - going to be heavily leveraging scripts from Godot XR Tools
+-Godot XR Tools team - going to be heavily leveraging scripts from Godot XR Tools: https://github.com/GodotVR/godot-xr-tools
 
  -Check out MalcolmNixon's Youtube here: https://www.youtube.com/@MalcolmANixon
 
