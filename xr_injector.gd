@@ -4,6 +4,8 @@ extends Node
 # May just wind up using local files again once custom global classes are removed from scripts for ease of use, remains to be seen.
 func _init() -> void:
 	print("loading injector files")
+	print("Size of game window found in injector.gd: ", DisplayServer.window_get_size())
+	print("Size (resolution) of screen found in injector.gd: ", DisplayServer.screen_get_size())
 	#var loaded = ProjectSettings.load_resource_pack("res://injector_src.zip")
 	#if loaded == true:
 	#	print("loaded injector files")
