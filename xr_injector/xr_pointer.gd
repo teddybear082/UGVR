@@ -84,7 +84,7 @@ const SUPPRESS_MASK := 0b0000_0000_0100_0000_0000_0000_0000_0000
 @export_flags_3d_physics var suppress_mask : int = SUPPRESS_MASK: set = set_suppress_mask
 
 ## Hack for Using XRToolsPointerEvent without custom classes
-@onready var XRToolsPointerEvent = preload("res://xr_pointer_event.gd").new()
+@onready var XRToolsPointerEvent = preload("res://xr_injector/xr_pointer_event.gd").new()
 ## Current target node
 var target : Node3D = null
 
@@ -110,7 +110,7 @@ var _controller  : XRController3D
 var _active_controller : XRController3D
 
 # Reference to XR Helpers script
-var XRHelpers = load("res://xr_helpers.gd").new()
+var XRHelpers = load("res://xr_injector/xr_helpers.gd").new()
 ## Add support for is_xr_class on XRTools classes
 func is_xr_class(name : String) -> bool:
 	return name == "XRToolsFunctionPointer"

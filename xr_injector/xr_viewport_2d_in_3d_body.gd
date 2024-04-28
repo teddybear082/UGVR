@@ -10,7 +10,7 @@ signal pointer_event(event)
 @export var viewport_size = Vector2(100.0, 100.0)
 
 ## Hack to allow use of XRToolsPointerEvent without using custom class
-@onready var XRToolsPointerEvent = preload("res://xr_pointer_event.gd").new()
+@onready var XRToolsPointerEvent = preload("res://xr_injector/xr_pointer_event.gd").new()
 
 # Current mouse mask
 var _mouse_mask := 0

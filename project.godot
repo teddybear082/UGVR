@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="UGVR"
-run/main_scene="res://xr_scene.tscn"
+run/main_scene="res://xr_injector/xr_scene.tscn"
 config/features=PackedStringArray("4.2", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -22,4 +22,5 @@ window/vsync/vsync_mode=0
 [xr]
 
 openxr/enabled=true
+openxr/default_action_map="res://xr_injector/openxr_action_map.tres"
 shaders/enabled=true

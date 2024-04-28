@@ -112,6 +112,10 @@ func _setup_for_openxr() -> bool:
 	# Disable vsync
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 
+	# Turn off FSR
+	get_tree().root.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	get_tree().root.scaling_3d_scale = 1.0
+	
 	# Switch the viewport to XR
 	get_viewport().use_xr = true
 
@@ -151,6 +155,9 @@ func _on_openxr_session_begun() -> void:
 	print("Setting physics rate to ", physics_rate)
 	Engine.physics_ticks_per_second = physics_rate
 
+	# Turn off FSR
+	get_tree().root.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	get_tree().root.scaling_3d_scale = 1.0
 
 # Handle OpenXR visible state
 func _on_openxr_visible_state() -> void:

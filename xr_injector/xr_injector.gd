@@ -14,7 +14,7 @@ func _init() -> void:
 		
 func _ready() -> void:
 	print("Now loading xr_scene.")
-	var xr_scene : PackedScene = load("res://xr_scene.tscn")
+	var xr_scene : PackedScene = load("res://xr_injector/xr_scene.tscn")
 	get_node("/root").call_deferred("add_child", xr_scene.instantiate())
 
 # No method of trying to add to custom classes works, so need to refactor not to use custom classes for now, saving prior work
