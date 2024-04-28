@@ -222,6 +222,8 @@ var camera_offset : Vector3 = Vector3(0,0,0)
 
 var experimental_passthrough : bool = false
 
+var xr_use_vehicle_mode : bool = false
+
 ## VIEWPORTS Config Options
 
 enum XR_VIEWPORT_LOCATION {
@@ -336,6 +338,7 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	xr_world_scale = game_options_cfg_file.get_value("CAMERA_OPTIONS", "xr_world_scale", xr_world_scale)
 	camera_offset = game_options_cfg_file.get_value("CAMERA_OPTIONS", "camera_offset", camera_offset)
 	experimental_passthrough = game_options_cfg_file.get_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
+	xr_use_vehicle_mode = game_options_cfg_file.get_value("CAMERA_OPTIONS", "xr_use_vehicle_mode", xr_use_vehicle_mode)
 
 	# Load viewport options
 	xr_main_viewport_location = game_options_cfg_file.get_value("VIEWPORTS_OPTIONS", "xr_main_viewport_location", xr_main_viewport_location)
@@ -383,6 +386,7 @@ func save_game_options_cfg_file(file_path):
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "xr_world_scale", xr_world_scale)
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "camera_offset", camera_offset)
 	game_options_cfg_file.set_value("CAMERA_OPTIONS", "experimental_passthrough", experimental_passthrough)
+	game_options_cfg_file.set_value("CAMERA_OPTIONS", "xr_use_vehicle_mode", xr_use_vehicle_mode)
 
 	# Save viewport options
 	

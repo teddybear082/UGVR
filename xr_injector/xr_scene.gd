@@ -129,6 +129,7 @@ var secondary_action_map : Dictionary
 # Additional user config variables
 var xr_world_scale : float = 1.0
 var experimental_passthrough : bool = false
+var xr_use_vehicle_mode : bool = false
 var disable_2d_ui : bool = false  # Not presently in config - ever give option?
 var gui_embed_subwindows : bool = false # Not presently in config - ever give option?
 var show_welcome_label : bool = true
@@ -1093,7 +1094,10 @@ func find_and_set_active_camera_3d():
 				print("Camera's window is: ", camera.get_window())
 				remote_t = RemoteTransform3D.new()
 				remote_t.name = "XRRemoteTransform"
-				remote_t.update_rotation = false
+				if xr_use_vehicle_mode:
+					remote_t.update_rotation = true
+				else:
+					remote_t.update_rotation = false
 				remote_t.update_scale = false
 				remote_t.remote_path = ""
 				camera.add_child(remote_t)
@@ -1273,6 +1277,7 @@ func set_xr_game_options():
 	xr_world_scale = xr_config_handler.xr_world_scale
 	camera_offset = xr_config_handler.camera_offset
 	experimental_passthrough = xr_config_handler.experimental_passthrough
+	xr_use_vehicle_mode = xr_config_handler.xr_use_vehicle_mode
 
 	# Load viewport options
 	xr_main_viewport_location = xr_config_handler.xr_main_viewport_location
