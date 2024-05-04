@@ -203,12 +203,13 @@ var autosave_action_map_duration_in_secs : int = 0
 var use_vostok_gun_finding_code : bool = false
 var use_beton_gun_finding_code : bool = false
 var use_tar_object_picker_finding_code : bool = false
+var currentRID = null
 
 func _ready() -> void:
 	set_process(false)
 	# Turn off FSR
-	get_tree().root.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-	get_tree().root.scaling_3d_scale = 1.0
+	currentRID = get_tree().get_root().get_viewport_rid()
+	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
 	
 	# Set relevant node signals
 	xr_start.connect("xr_started", Callable(self, "_on_xr_started"))
@@ -843,7 +844,8 @@ func handle_reparented_node_smoothing(delta : float, source_node : Node3D, desti
 # Handle initiation of xr
 func _on_xr_started():
 	# Turn off FSR
-	get_tree().root.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	currentRID = get_tree().get_root().get_viewport_rid()
+	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
 	get_tree().root.scaling_3d_scale = 1.0
 	# Only set up once not every time user goes in and out of VR
 	if already_set_up:
@@ -973,6 +975,10 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_pointer.target_material = unshaded_material
 	
 func setup_viewports():
+	# Turn off FSR
+	currentRID = get_tree().get_root().get_viewport_rid()
+	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
+	
 	if disable_2d_ui == false:
 		print("Viewport world2d: ", get_viewport().world_2d)
 		xr_main_viewport2d_in_3d_subviewport.world_2d = get_viewport().world_2d
@@ -1080,6 +1086,11 @@ func _on_xr_radial_menu_entry_selected(entry : String):
 
 # Function used by eval_tree to find the camera3d that is presently active in the flatscreen game and use it to drive XR camera and cursor3D (if used)
 func find_and_set_active_camera_3d():
+	# Turn off FSR
+	currentRID = get_tree().get_root().get_viewport_rid()
+	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
+	
+	# Set up variables used for cameras
 	var remote_t : RemoteTransform3D = null
 	var cameras : Array = get_node("/root").find_children("*", "Camera3D", true, false)
 	#print(cameras)
@@ -1200,6 +1211,11 @@ func find_active_world_environment_or_null():
 
 # Attempts to find the characterbody3d used in the flatscreen game by various methods and return it, or null if none is found
 func find_and_set_player_characterbody3d_or_null():
+	# Turn off FSR
+	currentRID = get_tree().get_root().get_viewport_rid()
+	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
+	
+	
 	var potential_character_body_node = null
 	# Only search for characterbody once we have a present camera in the scene driving the xr origin
 	if is_instance_valid(current_camera):
@@ -1421,7 +1437,7 @@ func _on_xr_config_handler_xr_game_action_map_cfg_saved(_path_to_file : String):
 
 # Tests only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
 func _set_vostok_gun(delta):
-
+	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
 	if is_instance_valid(xr_roomscale_controller) and is_instance_valid(xr_roomscale_controller.camera_3d):
 		var vostok_weapons_node = xr_roomscale_controller.camera_3d.find_child("Weapons", false, false)
 		if vostok_weapons_node != null:
