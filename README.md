@@ -44,7 +44,7 @@ https://vimeo.com/924331826
 
 ## Use
 
-Not presently intended for regular users as this tool is in heavy development / testing, and the code may regularly break or change. For devs or testers, see instructions in Wiki: https://github.com/teddybear082/UGVR/wiki/Getting-Started
+Not presently intended for regular users as this tool is in heavy development / testing, and the code may regularly break or change. For devs or testers, see instructions in Wiki: https://github.com/teddybear082/UGVR/wiki/1.-Getting-Started
 
 # CREDITS
 
