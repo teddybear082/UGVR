@@ -32,8 +32,12 @@ extends Node3D
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
-# Internal variable for xr hand material
-var xr_ghost_hand_material = preload("res://xr_injector/hands/materials/ghost_hand.tres")
+# Inrernal variables for xr hands and material (will be set in script)
+var show_xr_hands : bool = true
+var xr_left_hand : Node3D = null
+var xr_right_hand : Node3D = null
+var xr_hand_material = preload("res://xr_injector/hands/materials/labglove_transparent.tres")
+var xr_hand_material_choice : int = 0
 
 # Internal variables to hold emulated gamepad/joypad events that are triggered by motion controllers
 var secondary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
@@ -262,13 +266,15 @@ func _ready() -> void:
 	
 	# Set up XR hands
 	var xr_left_hand_scene : PackedScene = load("res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn")
-	var xr_left_hand = xr_left_hand_scene.instantiate()
+	xr_left_hand = xr_left_hand_scene.instantiate()
 	xr_left_controller.add_child(xr_left_hand)
-	xr_left_hand.hand_material_override = xr_ghost_hand_material
+	xr_left_hand.hand_material_override = xr_hand_material
+	xr_left_hand.name = "LeftHand"
 	var xr_right_hand_sceme : PackedScene = load("res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn")
-	var xr_right_hand = xr_right_hand_sceme.instantiate()
+	xr_right_hand = xr_right_hand_sceme.instantiate()
 	xr_right_controller.add_child(xr_right_hand)
-	xr_right_hand.hand_material_override = xr_ghost_hand_material
+	xr_right_hand.hand_material_override = xr_hand_material
+	xr_right_hand.name = "RightHand"
 	
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
@@ -938,6 +944,8 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	gesture_area = xr_camera_3d.get_node("GestureArea")
 	left_gesture_detection_area = xr_left_controller.get_node("GestureDetectionArea")
 	right_gesture_detection_area = xr_right_controller.get_node("GestureDetectionArea")
+	xr_left_hand = xr_left_controller.get_node("LeftHand")
+	xr_right_hand = xr_right_controller.get_node("RightHand")
 	xr_pointer = xr_origin_3d.get_node("XRPointer")
 	welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
 	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
@@ -1333,6 +1341,11 @@ func set_xr_game_options():
 	# Load xr injector GUI options
 	show_welcome_label = xr_config_handler.show_welcome_label
 	
+	# Load XR Hands options
+	show_xr_hands = xr_config_handler.show_xr_hands
+	xr_hand_material_choice = xr_config_handler.xr_hand_material_choice
+	set_xr_hands()
+	
 	# Set XR worldscale based on config
 	xr_origin_3d.world_scale = xr_world_scale
 	set_worldscale_for_xr_nodes(xr_world_scale)
@@ -1366,6 +1379,46 @@ func set_xr_game_options():
 		if not xr_autosave_timer.is_stopped():
 			xr_autosave_timer.set_paused(true)
 
+# Function to set whether XR Hands are visible and the material
+func set_xr_hands():
+	# Set xr hand model visibility
+	if show_xr_hands:
+		xr_left_hand.show()
+		xr_right_hand.show()
+	else:
+		xr_left_hand.hide()
+		xr_right_hand.hide()
+	
+	# Set xr hand material
+	match xr_hand_material_choice:
+		# Default - transparent hand
+		0:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
+		# Full blue glove
+		1:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove.tres")
+		# Half glove dark skinned
+		2:
+			xr_hand_material = load("res://xr_injector/hands/materials/glove_african_green_camo.tres")
+		# No glove light skinned
+		3:
+			xr_hand_material = load("res://xr_injector/hands/materials/caucasian_hand.tres")
+		# No glove dark skinned
+		4:
+			xr_hand_material = load("res://xr_injector/hands/materials/african_hands.tres")
+		# Full yellow glove
+		5:
+			xr_hand_material = load("res://xr_injector/hands/materials/cleaning_glove.tres") 
+		# Ghost hand - half glove light skinned
+		6:
+			xr_hand_material = load("res://xr_injector/hands/materials/ghost_hand.tres")
+		# Default to mostly tansparent if wrong or invalid value entered
+		_:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
+			
+	xr_left_hand.hand_material_override = xr_hand_material
+	xr_right_hand.hand_material_override = xr_hand_material
+	
 # Function to set proper world scale for various nodes that depend on sizes and distances
 func set_worldscale_for_xr_nodes(new_xr_world_scale):
 	gesture_area.transform.origin.y = 0.45 * new_xr_world_scale
