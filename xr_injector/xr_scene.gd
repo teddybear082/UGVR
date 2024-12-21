@@ -32,7 +32,8 @@ extends Node3D
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
-
+# Internal variable for xr hand material
+var xr_ghost_hand_material = preload("res://xr_injector/hands/materials/ghost_hand.tres")
 
 # Internal variables to hold emulated gamepad/joypad events that are triggered by motion controllers
 var secondary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
@@ -258,6 +259,16 @@ func _ready() -> void:
 	
 	# Set up reparenting node
 	xr_reparenting_node.set_as_top_level(true)
+	
+	# Set up XR hands
+	var xr_left_hand_scene : PackedScene = load("res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn")
+	var xr_left_hand = xr_left_hand_scene.instantiate()
+	xr_left_controller.add_child(xr_left_hand)
+	xr_left_hand.hand_material_override = xr_ghost_hand_material
+	var xr_right_hand_sceme : PackedScene = load("res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn")
+	var xr_right_hand = xr_right_hand_sceme.instantiate()
+	xr_right_controller.add_child(xr_right_hand)
+	xr_right_hand.hand_material_override = xr_ghost_hand_material
 	
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
