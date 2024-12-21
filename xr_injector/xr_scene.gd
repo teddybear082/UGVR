@@ -1333,10 +1333,14 @@ func set_xr_game_options():
 	# Enable arm swing jog or jump movement if enabled by the user
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 
-	# Clear Welcome label (probably someday can make it a config not to show again)
+	# Clear Welcome label
 	if show_welcome_label and not welcome_label_already_shown:
 		welcome_label_3d.show()
 		await get_tree().create_timer(10.0).timeout
+		welcome_label_3d.hide()
+		welcome_label_already_shown = true
+		
+	elif not show_welcome_label:
 		welcome_label_3d.hide()
 		welcome_label_already_shown = true
 		
