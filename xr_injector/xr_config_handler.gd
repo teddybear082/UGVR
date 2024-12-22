@@ -214,6 +214,10 @@ var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
 
+# XR Hands Options in GAME Options
+var show_xr_hands : bool = true
+var xr_hand_material_choice : int = 0
+
 ## CAMERA Config Options
 
 var xr_world_scale : float = 1.0
@@ -367,6 +371,10 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	# Load xr injector GUI options
 	show_welcome_label = game_options_cfg_file.get_value("XR_INJECTOR_GUI_OPTIONS", "show_welcome_label", show_welcome_label)
 	
+	# Load XR Hands options
+	show_xr_hands = game_options_cfg_file.get_value("XR_HANDS_OPTIONS", "show_xr_hands", show_xr_hands)
+	xr_hand_material_choice = game_options_cfg_file.get_value("XR_HANDS_OPTIONS", "xr_hand_material_choice", xr_hand_material_choice)
+	
 	emit_signal("xr_game_options_cfg_loaded", file_path)
 	print("Xr game options config loaded")
 	return true
@@ -412,13 +420,14 @@ func save_game_options_cfg_file(file_path):
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "jog_triggers_sprint", jog_triggers_sprint)
 	
 	# Save autosave options
-	
 	game_options_cfg_file.set_value("AUTOSAVE_OPTIONS", "autosave_action_map_duration_in_secs", autosave_action_map_duration_in_secs)
 	
-	
 	# Save XR Injector GUI options
-	
 	game_options_cfg_file.set_value("XR_INJECTOR_GUI_OPTIONS", "show_welcome_label", show_welcome_label)
+	
+	# Save XR Hands options
+	game_options_cfg_file.set_value("XR_HANDS_OPTIONS", "show_xr_hands", show_xr_hands)
+	game_options_cfg_file.set_value("XR_HANDS_OPTIONS", "xr_hand_material_choice", xr_hand_material_choice)
 	
 	# Now save config file itself
 	err = game_options_cfg_file.save(file_path)

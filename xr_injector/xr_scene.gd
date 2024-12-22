@@ -15,6 +15,8 @@ extends Node3D
 @onready var xr_secondary_viewport2d_in_3d_subviewport : SubViewport = xr_secondary_viewport2d_in_3d.get_node("Viewport")
 @onready var xr_left_controller : XRController3D = xr_origin_3d.get_node("XRController3D")
 @onready var xr_right_controller : XRController3D = xr_origin_3d.get_node("XRController3D2")
+@onready var xr_left_hand : Node3D = xr_left_controller.get_node("LeftHand")
+@onready var xr_right_hand : Node3D = xr_right_controller.get_node("RightHand")
 @onready var gesture_area : Area3D = xr_camera_3d.get_node("GestureArea")
 @onready var left_gesture_detection_area : Area3D = xr_left_controller.get_node("GestureDetectionArea")
 @onready var right_gesture_detection_area : Area3D = xr_right_controller.get_node("GestureDetectionArea")
@@ -32,7 +34,10 @@ extends Node3D
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
-
+# Inrernal variables for xr hands and material (will be set in script)
+var show_xr_hands : bool = true
+var xr_hand_material = preload("res://xr_injector/hands/materials/labglove_transparent.tres")
+var xr_hand_material_choice : int = 0
 
 # Internal variables to hold emulated gamepad/joypad events that are triggered by motion controllers
 var secondary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
@@ -258,6 +263,10 @@ func _ready() -> void:
 	
 	# Set up reparenting node
 	xr_reparenting_node.set_as_top_level(true)
+	
+	# Set up XR hand materials
+	xr_left_hand.hand_material_override = xr_hand_material
+	xr_right_hand.hand_material_override = xr_hand_material
 	
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
@@ -867,6 +876,9 @@ func _on_xr_started():
 	# Set Viewport sizes and locations for GUI
 	setup_viewports()
 	
+	# Set XR hands
+	set_xr_hands()
+	
 	set_process(true)
 
 # When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu	
@@ -895,6 +907,15 @@ func apply_user_height(height: float):
 func _on_xr_origin_exiting_tree():
 	if use_roomscale and is_instance_valid(current_roomscale_character_body) and xr_origin_reparented:
 		print("Calling xr origin exiting scene function")
+		
+		# XR hands seem to have an issue persisting through the duplication process, so handle them separately
+		if is_instance_valid(xr_left_hand):
+			xr_left_controller.remove_child(xr_left_hand)
+			xr_left_hand.queue_free()
+		if is_instance_valid(xr_right_hand):
+			xr_right_controller.remove_child(xr_right_hand)
+			xr_right_hand.queue_free()
+
 		#print(xr_origin_3d)
 		#print(xr_origin_3d.get_parent())
 		current_roomscale_character_body.remove_child(xr_origin_3d)
@@ -973,6 +994,9 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_pointer.laser_material = unshaded_material
 	xr_pointer.laser_hit_material = unshaded_material
 	xr_pointer.target_material = unshaded_material
+	
+	# Set up XR Hands
+	set_xr_hands()
 	
 func setup_viewports():
 	# Turn off FSR
@@ -1083,7 +1107,68 @@ func _on_xr_radial_menu_entry_selected(entry : String):
 		await get_tree().create_timer(0.2).timeout
 		Input.action_release(entry)
 
-
+# Function to set whether XR Hands are visible and the material
+func set_xr_hands():
+	# TODO:Find out why hands sometimes disappear during scene transitions, appears to be related to duplication of xr origin when it is removed from scene
+	# In the meantime, if hands are lost, bring them back, since they are just cosmetic anyway
+	
+	# First check if hands somehow floated away (more than 1 relative game unit) unexpectedly
+	# Using length_squared because per docs it is faster than Vector3.length()
+	if (xr_left_hand.global_transform.origin - xr_left_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
+		xr_left_hand.queue_free()
+	if (xr_right_hand.global_transform.origin - xr_right_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
+		xr_right_hand.queue_free()
+	
+	# If left hand or right hand are invalid either because of the above calculation or they are otherwise lost, restore them
+	if not is_instance_valid(xr_left_hand):
+		xr_left_hand = null
+		var xr_left_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn")
+		xr_left_hand = xr_left_hand_scene.instantiate()
+		xr_left_controller.add_child(xr_left_hand)
+	if not is_instance_valid(xr_right_hand):
+		xr_right_hand = null
+		var xr_right_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn")
+		xr_right_hand = xr_right_hand_scene.instantiate()
+		xr_right_controller.add_child(xr_right_hand)
+	
+	# Set xr hand model visibility
+	if show_xr_hands:
+		xr_left_hand.show()
+		xr_right_hand.show()
+	else:
+		xr_left_hand.hide()
+		xr_right_hand.hide()
+	
+	# Set xr hand material
+	match xr_hand_material_choice:
+		# Default - transparent hand
+		0:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
+		# Full blue glove
+		1:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove.tres")
+		# Half glove dark skinned
+		2:
+			xr_hand_material = load("res://xr_injector/hands/materials/glove_african_green_camo.tres")
+		# No glove light skinned
+		3:
+			xr_hand_material = load("res://xr_injector/hands/materials/caucasian_hand.tres")
+		# No glove dark skinned
+		4:
+			xr_hand_material = load("res://xr_injector/hands/materials/african_hands.tres")
+		# Full yellow glove
+		5:
+			xr_hand_material = load("res://xr_injector/hands/materials/cleaning_glove.tres") 
+		# Ghost hand - half glove light skinned
+		6:
+			xr_hand_material = load("res://xr_injector/hands/materials/ghost_hand.tres")
+		# Default to mostly tansparent if wrong or invalid value entered
+		_:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
+			
+	xr_left_hand.hand_material_override = xr_hand_material
+	xr_right_hand.hand_material_override = xr_hand_material
+	
 # Function used by eval_tree to find the camera3d that is presently active in the flatscreen game and use it to drive XR camera and cursor3D (if used)
 func find_and_set_active_camera_3d():
 	# Turn off FSR
@@ -1321,6 +1406,11 @@ func set_xr_game_options():
 	
 	# Load xr injector GUI options
 	show_welcome_label = xr_config_handler.show_welcome_label
+	
+	# Load XR Hands options
+	show_xr_hands = xr_config_handler.show_xr_hands
+	xr_hand_material_choice = xr_config_handler.xr_hand_material_choice
+	set_xr_hands()
 	
 	# Set XR worldscale based on config
 	xr_origin_3d.world_scale = xr_world_scale
