@@ -8,7 +8,7 @@ https://vimeo.com/924331826
 
 ## Presently working:
 
--Inject VR camera into most Godot 4 3D games tested in the position of the active camera
+-Inject VR camera into most Godot 4 3D games tested in the position of the active camera and display "VR Hands"
 
 -Display 2D UI of most Godot 4 3D games in an interactable panel in the VR world
 
@@ -40,7 +40,7 @@ https://vimeo.com/924331826
 
 -Allow user to remap controls in interface 
 
--Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element, child nodes to controller locations
+-Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element, child nodes to controller locations, change position of hand nodes
 
 ## Use
 
