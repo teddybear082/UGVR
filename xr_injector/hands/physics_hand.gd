@@ -1,6 +1,5 @@
 @tool
-class_name XRToolsPhysicsHand
-extends XRToolsHand
+extends "res://xr_injector/hands/hand.gd"
 
 
 ## XR Tools Physics Hand Script

@@ -1,5 +1,4 @@
 @tool
-class_name XRToolsHandPhysicsBone
 extends BoneAttachment3D
 
 
@@ -46,6 +45,8 @@ var _physics_bone : CharacterBody3D
 # Node attached to the skeletal-bone, and the target of the physics-bone
 var _skeletal_bone : Node3D
 
+# Since cannot use custom classes, effectively import XR Hand (hand.gd script) instead
+var XRToolsPhysicsHand = preload("res://xr_injector/hands/physics_hand.gd")
 
 # Add support for is_xr_class on XRTools classes
 func is_xr_class(name : String) -> bool:
@@ -60,7 +61,7 @@ func _ready():
 		return
 
 	# Connect the 'hand_scale_changed' signal
-	var physics_hand := XRToolsHand.find_instance(self) as XRToolsPhysicsHand
+	var physics_hand = XRToolsPhysicsHand.find_instance(self)
 	if physics_hand:
 		physics_hand.hand_scale_changed.connect(_on_hand_scale_changed)
 
