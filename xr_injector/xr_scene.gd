@@ -876,6 +876,9 @@ func _on_xr_started():
 	# Set Viewport sizes and locations for GUI
 	setup_viewports()
 	
+	# Set XR hands
+	set_xr_hands()
+	
 	set_process(true)
 
 # When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu	
@@ -904,6 +907,15 @@ func apply_user_height(height: float):
 func _on_xr_origin_exiting_tree():
 	if use_roomscale and is_instance_valid(current_roomscale_character_body) and xr_origin_reparented:
 		print("Calling xr origin exiting scene function")
+		
+		# XR hands seem to have an issue persisting through the duplication process, so handle them separately
+		if is_instance_valid(xr_left_hand):
+			xr_left_controller.remove_child(xr_left_hand)
+			xr_left_hand.queue_free()
+		if is_instance_valid(xr_right_hand):
+			xr_right_controller.remove_child(xr_right_hand)
+			xr_right_hand.queue_free()
+
 		#print(xr_origin_3d)
 		#print(xr_origin_3d.get_parent())
 		current_roomscale_character_body.remove_child(xr_origin_3d)
@@ -936,8 +948,6 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	gesture_area = xr_camera_3d.get_node("GestureArea")
 	left_gesture_detection_area = xr_left_controller.get_node("GestureDetectionArea")
 	right_gesture_detection_area = xr_right_controller.get_node("GestureDetectionArea")
-	xr_left_hand = xr_left_controller.get_node("LeftHand")
-	xr_right_hand = xr_right_controller.get_node("RightHand")
 	xr_pointer = xr_origin_3d.get_node("XRPointer")
 	welcome_label_3d = xr_camera_3d.get_node("WelcomeLabel3D")
 	xr_roomscale_controller = xr_origin_3d.get_node("XRRoomscaleController")
@@ -1097,7 +1107,68 @@ func _on_xr_radial_menu_entry_selected(entry : String):
 		await get_tree().create_timer(0.2).timeout
 		Input.action_release(entry)
 
-
+# Function to set whether XR Hands are visible and the material
+func set_xr_hands():
+	# TODO:Find out why hands sometimes disappear during scene transitions, appears to be related to duplication of xr origin when it is removed from scene
+	# In the meantime, if hands are lost, bring them back, since they are just cosmetic anyway
+	
+	# First check if hands somehow floated away (more than 1 relative game unit) unexpectedly
+	# Using length_squared because per docs it is faster than Vector3.length()
+	if (xr_left_hand.global_transform.origin - xr_left_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
+		xr_left_hand.queue_free()
+	if (xr_right_hand.global_transform.origin - xr_right_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
+		xr_right_hand.queue_free()
+	
+	# If left hand or right hand are invalid either because of the above calculation or they are otherwise lost, restore them
+	if not is_instance_valid(xr_left_hand):
+		xr_left_hand = null
+		var xr_left_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn")
+		xr_left_hand = xr_left_hand_scene.instantiate()
+		xr_left_controller.add_child(xr_left_hand)
+	if not is_instance_valid(xr_right_hand):
+		xr_right_hand = null
+		var xr_right_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn")
+		xr_right_hand = xr_right_hand_scene.instantiate()
+		xr_right_controller.add_child(xr_right_hand)
+	
+	# Set xr hand model visibility
+	if show_xr_hands:
+		xr_left_hand.show()
+		xr_right_hand.show()
+	else:
+		xr_left_hand.hide()
+		xr_right_hand.hide()
+	
+	# Set xr hand material
+	match xr_hand_material_choice:
+		# Default - transparent hand
+		0:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
+		# Full blue glove
+		1:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove.tres")
+		# Half glove dark skinned
+		2:
+			xr_hand_material = load("res://xr_injector/hands/materials/glove_african_green_camo.tres")
+		# No glove light skinned
+		3:
+			xr_hand_material = load("res://xr_injector/hands/materials/caucasian_hand.tres")
+		# No glove dark skinned
+		4:
+			xr_hand_material = load("res://xr_injector/hands/materials/african_hands.tres")
+		# Full yellow glove
+		5:
+			xr_hand_material = load("res://xr_injector/hands/materials/cleaning_glove.tres") 
+		# Ghost hand - half glove light skinned
+		6:
+			xr_hand_material = load("res://xr_injector/hands/materials/ghost_hand.tres")
+		# Default to mostly tansparent if wrong or invalid value entered
+		_:
+			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
+			
+	xr_left_hand.hand_material_override = xr_hand_material
+	xr_right_hand.hand_material_override = xr_hand_material
+	
 # Function used by eval_tree to find the camera3d that is presently active in the flatscreen game and use it to drive XR camera and cursor3D (if used)
 func find_and_set_active_camera_3d():
 	# Turn off FSR
@@ -1374,46 +1445,6 @@ func set_xr_game_options():
 		if not xr_autosave_timer.is_stopped():
 			xr_autosave_timer.set_paused(true)
 
-# Function to set whether XR Hands are visible and the material
-func set_xr_hands():
-	# Set xr hand model visibility
-	if show_xr_hands:
-		xr_left_hand.show()
-		xr_right_hand.show()
-	else:
-		xr_left_hand.hide()
-		xr_right_hand.hide()
-	
-	# Set xr hand material
-	match xr_hand_material_choice:
-		# Default - transparent hand
-		0:
-			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
-		# Full blue glove
-		1:
-			xr_hand_material = load("res://xr_injector/hands/materials/labglove.tres")
-		# Half glove dark skinned
-		2:
-			xr_hand_material = load("res://xr_injector/hands/materials/glove_african_green_camo.tres")
-		# No glove light skinned
-		3:
-			xr_hand_material = load("res://xr_injector/hands/materials/caucasian_hand.tres")
-		# No glove dark skinned
-		4:
-			xr_hand_material = load("res://xr_injector/hands/materials/african_hands.tres")
-		# Full yellow glove
-		5:
-			xr_hand_material = load("res://xr_injector/hands/materials/cleaning_glove.tres") 
-		# Ghost hand - half glove light skinned
-		6:
-			xr_hand_material = load("res://xr_injector/hands/materials/ghost_hand.tres")
-		# Default to mostly tansparent if wrong or invalid value entered
-		_:
-			xr_hand_material = load("res://xr_injector/hands/materials/labglove_transparent.tres")
-			
-	xr_left_hand.hand_material_override = xr_hand_material
-	xr_right_hand.hand_material_override = xr_hand_material
-	
 # Function to set proper world scale for various nodes that depend on sizes and distances
 func set_worldscale_for_xr_nodes(new_xr_world_scale):
 	gesture_area.transform.origin.y = 0.45 * new_xr_world_scale

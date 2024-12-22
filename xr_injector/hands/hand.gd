@@ -114,6 +114,7 @@ func is_xr_class(name : String) -> bool:
 
 ## Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	print("XR Hand is entering the scene tree!")
 	# Save the initial hand transform
 	_initial_transform = transform
 	_transform = _initial_transform
@@ -138,7 +139,6 @@ func _ready() -> void:
 	_update_hand_material_override()
 	_update_pose()
 	_update_target()
-
 
 ## This method checks for world-scale changes and scales itself causing the
 ## hand mesh and skeleton to scale appropriately. It then reads the grip and
