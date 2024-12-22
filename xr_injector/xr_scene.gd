@@ -15,6 +15,8 @@ extends Node3D
 @onready var xr_secondary_viewport2d_in_3d_subviewport : SubViewport = xr_secondary_viewport2d_in_3d.get_node("Viewport")
 @onready var xr_left_controller : XRController3D = xr_origin_3d.get_node("XRController3D")
 @onready var xr_right_controller : XRController3D = xr_origin_3d.get_node("XRController3D2")
+@onready var xr_left_hand : Node3D = xr_left_controller.get_node("LeftHand")
+@onready var xr_right_hand : Node3D = xr_right_controller.get_node("RightHand")
 @onready var gesture_area : Area3D = xr_camera_3d.get_node("GestureArea")
 @onready var left_gesture_detection_area : Area3D = xr_left_controller.get_node("GestureDetectionArea")
 @onready var right_gesture_detection_area : Area3D = xr_right_controller.get_node("GestureDetectionArea")
@@ -34,8 +36,6 @@ extends Node3D
 
 # Inrernal variables for xr hands and material (will be set in script)
 var show_xr_hands : bool = true
-var xr_left_hand : Node3D = null
-var xr_right_hand : Node3D = null
 var xr_hand_material = preload("res://xr_injector/hands/materials/labglove_transparent.tres")
 var xr_hand_material_choice : int = 0
 
@@ -264,17 +264,9 @@ func _ready() -> void:
 	# Set up reparenting node
 	xr_reparenting_node.set_as_top_level(true)
 	
-	# Set up XR hands
-	var xr_left_hand_scene : PackedScene = load("res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn")
-	xr_left_hand = xr_left_hand_scene.instantiate()
-	xr_left_controller.add_child(xr_left_hand)
+	# Set up XR hand materials
 	xr_left_hand.hand_material_override = xr_hand_material
-	xr_left_hand.name = "LeftHand"
-	var xr_right_hand_sceme : PackedScene = load("res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn")
-	xr_right_hand = xr_right_hand_sceme.instantiate()
-	xr_right_controller.add_child(xr_right_hand)
 	xr_right_hand.hand_material_override = xr_hand_material
-	xr_right_hand.name = "RightHand"
 	
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
@@ -992,6 +984,9 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_pointer.laser_material = unshaded_material
 	xr_pointer.laser_hit_material = unshaded_material
 	xr_pointer.target_material = unshaded_material
+	
+	# Set up XR Hands
+	set_xr_hands()
 	
 func setup_viewports():
 	# Turn off FSR
