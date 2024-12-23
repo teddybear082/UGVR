@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://1lx4kd5v6lup"]
+
+[ext_resource type="Shader" path="res://xr_injector/shimmer_text.gdshader" id="1_inqry"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_inqry")
+shader_parameter/base_color = Vector3(1, 0.5, 0.2)
+shader_parameter/shimmer_speed = 2.0
+shader_parameter/shimmer_intensity = 0.15

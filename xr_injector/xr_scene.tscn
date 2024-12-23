@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=19 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_injector/xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_injector/xr_pointer.tscn" id="2_l282w"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://clujaf3u776a3" path="res://xr_injector/xr_viewport_2d_in_3d.tscn" id="3_f316b"]
 [ext_resource type="PackedScene" uid="uid://bbvciliw3xnf6" path="res://xr_injector/xr_black_out.tscn" id="4_ny8kq"]
 [ext_resource type="Script" path="res://xr_injector/xr_roomscale_controller.gd" id="5_1018u"]
+[ext_resource type="PackedScene" uid="uid://c1n6gs0qo50sl" path="res://xr_injector/ugvr_logo.tscn" id="5_dgm18"]
 [ext_resource type="Script" path="res://xr_injector/xr_config_handler.gd" id="5_jiibt"]
 [ext_resource type="PackedScene" uid="uid://b4kad2kuba1yn" path="res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn" id="5_mxch7"]
 [ext_resource type="Script" path="res://xr_injector/xr_physical_movement_controller.gd" id="6_1wyxn"]
@@ -64,23 +65,11 @@ collision_mask = 32768
 [node name="GestureAreaShape" type="CollisionShape3D" parent="XROrigin3D/XRCamera3D/GestureArea"]
 shape = SubResource("SphereShape3D_10cyd")
 
-[node name="WelcomeLabel3D" type="Label3D" parent="XROrigin3D/XRCamera3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -2)
-render_priority = 1
-modulate = Color(0.854902, 0.866667, 0.211765, 1)
-text = "Welcome to the earliest alpha of Godot Universal VR Injector! (UGVR)
-
-
-Toggle your menu pointer by raising your right hand over your head and pressing trigger.
-
-Toggle the UGVR menu (WIP), which has more instructions, by raising your left hand over your head and pressing trigger.
-
-Have fun!"
-font_size = 14
-autowrap_mode = 2
-width = 350.0
-
 [node name="BlackOut" parent="XROrigin3D/XRCamera3D" instance=ExtResource("4_ny8kq")]
+
+[node name="WelcomeLabel3D" parent="XROrigin3D/XRCamera3D" instance=ExtResource("5_dgm18")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)
+visible = false
 
 [node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
 process_mode = 3

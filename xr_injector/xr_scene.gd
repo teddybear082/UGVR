@@ -21,7 +21,7 @@ extends Node3D
 @onready var left_gesture_detection_area : Area3D = xr_left_controller.get_node("GestureDetectionArea")
 @onready var right_gesture_detection_area : Area3D = xr_right_controller.get_node("GestureDetectionArea")
 @onready var xr_pointer : Node3D = xr_origin_3d.get_node("XRPointer")
-@onready var welcome_label_3d : Label3D = xr_camera_3d.get_node("WelcomeLabel3D")
+@onready var welcome_label_3d : MeshInstance3D = xr_camera_3d.get_node("WelcomeLabel3D")
 @onready var xr_config_handler : Node = get_node("XRConfigHandler")
 @onready var xr_autosave_timer : Timer = get_node("XRAutoSaveTimer")
 @onready var xr_roomscale_controller : Node = xr_origin_3d.get_node("XRRoomscaleController")
@@ -1423,10 +1423,14 @@ func set_xr_game_options():
 	# Enable arm swing jog or jump movement if enabled by the user
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 
-	# Clear Welcome label
+	# Show or Clear Welcome label / Splash Screen
 	if show_welcome_label and not welcome_label_already_shown:
 		welcome_label_3d.show()
-		await get_tree().create_timer(10.0).timeout
+		await get_tree().create_time(1.5).timeout
+		var logo_audio_node = welcome_label_3d.get_node_or_null("logo_audio")
+		if logo_audio_node != null:
+			logo_audio_node.play()
+		await get_tree().create_timer(9.0).timeout
 		welcome_label_3d.hide()
 		welcome_label_already_shown = true
 		

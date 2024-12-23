@@ -1,0 +1,51 @@
+[gd_scene load_steps=8 format=3 uid="uid://c1n6gs0qo50sl"]
+
+[ext_resource type="FontFile" uid="uid://dyl07m77v078n" path="res://xr_injector/Gluten-VariableFont_slnt,wght.ttf" id="1_11lbq"]
+[ext_resource type="PackedScene" uid="uid://l76da1sleber" path="res://xr_injector/godot_plush/godot_plush_sitting.glb" id="2_ta3vb"]
+[ext_resource type="AudioStream" uid="uid://bwyd7q5ln8ow0" path="res://xr_injector/UGVR_startup_jingle.mp3" id="3_jcdte"]
+
+[sub_resource type="TextMesh" id="TextMesh_oqr6a"]
+text = "UGVR"
+font = ExtResource("1_11lbq")
+font_size = 127
+pixel_size = 0.005
+depth = 0.1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rnotr"]
+diffuse_mode = 3
+specular_mode = 1
+disable_ambient_light = true
+disable_fog = true
+albedo_color = Color(0.155509, 0.339238, 0.626908, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_w5we1"]
+size = Vector3(1.5, 0.5, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f7q5c"]
+shading_mode = 0
+disable_ambient_light = true
+disable_fog = true
+albedo_color = Color(0.0431373, 0.0431373, 0.0431373, 1)
+
+[node name="UGVRLogo" type="MeshInstance3D"]
+mesh = SubResource("TextMesh_oqr6a")
+surface_material_override/0 = SubResource("StandardMaterial3D_rnotr")
+
+[node name="godot_plush_sitting" parent="." instance=ExtResource("2_ta3vb")]
+transform = Transform3D(-0.959491, 0, -0.281739, 0, 1, 0, 0.281739, 0, -0.959491, -0.16337, -0.122227, 0.00101909)
+
+[node name="logo_audio" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("3_jcdte")
+
+[node name="background_mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0346538, -0.0750222)
+mesh = SubResource("BoxMesh_w5we1")
+surface_material_override/0 = SubResource("StandardMaterial3D_f7q5c")
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.914332, -0.404966, 0, 0.404966, 0.914332, 0, -0.367321, 0.774456)
+light_color = Color(0.372549, 0.976471, 0.988235, 1)
+light_volumetric_fog_energy = 0.0
+light_specular = 0.0
+light_bake_mode = 0
+spot_range = 3.0
