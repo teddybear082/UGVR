@@ -201,6 +201,7 @@ var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
 var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
 var open_radial_menu_button : String = "by_button"
 
+## GAME OPTIONS CONFIG
 # Roomscale menu options in GAME options
 var use_roomscale : bool = false
 var roomscale_height_adjustment : float = 0.0
@@ -214,11 +215,11 @@ var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
 
-# XR Hands Options in GAME Options
+# XR Hands Options in GAME options
 var show_xr_hands : bool = true
 var xr_hand_material_choice : int = 0
 
-## CAMERA Config Options
+# CAMERA Config Options in GAME options
 
 var xr_world_scale : float = 1.0
 
@@ -228,7 +229,7 @@ var experimental_passthrough : bool = false
 
 var xr_use_vehicle_mode : bool = false
 
-## VIEWPORTS Config Options
+# VIEWPORTS Config Options in GAME options
 
 enum XR_VIEWPORT_LOCATION {
 	CAMERA = 0,
@@ -252,10 +253,10 @@ var primary_viewport_offset : Vector3 = Vector3(0,0,0)
 
 var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 
-## AUTOSAVE OPTIONS
+# AUTOSAVE Options in GAME options
 var autosave_action_map_duration_in_secs : int = 0 # Off by default
 
-## XR INJECTOR GUI OPTIONS
+# XR INJECTOR GUI options in GAME options
 var show_welcome_label : bool = true
 
 
@@ -276,18 +277,6 @@ var game_action_map_cfg_path : String
 # Used to store config base path
 var cfg_base_path : String
 
-# Variable to store UGVR UI scene to allow GUI to configure config handler variables
-var ugvr_menu_2d = null
-var ugvr_menu_viewport = null
-
-# Variables for VR GUI
-var option_template_label = null
-var action_options = null
-var action_settings = null
-var gamepad_button_template = null
-var xr_face_button_template = null
-var checkbox_template = null
-var section_header_template = null
 
 # Set up files for configs
 func _ready():
@@ -538,15 +527,6 @@ func load_action_map_file(file_path: String) -> bool:
 			var value = action_map_cfg_file.get_value("GAME_ACTIONS", action)
 			if typeof(value) == TYPE_STRING or typeof(value) == TYPE_STRING_NAME:
 				# Button mapping
-				if value == needs_mapping_phrase and ugvr_menu_2d:
-					var new_action_label = option_template_label.duplicate()
-					var new_settings_button = gamepad_button_template.duplicate()
-					new_action_label.text = action
-					action_options.add_child(new_action_label)
-					new_action_label.visible = true
-					new_settings_button.selected = 25
-					action_settings.add_child(new_settings_button)
-					new_settings_button.visible = true
 				var button_index = default_gamepad_button_names.find(value)
 				if button_index != -1:
 					# If we have a valid button to assign, check whether there are already joypad events assigned to this action,and if so, delete them to avoid conflicting inputs
@@ -558,15 +538,7 @@ func load_action_map_file(file_path: String) -> bool:
 					var event = InputEventJoypadButton.new()
 					event.button_index = button_index
 					InputMap.action_add_event(action, event)
-					if ugvr_menu_2d:
-						var new_action_label = option_template_label.duplicate()
-						var new_settings_button = gamepad_button_template.duplicate()
-						new_action_label.text = action
-						action_options.add_child(new_action_label)
-						new_action_label.visible = true
-						new_settings_button.selected = event.button_index
-						action_settings.add_child(new_settings_button)
-						new_settings_button.visible = true
+
 			elif typeof(value) == TYPE_ARRAY:
 				if value.size() != 2:
 					printerr("Array used for action map for action is wrong size!", action, value)
@@ -587,17 +559,6 @@ func load_action_map_file(file_path: String) -> bool:
 					event.axis_value = axis_value
 					#event.deadzone = 0.1
 					InputMap.action_add_event(action, event)
-					if ugvr_menu_2d:
-						var new_action_label = option_template_label.duplicate()
-						var new_settings_button = gamepad_button_template.duplicate()
-						new_action_label.text = action
-						action_options.add_child(new_action_label)
-						new_action_label.visible = true
-						for index in range(15, 25):
-							if new_settings_button.get_item_text(index).contains(axis_name) and new_settings_button.get_item_text(index).contains(str(axis_value)):
-								new_settings_button.selected = index
-								action_settings.add_child(new_settings_button)
-								new_settings_button.visible = true
 			else:
 				printerr("Error in user action map config file - value is not recognized: ", value)
 
@@ -610,9 +571,6 @@ func load_action_map_file(file_path: String) -> bool:
 	emit_signal("xr_game_action_map_cfg_loaded", file_path)
 	
 	print("finished loading action map")
-	
-	if ugvr_menu_viewport:
-		ugvr_menu_viewport._update_render()
 	
 	return true
 
@@ -837,50 +795,3 @@ func create_game_control_map_cfg_file(file_path):
 	emit_signal("xr_game_control_map_cfg_saved", file_path)
 	
 	return true
-
-func set_ugvr_gui_menu_2d(new_ugvr_menu_2d):
-	if new_ugvr_menu_2d == null or not is_instance_valid(new_ugvr_menu_2d):
-		print("Error setting ugvr menu 2d in config handler, is either null or not valid")
-		return
-	ugvr_menu_2d = new_ugvr_menu_2d
-	option_template_label = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer/OptionLabelPlaceholder")
-	action_options = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer")
-	action_settings = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer2")
-	gamepad_button_template = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer2/GamePadOptionButton")
-	xr_face_button_template = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer2/XRFaceOptionButton")
-	checkbox_template = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer2/DefaultCheckBox")
-	section_header_template = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Action Map Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer/SectionHeaderTemplate")
-
-func set_ugvr_menu_viewport(new_ugvr_menu_viewport):
-	ugvr_menu_viewport = new_ugvr_menu_viewport
-
-#func create_control_options_menu(current_config_file):
-	#var options_container = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Control Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer")
-	#var settings_container = ugvr_menu_2d.get_node("MarginContainer/TabContainer/VR Control Options/ScrollContainer/MarginContainer/HSplitContainer/VBoxContainer2")
-	#for section in current_config_file.get_sections():
-		#var section_header = section_header_template.duplicate()
-		#section_header.text = section
-		#options_container.add_child(section_header)
-		#for setting in current_config_file.get_section_keys(section):
-			#var setting_label = option_template_label.duplicate()
-			#setting_label.text = setting
-			#settings_container.add_child(setting_label)
-			#var setting_value = current_config_file.get_value(section, setting)
-			#match typeof(setting_value):
-				#TYPE_INT:
-					#pass
-				#TYPE_STRING:
-					#if default_gamepad_button_names.has(setting_value):
-						#var gamepad_option_button = gamepad_button_template.duplicate()
-						#gamepad_option_button.selected = default_gamepad_button_names.find(setting_value)
-						#settings_container.add_child(gamepad_option_button)
-				#TYPE_BOOL:
-					#var checkbox = checkbox_template.duplicate()
-					#checkbox.button_pressed = setting_value
-					#settings_container.add_child(checkbox)
-				#TYPE_FLOAT:
-					#pass
-				#TYPE_VECTOR2:
-					#pass
-				#TYPE_VECTOR3: 
-					#pass

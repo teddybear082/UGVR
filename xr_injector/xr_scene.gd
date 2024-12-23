@@ -28,9 +28,6 @@ extends Node3D
 @onready var xr_physical_movement_controller : Node = xr_origin_3d.get_node("XRPhysicalMovementController")
 @onready var xr_radial_menu : Node3D =  get_node("XRRadialMenu")
 @onready var xr_black_out : Node3D = xr_camera_3d.get_node("BlackOut")
-@onready var ugvr_menu_viewport : Node3D = get_node("XRMenuViewport2Din3D")
-@onready var ugvr_menu_2d = ugvr_menu_viewport.get_scene_instance()
-@onready var ugvr_menu_holder = xr_camera_3d.get_node("UGVRMenuHolder")
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
@@ -227,11 +224,6 @@ func _ready() -> void:
 	xr_config_handler.connect("xr_game_options_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_options_cfg_saved"))
 	xr_config_handler.connect("xr_game_control_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_control_map_cfg_saved"))
 	xr_config_handler.connect("xr_game_action_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_action_map_cfg_saved"))
-	
-	# Set up config handler to use ugvr menu 2d scene, and ugvr menu 2d scene to recognize config handler
-	xr_config_handler.set_ugvr_gui_menu_2d(ugvr_menu_2d)
-	xr_config_handler.set_ugvr_menu_viewport(ugvr_menu_viewport)
-	#ugvr_menu_2d.set_config_handler(xr_config_handler) # Not working yet, no script attached to ugvr menu yet
 	
 	# Set up unshaded material for pointers and cursor3D objects
 	unshaded_material.disable_ambient_light = true
@@ -531,12 +523,9 @@ func handle_primary_xr_release(button):
 func handle_secondary_xr_inputs(button):
 	#print("secondary button pressed: ", button)
 
-	# If pressing pointer activation button and making gesture, toggle UGVR menu
+	# If pressing pointer activation button and making gesture, toggle UGVR menu - next step make this the chord defined in UGVR config option
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
-		ugvr_menu_viewport.global_transform = ugvr_menu_holder.global_transform
-		ugvr_menu_viewport.visible = !ugvr_menu_viewport.visible
-		ugvr_menu_viewport.set_enabled(!ugvr_menu_viewport.enabled)
-		ugvr_menu_showing = ugvr_menu_viewport.enabled
+		# Hold for future use - Insert code here to make new UGVR menu or scene pop up
 		if ugvr_menu_showing:
 			xr_pointer.collision_mask = 4194304 # layer 23 - layer ugvr menu is now on
 		else:
@@ -954,7 +943,6 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
 	xr_radial_menu = get_node("XRRadialMenu")
 	xr_black_out = xr_camera_3d.get_node("BlackOut")
-	ugvr_menu_holder = xr_camera_3d.get_node("UGVRMenuHolder")
 	
 	# Set XR worldscale
 	xr_origin_3d.world_scale = xr_world_scale
@@ -1502,7 +1490,6 @@ func set_xr_action_map_options():
 	xr_radial_menu_entries = xr_config_handler.xr_radial_menu_entries
 	open_radial_menu_button = xr_config_handler.open_radial_menu_button
 	setup_radial_menu()
-	ugvr_menu_2d.connect_option_button_chidren_signals()
 	
 # Receiver function for config file signal that game options have been loaded
 func _on_xr_config_handler_xr_game_options_cfg_loaded(_path_to_file : String):

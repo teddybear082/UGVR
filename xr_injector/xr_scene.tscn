@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=18 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_injector/xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_injector/xr_pointer.tscn" id="2_l282w"]
@@ -13,7 +13,6 @@
 [ext_resource type="Material" uid="uid://cnids8g0cojet" path="res://xr_injector/hands/materials/labglove_transparent.tres" id="6_y01lc"]
 [ext_resource type="Script" path="res://xr_injector/xr_radial_menu.gd" id="7_hw5k1"]
 [ext_resource type="PackedScene" uid="uid://l2n30mpbkdyw" path="res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn" id="7_n8qcs"]
-[ext_resource type="PackedScene" uid="uid://x0xxleun8ha0" path="res://xr_injector/xr_options_menu.tscn" id="10_cjn2i"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_pnlj8"]
 resource_local_to_scene = true
@@ -53,9 +52,6 @@ unshaded = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -3.2)
 viewport_size = Vector2(1920, 1080)
 unshaded = true
-
-[node name="UGVRMenuHolder" type="Node3D" parent="XROrigin3D/XRCamera3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -1.65)
 
 [node name="GestureArea" type="Area3D" parent="XROrigin3D/XRCamera3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
@@ -126,16 +122,6 @@ wait_time = 180.0
 
 [node name="XRRadialMenu" type="Node3D" parent="."]
 script = ExtResource("7_hw5k1")
-
-[node name="XRMenuViewport2Din3D" parent="." instance=ExtResource("3_f316b")]
-process_mode = 3
-visible = false
-enabled = false
-collision_layer = 4194304
-scene = ExtResource("10_cjn2i")
-viewport_size = Vector2(1920, 1080)
-transparent = 0
-unshaded = true
 
 [node name="XRReparentingNode" type="Node3D" parent="."]
 
