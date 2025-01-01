@@ -148,6 +148,7 @@ var use_roomscale : bool = false
 var roomscale_height_adjustment : float = 0.0
 var attempt_to_use_camera_to_set_roomscale_height : bool = false
 var reverse_roomscale_direction : bool = false
+var use_roomscale_controller_directed_movement : bool = false
 var use_roomscale_3d_cursor : bool = false
 var use_long_range_3d_cursor : bool = false
 var roomscale_3d_cursor_distance_from_camera : float = 2.0
@@ -356,10 +357,10 @@ func _eval_tree() -> void:
 			xr_roomscale_controller.set_characterbody3D(current_roomscale_character_body)
 			if attempt_to_use_camera_to_set_roomscale_height:
 				@warning_ignore("unused_variable")
-				var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d, reverse_roomscale_direction, current_camera, roomscale_height_adjustment)
+				var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d, reverse_roomscale_direction, current_camera, primary_controller, use_roomscale_controller_directed_movement, roomscale_height_adjustment)
 			else:
 				@warning_ignore("unused_variable")
-				var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d, reverse_roomscale_direction, null, roomscale_height_adjustment)
+				var err = xr_roomscale_controller.set_enabled(true, xr_origin_3d, reverse_roomscale_direction, null, primary_controller, use_roomscale_controller_directed_movement, roomscale_height_adjustment)
 			@warning_ignore("unused_variable")
 			var err2 = xr_roomscale_controller.recenter()
 			current_camera = null
@@ -1381,6 +1382,7 @@ func set_xr_game_options():
 	roomscale_height_adjustment = xr_config_handler.roomscale_height_adjustment
 	attempt_to_use_camera_to_set_roomscale_height = xr_config_handler.attempt_to_use_camera_to_set_roomscale_height
 	reverse_roomscale_direction = xr_config_handler.reverse_roomscale_direction
+	use_roomscale_controller_directed_movement = xr_config_handler.use_roomscale_controller_directed_movement
 	use_roomscale_3d_cursor = xr_config_handler.use_roomscale_3d_cursor
 	use_long_range_3d_cursor = xr_config_handler.use_long_range_3d_cursor
 	roomscale_3d_cursor_distance_from_camera = xr_config_handler.roomscale_3d_cursor_distance_from_camera

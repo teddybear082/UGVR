@@ -11,6 +11,7 @@ var xr_origin_3D : XROrigin3D = null
 var xr_camera_3D : XRCamera3D = null
 var xr_neck_position_3D : Node3D = null
 var camera_3d : Camera3D = null
+var xr_controller : XRController3D = null
 # Node for blacking out screen when player walks to where they should not in roomscale
 var black_out : Node3D = null
 # Node driving the player movement
@@ -25,6 +26,8 @@ var reverse_roomscale_direction : bool = false
 # Height adjustment set by user if any
 var roomscale_height_adjustment : float = 0.0
 
+# Whether to use controller directed movement
+var roomscale_controller_directed_movement = false
 
 # `recenter` is called when the user has requested their view to be recentered.
 # The code here assumes the player has walked into an area they shouldn't be
@@ -69,8 +72,14 @@ func _process_on_physical_movement(delta) -> bool:
 	var current_velocity = current_characterbody3D.velocity
 
 	# Start by rotating the player to face the same way our real player is
-	var camera_basis: Basis = xr_origin_3D.transform.basis * xr_camera_3D.transform.basis
-	var forward: Vector2 = Vector2(camera_basis.z.x, camera_basis.z.z)
+	var directed_basis : Basis
+	
+	# If controller directed use controller as forward basis, otherwise use camera
+	if roomscale_controller_directed_movement and is_instance_valid(xr_controller):
+		directed_basis = xr_origin_3D.transform.basis * xr_controller.transform.basis
+	else:
+		directed_basis = xr_origin_3D.transform.basis * xr_camera_3D.transform.basis
+	var forward: Vector2 = Vector2(directed_basis.z.x, directed_basis.z.z)
 	if reverse_roomscale_direction:
 		forward = -forward
 	var angle: float = forward.angle_to(Vector2(0.0, 1.0))
@@ -136,7 +145,7 @@ func set_characterbody3D(new_characterbody3D : CharacterBody3D):
 		current_characterbody3D = new_characterbody3D
 
 # Function to enable or disable roomscale movement
-func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false, current_camera : Camera3D = null, height_adjustment : float = 0.0) -> bool:
+func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false, current_camera : Camera3D = null, primary_controller : XRController3D = null, use_controller_directed_movement : bool = false, height_adjustment : float = 0.0) -> bool:
 	if value == true and (current_characterbody3D == null or !is_instance_valid(current_characterbody3D)):
 		print("Tried to enable roomscale but characterbody3D still not set or is set to an invalid instance.")
 		return false
@@ -147,6 +156,8 @@ func set_enabled(value:bool, new_origin, reverse_roomscale:bool = false, current
 		xr_neck_position_3D = xr_camera_3D.get_node("Neck")
 		black_out = xr_camera_3D.get_node("BlackOut")
 		camera_3d = current_camera
+		xr_controller = primary_controller
+		roomscale_controller_directed_movement = use_controller_directed_movement
 		roomscale_height_adjustment = height_adjustment
 	enabled = value
 	set_process(value)

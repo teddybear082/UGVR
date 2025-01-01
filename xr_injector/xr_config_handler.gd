@@ -207,6 +207,7 @@ var use_roomscale : bool = false
 var roomscale_height_adjustment : float = 0.0
 var attempt_to_use_camera_to_set_roomscale_height : bool = false
 var reverse_roomscale_direction : bool = false
+var use_roomscale_controller_directed_movement : bool = false
 var use_roomscale_3d_cursor : bool = false
 var use_long_range_3d_cursor : bool = false
 var roomscale_3d_cursor_distance_from_camera : float = 2.0
@@ -346,6 +347,7 @@ func load_game_options_cfg_file(file_path: String) -> bool:
 	roomscale_height_adjustment = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "roomscale_height_adjustment", roomscale_height_adjustment)
 	attempt_to_use_camera_to_set_roomscale_height = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "attempt_to_use_camera_to_set_roomscale_height", attempt_to_use_camera_to_set_roomscale_height)
 	reverse_roomscale_direction = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "reverse_roomscale_direction", reverse_roomscale_direction)
+	use_roomscale_controller_directed_movement = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_roomscale_controller_directed_movement", use_roomscale_controller_directed_movement)
 	use_roomscale_3d_cursor = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_roomscale_3d_cursor", use_roomscale_3d_cursor)
 	use_long_range_3d_cursor = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "use_long_range_3d_cursor", use_long_range_3d_cursor)
 	roomscale_3d_cursor_distance_from_camera = game_options_cfg_file.get_value("ROOMSCALE_OPTIONS", "roomscale_3d_cursor_distance_from_camera", roomscale_3d_cursor_distance_from_camera)
@@ -400,6 +402,7 @@ func save_game_options_cfg_file(file_path):
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "roomscale_height_adjustment", roomscale_height_adjustment)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "attempt_to_use_camera_to_set_roomscale_height", attempt_to_use_camera_to_set_roomscale_height)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "reverse_roomscale_direction", reverse_roomscale_direction)
+	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_roomscale_controller_directed_movement", use_roomscale_controller_directed_movement)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_roomscale_3d_cursor", use_roomscale_3d_cursor)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "use_long_range_3d_cursor", use_long_range_3d_cursor)
 	game_options_cfg_file.set_value("ROOMSCALE_OPTIONS", "roomscale_3d_cursor_distance_from_camera", roomscale_3d_cursor_distance_from_camera)
