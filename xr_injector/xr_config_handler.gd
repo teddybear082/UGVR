@@ -176,6 +176,9 @@ var turning_speed : float = 90.0
 var turning_degrees : float = 30.0
 var stick_turn_controller : String = "primary_controller"
 
+# Motion sickness vignette options
+var use_motion_sickness_vignette : bool = false
+
 # UGVR specific special button maps
 var ugvr_menu_toggle_combo : Dictionary = {"primary_controller" : ["primary_click"], "secondary_controller": ["primary_click"]}
 
@@ -639,6 +642,8 @@ func save_game_control_map_cfg_file(file_path):
 	
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only", use_physical_gamepad_only)
 
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "use_motion_sickness_vignette", use_motion_sickness_vignette)
+
 	err = game_control_map_cfg_file.save(file_path)
 
 	emit_signal("xr_game_control_map_cfg_saved", file_path)
@@ -729,6 +734,9 @@ func load_game_control_map_cfg_file(file_path: String) -> bool:
 	
 	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only"):
 		use_physical_gamepad_only = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only")
+	
+	if game_control_map_cfg_file.has_section_key("OTHER_CONTROL_OPTIONS", "use_motion_sickness_vignette"):
+		use_motion_sickness_vignette = game_control_map_cfg_file.get_value("OTHER_CONTROL_OPTIONS", "use_motion_sickness_vignette")
 
 	emit_signal("xr_game_control_map_cfg_loaded", file_path)
 	print("xr game control map cfg loaded")
@@ -792,6 +800,8 @@ func create_game_control_map_cfg_file(file_path):
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "select_button", select_button)
 
 	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "use_physical_gamepad_only", use_physical_gamepad_only)
+	
+	game_control_map_cfg_file.set_value("OTHER_CONTROL_OPTIONS", "use_motion_sickness_vignette", use_motion_sickness_vignette)
 	
 	err = game_control_map_cfg_file.save(file_path)
 

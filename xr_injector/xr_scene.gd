@@ -28,6 +28,7 @@ extends Node3D
 @onready var xr_physical_movement_controller : Node = xr_origin_3d.get_node("XRPhysicalMovementController")
 @onready var xr_radial_menu : Node3D =  get_node("XRRadialMenu")
 @onready var xr_black_out : Node3D = xr_camera_3d.get_node("BlackOut")
+@onready var xr_vignette : Node3D = xr_camera_3d.get_node("Vignette")
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 
@@ -179,6 +180,9 @@ var turning_type : TurningType = TurningType.SNAP
 var turning_speed : float = 90.0
 var turning_degrees : float = 30.0
 var stick_turn_controller : String = "primary_controller"
+
+# Variables for XR Vignette in CONTROLS options
+var use_motion_sickness_vignette : bool = false
 
 # Variables for moving viewport2din3d nodes - they start as childed to the origin and then moved as necessary
 enum XR_VIEWPORT_LOCATION {
@@ -869,6 +873,13 @@ func _on_xr_started():
 	# Set XR hands
 	set_xr_hands()
 	
+	# Print key XR stats to log for debugging purposes
+	var screen_resolution = XRServer.primary_interface.get_render_target_size()
+	print("Screen resolution from XRServer.primary_interface render target size: ", screen_resolution)
+	var screen_aspect : float = float(screen_resolution.x) / float(screen_resolution.y)
+	print("XR Projection left: ", XRServer.primary_interface.get_projection_for_view(0, screen_aspect, 0.1, 100) )
+	print("XR Projection right: ", XRServer.primary_interface.get_projection_for_view(1, screen_aspect, 0.1, 100) )
+	
 	set_process(true)
 
 # When autosave timer expires, save game action map to capture changes user may have made in-game remapping menu	
@@ -944,9 +955,13 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	xr_physical_movement_controller = xr_origin_3d.get_node("XRPhysicalMovementController")
 	xr_radial_menu = get_node("XRRadialMenu")
 	xr_black_out = xr_camera_3d.get_node("BlackOut")
+	xr_vignette = xr_camera_3d.get_node("Vignette")
 	
 	# Set XR worldscale
 	xr_origin_3d.world_scale = xr_world_scale
+	
+	# Setup vignette with new origin
+	xr_vignette.set_enabled(use_motion_sickness_vignette)
 	
 	# Reset controls
 	var finished = map_xr_controllers_to_action_map()
@@ -1481,6 +1496,10 @@ func set_xr_control_options():
 	start_button = xr_config_handler.start_button
 	select_button = xr_config_handler.select_button
 	use_physical_gamepad_only = xr_config_handler.use_physical_gamepad_only
+	use_motion_sickness_vignette = xr_config_handler.use_motion_sickness_vignette
+	
+	# Setup vignette
+	xr_vignette.set_enabled(use_motion_sickness_vignette)
 	
 	# Set up xr controllers to emulate gamepad
 	var finished = map_xr_controllers_to_action_map()

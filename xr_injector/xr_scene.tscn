@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=19 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_injector/xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_injector/xr_pointer.tscn" id="2_l282w"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://xr_injector/xr_config_handler.gd" id="5_jiibt"]
 [ext_resource type="PackedScene" uid="uid://b4kad2kuba1yn" path="res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn" id="5_mxch7"]
 [ext_resource type="Script" path="res://xr_injector/xr_physical_movement_controller.gd" id="6_1wyxn"]
+[ext_resource type="PackedScene" uid="uid://cc6ngdqie8o8c" path="res://xr_injector/xr_vignette/vignette.tscn" id="6_2wp6c"]
 [ext_resource type="Material" uid="uid://cnids8g0cojet" path="res://xr_injector/hands/materials/labglove_transparent.tres" id="6_y01lc"]
 [ext_resource type="Script" path="res://xr_injector/xr_radial_menu.gd" id="7_hw5k1"]
 [ext_resource type="PackedScene" uid="uid://l2n30mpbkdyw" path="res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn" id="7_n8qcs"]
@@ -66,6 +67,8 @@ shape = SubResource("SphereShape3D_10cyd")
 [node name="WelcomeLabel3D" parent="XROrigin3D/XRCamera3D" instance=ExtResource("5_dgm18")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)
 visible = false
+
+[node name="Vignette" parent="XROrigin3D/XRCamera3D" instance=ExtResource("6_2wp6c")]
 
 [node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
 process_mode = 3
