@@ -1,0 +1,37 @@
+[gd_scene load_steps=4 format=3 uid="uid://usbqxk6a57mm"]
+
+[ext_resource type="Script" path="res://xr_injector/xr_gui/xr_interactive_gui_object.gd" id="1_dhj8o"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_i5nja"]
+size = Vector3(0.3, 0.15, 0.15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wef3m"]
+margin = 0.01
+size = Vector3(0.3, 0.15, 0.15)
+
+[node name="InteractiveGUIObject" type="Node3D"]
+script = ExtResource("1_dhj8o")
+
+[node name="Area3D" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 32768
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Area3D"]
+mesh = SubResource("BoxMesh_i5nja")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("BoxShape3D_wef3m")
+
+[node name="SettingNameLabel3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0.075)
+pixel_size = 0.0001
+text = "Setting"
+font_size = 256
+outline_size = 24
+
+[node name="SettingValueLabel3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.075)
+pixel_size = 0.0001
+text = "SettingValue"
+font_size = 256
+outline_size = 24

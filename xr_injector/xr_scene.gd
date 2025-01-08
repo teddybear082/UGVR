@@ -1431,7 +1431,7 @@ func set_xr_game_options():
 	# Show or Clear Welcome label / Splash Screen
 	if show_welcome_label and not welcome_label_already_shown:
 		welcome_label_3d.show()
-		await get_tree().create_time(1.5).timeout
+		await get_tree().create_timer(1.5).timeout
 		var logo_audio_node = welcome_label_3d.get_node_or_null("logo_audio")
 		if logo_audio_node != null:
 			logo_audio_node.play()

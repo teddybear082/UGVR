@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bs1477cm15a8m"]
+
+[ext_resource type="Script" path="res://xr_injector/xr_gui/xr_gui_menu.gd" id="1_pn0qv"]
+
+[node name="gui_menu" type="Node3D"]
+script = ExtResource("1_pn0qv")
