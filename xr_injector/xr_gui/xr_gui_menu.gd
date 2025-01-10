@@ -4,22 +4,24 @@ signal setting_changed(setting_name: String, setting_value: Variant)
 
 var interactive_gui_object_scene = preload("res://xr_injector/xr_gui/xr_interactive_gui_object.tscn")
 
-# Just for testing purposes presently; this should be set by UGVR code later
-var settings_to_populate : Array = [
-	{
-		"setting_name": "snap_turn",
-		"options": [true, false],
-		"active_index": 0
-	},
-	{
-		"setting_name": "primary_controller",
-		"options": ["left", "right"],
-		"active_index": 1
-	},
-]
+# This should be set by UGVR code
+var settings_to_populate : Array 
+# Format expected is as follows: 
+#[
+	#{
+	#	"setting_name": "snap_turn",
+	#	"options": [true, false],
+	#	"active_index": 0
+	#},
+	#{
+	#	"setting_name": "primary_controller",
+	#	"options": ["left", "right"],
+	#	"active_index": 1
+	#},
+#]
 
 func _ready():
-	populate_gui_menu(settings_to_populate) # Test purposes only
+	#populate_gui_menu(settings_to_populate) # Test purposes only
 	pass
 
 # Function to populate the GUI menu

@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://e4ctdupwya3a"]
+[gd_scene load_steps=22 format=3 uid="uid://e4ctdupwya3a"]
 
 [ext_resource type="Script" path="res://xr_injector/xr_scene.gd" id="1_fmh2y"]
 [ext_resource type="PackedScene" uid="uid://i1hto5hirreh" path="res://xr_injector/xr_pointer.tscn" id="2_l282w"]
@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://cc6ngdqie8o8c" path="res://xr_injector/xr_vignette/vignette.tscn" id="6_2wp6c"]
 [ext_resource type="Material" uid="uid://cnids8g0cojet" path="res://xr_injector/hands/materials/labglove_transparent.tres" id="6_y01lc"]
 [ext_resource type="Script" path="res://xr_injector/xr_radial_menu.gd" id="7_hw5k1"]
+[ext_resource type="PackedScene" uid="uid://bs1477cm15a8m" path="res://xr_injector/xr_gui/xr_gui_menu.tscn" id="7_ienpi"]
 [ext_resource type="PackedScene" uid="uid://l2n30mpbkdyw" path="res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn" id="7_n8qcs"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_pnlj8"]
@@ -25,8 +26,16 @@ radius = 0.3
 [sub_resource type="SphereShape3D" id="SphereShape3D_iwxk1"]
 radius = 0.2
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_7jhj5"]
+margin = 0.01
+radius = 0.1
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_8i68g"]
 radius = 0.2
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_gr4m3"]
+margin = 0.01
+radius = 0.1
 
 [node name="XrScene" type="Node3D"]
 process_mode = 3
@@ -68,6 +77,9 @@ shape = SubResource("SphereShape3D_10cyd")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)
 visible = false
 
+[node name="XRGUIMenu" parent="XROrigin3D/XRCamera3D/WelcomeLabel3D" instance=ExtResource("7_ienpi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, -0.3, 1.5)
+
 [node name="Vignette" parent="XROrigin3D/XRCamera3D" instance=ExtResource("6_2wp6c")]
 
 [node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
@@ -88,6 +100,13 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 [node name="LeftHand" parent="XROrigin3D/XRController3D" instance=ExtResource("5_mxch7")]
 hand_material_override = ExtResource("6_y01lc")
 
+[node name="GUIDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D"]
+collision_layer = 16384
+collision_mask = 0
+
+[node name="GUIDetectionShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D/GUIDetectionArea"]
+shape = SubResource("SphereShape3D_7jhj5")
+
 [node name="XRController3D2" type="XRController3D" parent="XROrigin3D"]
 process_mode = 3
 tracker = &"right_hand"
@@ -105,6 +124,13 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 
 [node name="RightHand" parent="XROrigin3D/XRController3D2" instance=ExtResource("7_n8qcs")]
 hand_material_override = ExtResource("6_y01lc")
+
+[node name="GUIDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D2"]
+collision_layer = 16384
+collision_mask = 0
+
+[node name="GUIDetectionShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GUIDetectionArea"]
+shape = SubResource("SphereShape3D_gr4m3")
 
 [node name="XRPointer" parent="XROrigin3D" instance=ExtResource("2_l282w")]
 process_mode = 3

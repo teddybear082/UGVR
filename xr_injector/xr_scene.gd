@@ -31,6 +31,7 @@ extends Node3D
 @onready var xr_vignette : Node3D = xr_camera_3d.get_node("Vignette")
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
+@onready var xr_gui_menu : Node3D = welcome_label_3d.get_node("XRGUIMenu")
 
 # Inrernal variables for xr hands and material (will be set in script)
 var show_xr_hands : bool = true
@@ -1454,6 +1455,9 @@ func set_xr_game_options():
 		if not xr_autosave_timer.is_stopped():
 			xr_autosave_timer.set_paused(true)
 
+	# Update UGVR GUI
+	update_ugvr_gui()
+
 # Function to set proper world scale for various nodes that depend on sizes and distances
 func set_worldscale_for_xr_nodes(new_xr_world_scale):
 	gesture_area.transform.origin.y = 0.45 * new_xr_world_scale
@@ -1503,6 +1507,9 @@ func set_xr_control_options():
 	
 	# Set up xr controllers to emulate gamepad
 	var finished = map_xr_controllers_to_action_map()
+	
+	# Update UGVR GUI
+	update_ugvr_gui()
 
 # Function to pull current state of config handler action map variables to set same xr scene variables based on user config	
 func set_xr_action_map_options():
@@ -1511,6 +1518,10 @@ func set_xr_action_map_options():
 	xr_radial_menu_entries = xr_config_handler.xr_radial_menu_entries
 	open_radial_menu_button = xr_config_handler.open_radial_menu_button
 	setup_radial_menu()
+	
+	# Update UGVR GUI
+	update_ugvr_gui()
+
 	
 # Receiver function for config file signal that game options have been loaded
 func _on_xr_config_handler_xr_game_options_cfg_loaded(_path_to_file : String):
@@ -1523,7 +1534,7 @@ func _on_xr_config_handler_xr_game_control_map_cfg_loaded(_path_to_file : String
 # Reciever function for config file signal that action map options have been loaded	
 func _on_xr_config_handler_xr_game_action_map_cfg_loaded(_path_to_file : String):
 	set_xr_action_map_options()
-	
+
 # Receiver function for config file signal that game options have been saved
 func _on_xr_config_handler_xr_game_options_cfg_saved(_path_to_file : String):
 	set_xr_game_options()
@@ -1537,6 +1548,43 @@ func _on_xr_config_handler_xr_game_action_map_cfg_saved(_path_to_file : String):
 	set_xr_action_map_options()
 
 
+# Update UGVR GUI
+func update_ugvr_gui():
+	var primary_controller_selection_index = 0 if primary_controller_selection == "right" else 1 
+	var xr_gui_settings : Array = [
+		{
+			"setting_name": "primary_controller_selection",
+			"options": ["right", "left"],
+			"active_index": primary_controller_selection_index
+		},
+		{
+			"setting_name": "turning_type",
+			"options": ["snap", "smooth", "none"],
+			"active_index": turning_type
+		},
+		{
+			"setting_name": "use_arm_swing_jump",
+			"options": [false, true],
+			"active_index": int(use_arm_swing_jump)
+		},
+		{
+			"setting_name": "use_jog_movement",
+			"options": [false, true],
+			"active_index": int(use_jog_movement)
+		},
+		{
+			"setting_name": "use_motion_sickness_vignette",
+			"options": [false, true],
+			"active_index": int(use_motion_sickness_vignette)
+		},
+		{
+			"setting_name": "show_welcome_label",
+			"options": [false, true],
+			"active_index": int(show_welcome_label)
+		},
+	]
+	
+	xr_gui_menu.set_settings_to_populate(xr_gui_settings)
 
 # -----------------------------------------------------
 # EXPERIMENTAL SECTION - NOT FOR FINAL INJECTOR

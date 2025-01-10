@@ -9,12 +9,12 @@ size = Vector3(0.3, 0.15, 0.15)
 margin = 0.01
 size = Vector3(0.3, 0.15, 0.15)
 
-[node name="InteractiveGUIObject" type="Node3D"]
+[node name="XRInteractiveGUIObject" type="Node3D"]
 script = ExtResource("1_dhj8o")
 
 [node name="Area3D" type="Area3D" parent="."]
 collision_layer = 0
-collision_mask = 32768
+collision_mask = 16384
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Area3D"]
 mesh = SubResource("BoxMesh_i5nja")
