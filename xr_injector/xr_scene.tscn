@@ -66,7 +66,7 @@ unshaded = true
 [node name="GestureArea" type="Area3D" parent="XROrigin3D/XRCamera3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 collision_layer = 0
-collision_mask = 32768
+collision_mask = 2097152
 
 [node name="GestureAreaShape" type="CollisionShape3D" parent="XROrigin3D/XRCamera3D/GestureArea"]
 shape = SubResource("SphereShape3D_10cyd")
@@ -88,7 +88,7 @@ tracker = &"left_hand"
 pose = &"aim"
 
 [node name="GestureDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D"]
-collision_layer = 32768
+collision_layer = 2097152
 collision_mask = 0
 
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D/GestureDetectionArea"]
@@ -101,7 +101,7 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 hand_material_override = ExtResource("6_y01lc")
 
 [node name="GUIDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D"]
-collision_layer = 16384
+collision_layer = 8388608
 collision_mask = 0
 
 [node name="GUIDetectionShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D/GUIDetectionArea"]
@@ -113,7 +113,7 @@ tracker = &"right_hand"
 pose = &"aim"
 
 [node name="GestureDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D2"]
-collision_layer = 32768
+collision_layer = 2097152
 collision_mask = 0
 
 [node name="ControllerGestureShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GestureDetectionArea"]
@@ -126,7 +126,7 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 hand_material_override = ExtResource("6_y01lc")
 
 [node name="GUIDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D2"]
-collision_layer = 16384
+collision_layer = 8388608
 collision_mask = 0
 
 [node name="GUIDetectionShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GUIDetectionArea"]

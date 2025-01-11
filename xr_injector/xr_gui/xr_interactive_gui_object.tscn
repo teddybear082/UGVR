@@ -14,7 +14,7 @@ script = ExtResource("1_dhj8o")
 
 [node name="Area3D" type="Area3D" parent="."]
 collision_layer = 0
-collision_mask = 16384
+collision_mask = 8388608
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Area3D"]
 mesh = SubResource("BoxMesh_i5nja")

@@ -211,6 +211,7 @@ var autosave_action_map_duration_in_secs : int = 0
 var use_vostok_gun_finding_code : bool = false
 var use_beton_gun_finding_code : bool = false
 var use_tar_object_picker_finding_code : bool = false
+var use_CRUEL_gun_finding_code : bool = false
 var currentRID = null
 
 func _ready() -> void:
@@ -276,6 +277,9 @@ func _process(_delta : float) -> void:
 		
 	if use_tar_object_picker_finding_code:
 		_set_tar_object_picker(_delta)
+	
+	if use_CRUEL_gun_finding_code:
+		_set_CRUEL_gun(_delta)
 	
 	# Trigger method to find active camera and parent XR scene to it at regular intervals
 	if Engine.get_process_frames() % 90 == 0:
@@ -544,6 +548,10 @@ func handle_secondary_xr_inputs(button):
 			xr_physical_movement_controller.detect_game_jump_action_events()
 		if use_jog_movement:
 			xr_physical_movement_controller.detect_game_sprint_events()
+
+		# Print scene tree to game log for modding / debug purposes - this is better than doing it constantly, and makes sense since this button combo will only be used intentionally
+		get_tree().current_scene.print_tree_pretty()
+
 	
 	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
 	if ugvr_menu_showing:
@@ -1114,8 +1122,7 @@ func _on_xr_radial_menu_entry_selected(entry : String):
 
 # Function to set whether XR Hands are visible and the material
 func set_xr_hands():
-	# TODO:Find out why hands sometimes disappear during scene transitions, appears to be related to duplication of xr origin when it is removed from scene
-	# In the meantime, if hands are lost, bring them back, since they are just cosmetic anyway
+	# If hands are lost, bring them back, since they are just cosmetic anyway
 	
 	# First check if hands somehow floated away (more than 1 relative game unit) unexpectedly
 	# Using length_squared because per docs it is faster than Vector3.length()
@@ -1589,6 +1596,19 @@ func update_ugvr_gui():
 # -----------------------------------------------------
 # EXPERIMENTAL SECTION - NOT FOR FINAL INJECTOR
 
+# Another way of debug printing of scene tree - could be more useful if want to do something more than just print like actually operate on the nodes
+#func get_nodes_in_scene(scene: Node):
+	#var nodes = [scene]
+	#for child in scene.get_children(true):
+		#nodes.append_array(get_nodes_in_scene(child))
+	
+	#return nodes
+
+#var scene_tree = get_tree().current_scene
+#for node in get_nodes_in_scene(get_tree().current_scene):
+	#print("node name: ", node.name)
+	#print("node_path: ", node.get_path())
+
 # Tests only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
 func _set_vostok_gun(delta):
 	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
@@ -1643,3 +1663,79 @@ func _set_tar_object_picker(delta : float):
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
 			handle_node_reparenting(delta, object_picker_point, rotate_reparented_node_180_degrees)
+
+
+# Same, just experiemental - example of using custom code and variables with UGGVR to get a specific game working better in VR after using the print tree functionality to get scene tree
+# Using a game specific prefix like "CRUEL_" helps ensure there can't be conflicts from other variables in UGVR
+var first_time_reparenting_CRUEL_gun : bool = true
+var CRUEL_camera_node = null
+var CRUEL_node3d = null
+var CRUEL_weapon_container = null
+var CRUEL_sway_controller = null
+var CRUEL_pistol = null
+var CRUEL_raycast = null
+var CRUEL_melee_raycast = null
+var CRUEL_interact_raycast = null
+var CRUEL_melee_shapecast = null
+var CRUEL_bullet_shapecast = null
+var CRUEL_nearest_target = null
+
+func _set_CRUEL_gun(delta: float):
+	if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
+		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer") # currently testing
+		#var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol") # Need to try again with newest approach
+		#var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController")
+		#var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera") # Seems to be too much to tie to hand
+		
+		if weapon_node != null and xr_origin_reparented:
+			weapon_node.transform.origin = Vector3(0,0,0)
+			
+			if first_time_reparenting_CRUEL_gun or not is_instance_valid(CRUEL_camera_node):
+				first_time_reparenting_CRUEL_gun = false
+				CRUEL_camera_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera")
+				CRUEL_node3d = CRUEL_camera_node.get_node("Node3D")
+				CRUEL_weapon_container = CRUEL_node3d.get_node("WeaponContainer")
+				CRUEL_sway_controller = CRUEL_weapon_container.get_node("SwayController")
+				CRUEL_pistol = CRUEL_sway_controller.get_node("Pistol")
+				CRUEL_raycast = CRUEL_camera_node.get_node("RayCast3D")
+				CRUEL_melee_raycast = CRUEL_camera_node.get_node("MeleeRaycast")
+				CRUEL_interact_raycast = CRUEL_camera_node.get_node("InteractRaycast")
+				CRUEL_melee_shapecast = CRUEL_camera_node.get_node("MeleeShapeCast3D")
+				CRUEL_bullet_shapecast = CRUEL_camera_node.get_node("BulletDeflectShapeCast3D")
+				CRUEL_nearest_target = CRUEL_camera_node.get_node("NearestTarget")
+				CRUEL_node3d.transform.origin = Vector3(0,0,0)
+				CRUEL_weapon_container.transform.origin = Vector3(0,0,0)
+				CRUEL_sway_controller.transform.origin = Vector3(0,0,0)
+				CRUEL_pistol.transform.origin = Vector3(0,0,0)
+				CRUEL_raycast.transform.origin = Vector3(0,0,0)
+				CRUEL_melee_raycast.transform.origin = Vector3(0,0,0)
+				CRUEL_interact_raycast.transform.origin = Vector3(0,0,0)
+				CRUEL_melee_shapecast.transform.origin = Vector3(0,0,0)
+				CRUEL_bullet_shapecast.transform.origin = Vector3(0,0,0)
+				CRUEL_nearest_target.transform.origin = Vector3(0,0,0)
+				CRUEL_raycast.force_raycast_update() 
+				CRUEL_melee_raycast.force_raycast_update()
+				CRUEL_interact_raycast.force_raycast_update()
+				CRUEL_melee_shapecast.force_shapecast_update() 
+				CRUEL_bullet_shapecast.force_shapecast_update()
+				# Add 3D cursors to weapon node, should be where raycasts point
+				var cursor = cursor_3d.duplicate()
+				weapon_node.add_child(cursor)
+				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
+				var long_range_cursor = long_range_cursor_3d.duplicate()
+				weapon_node.add_child(long_range_cursor)
+				long_range_cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
+				cursor.visible = true
+				long_range_cursor.visible = true
+			xr_reparenting_active = true
+			var rotate_reparented_node_180_degrees = false
+			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees) # Maybe try directly reparenting and see how that goes, probably will break things though - or could try using remote transform on primary controller.
+			# Try to handle quasi reparenting of pistol mesh node so it looks more natural; leaving melee raycasts and shapecasts alone so they are not dependent on hand movement
+			if is_instance_valid(CRUEL_pistol):
+				handle_node_reparenting(delta, CRUEL_pistol, rotate_reparented_node_180_degrees) # Maybe try directly reparenting and see if it eliminates jitter
+			if is_instance_valid(CRUEL_raycast):
+				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees) # Same, but probably will break things if reparented
+				CRUEL_raycast.force_raycast_update()
+			if is_instance_valid(CRUEL_bullet_shapecast):
+				handle_node_reparenting(delta, CRUEL_bullet_shapecast, rotate_reparented_node_180_degrees) #Same, but probably will break things if reparented
+				CRUEL_bullet_shapecast.force_shapecast_update()
