@@ -266,7 +266,7 @@ func _ready() -> void:
 	# Set up XR hand materials
 	xr_left_hand.hand_material_override = xr_hand_material
 	xr_right_hand.hand_material_override = xr_hand_material
-	
+
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
 	if use_vostok_gun_finding_code:
@@ -1682,10 +1682,7 @@ var CRUEL_nearest_target = null
 
 func _set_CRUEL_gun(delta: float):
 	if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
-		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer") # currently testing
-		#var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol") # Need to try again with newest approach
-		#var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController")
-		#var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera") # Seems to be too much to tie to hand
+		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
 		
 		if weapon_node != null and xr_origin_reparented:
 			weapon_node.transform.origin = Vector3(0,0,0)
@@ -1727,15 +1724,13 @@ func _set_CRUEL_gun(delta: float):
 				long_range_cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
 				cursor.visible = true
 				long_range_cursor.visible = true
+
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
-			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees) # Maybe try directly reparenting and see how that goes, probably will break things though - or could try using remote transform on primary controller.
-			# Try to handle quasi reparenting of pistol mesh node so it looks more natural; leaving melee raycasts and shapecasts alone so they are not dependent on hand movement
-			if is_instance_valid(CRUEL_pistol):
-				handle_node_reparenting(delta, CRUEL_pistol, rotate_reparented_node_180_degrees) # Maybe try directly reparenting and see if it eliminates jitter
+			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees)
 			if is_instance_valid(CRUEL_raycast):
-				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees) # Same, but probably will break things if reparented
+				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees)
 				CRUEL_raycast.force_raycast_update()
 			if is_instance_valid(CRUEL_bullet_shapecast):
-				handle_node_reparenting(delta, CRUEL_bullet_shapecast, rotate_reparented_node_180_degrees) #Same, but probably will break things if reparented
+				handle_node_reparenting(delta, CRUEL_bullet_shapecast, rotate_reparented_node_180_degrees)
 				CRUEL_bullet_shapecast.force_shapecast_update()
