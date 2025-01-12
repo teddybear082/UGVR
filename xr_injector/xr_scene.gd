@@ -786,7 +786,8 @@ func _handle_rotation(angle : float) -> void:
 # ---------------------END OF DECASIS STICK TURNING CODE -----------------------------------------------
 
 # Handle reparenting game elements
-func handle_node_reparenting(delta : float, reparented_node : Node3D, rotate_reparented_node_180_degrees : bool):
+# Reparented node is the node passed to the function to be attached to the primary controller, use rotate if the model has z going the wrong direction, use target offset to better place the object in the XR hand
+func handle_node_reparenting(delta : float, reparented_node : Node3D, rotate_reparented_node_180_degrees : bool, target_offset: Vector3 = Vector3(0,0,0)):
 
 	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
 		return
@@ -817,10 +818,10 @@ func handle_node_reparenting(delta : float, reparented_node : Node3D, rotate_rep
 		else:
 			xr_reparenting_node_holder.rotation_degrees = Vector3(0,0,0)
 
-		handle_reparented_node_smoothing(delta, xr_reparenting_node_holder, reparented_node, rotate_reparented_node_180_degrees)
+		handle_reparented_node_smoothing(delta, xr_reparenting_node_holder, reparented_node, rotate_reparented_node_180_degrees, target_offset)
 
 # Try to smooth movement of reparented node to minimize jitter
-func handle_reparented_node_smoothing(delta : float, source_node : Node3D, destination_node : Node3D, rotate_reparented_node_180_degrees : bool):
+func handle_reparented_node_smoothing(delta : float, source_node : Node3D, destination_node : Node3D, rotate_reparented_node_180_degrees : bool, target_offset: Vector3 = Vector3(0,0,0)):
 	if is_instance_valid(source_node) and is_instance_valid(destination_node):
 
 		# Set lerp speed to current FPS
@@ -828,7 +829,7 @@ func handle_reparented_node_smoothing(delta : float, source_node : Node3D, desti
 		var lerp_speed = attach_lerp_speed * delta
 		# Get target rotation and position from source node
 		var new_pose_rotation = source_node.global_transform.basis.get_rotation_quaternion()
-		var new_position = source_node.global_transform.origin
+		var new_position = source_node.global_transform.origin + target_offset
 		# Get current destination node rotation and position
 		var last_pose_rotation = destination_node.global_transform.basis.get_rotation_quaternion()
 		var last_position = destination_node.global_transform.origin
@@ -1722,7 +1723,7 @@ func _set_CRUEL_gun(delta: float):
 
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
-			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees)
+			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees, Vector3(0,-0.3,0))
 
 			if is_instance_valid(CRUEL_raycast):
 				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees)
