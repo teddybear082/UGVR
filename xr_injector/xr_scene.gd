@@ -1665,7 +1665,7 @@ func _set_tar_object_picker(delta : float):
 			handle_node_reparenting(delta, object_picker_point, rotate_reparented_node_180_degrees)
 
 
-# Same, just experiemental - example of using custom code and variables with UGGVR to get a specific game working better in VR after using the print tree functionality to get scene tree
+# Same, just experiemental - example of using custom code and variables with UGVR to get a specific game working better in VR after using the print tree functionality to get scene tree
 # Using a game specific prefix like "CRUEL_" helps ensure there can't be conflicts from other variables in UGVR
 var first_time_reparenting_CRUEL_gun : bool = true
 var CRUEL_camera_node = null
@@ -1679,7 +1679,6 @@ var CRUEL_interact_raycast = null
 var CRUEL_melee_shapecast = null
 var CRUEL_bullet_shapecast = null
 var CRUEL_nearest_target = null
-
 func _set_CRUEL_gun(delta: float):
 	if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
 		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
@@ -1715,22 +1714,24 @@ func _set_CRUEL_gun(delta: float):
 				CRUEL_interact_raycast.force_raycast_update()
 				CRUEL_melee_shapecast.force_shapecast_update() 
 				CRUEL_bullet_shapecast.force_shapecast_update()
-				# Add 3D cursors to weapon node, should be where raycasts point
+				# Add 3D cursor to weapon node, should be where raycasts point, for this game the closer distance seems to be more accurate
 				var cursor = cursor_3d.duplicate()
 				weapon_node.add_child(cursor)
 				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
-				var long_range_cursor = long_range_cursor_3d.duplicate()
-				weapon_node.add_child(long_range_cursor)
-				long_range_cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
 				cursor.visible = true
-				long_range_cursor.visible = true
 
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
 			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees)
+
 			if is_instance_valid(CRUEL_raycast):
 				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees)
 				CRUEL_raycast.force_raycast_update()
 			if is_instance_valid(CRUEL_bullet_shapecast):
 				handle_node_reparenting(delta, CRUEL_bullet_shapecast, rotate_reparented_node_180_degrees)
 				CRUEL_bullet_shapecast.force_shapecast_update()
+			
+			#Try to cut down stuttering
+			CRUEL_pistol.bulletDeviation = 0.0
+			CRUEL_weapon_container.walkBobAmplitude = 0.0
+			CRUEL_weapon_container.bobAmplitude = 0
