@@ -935,10 +935,10 @@ func _on_xr_origin_exiting_tree():
 		#print(xr_origin_3d.get_parent())
 		if attempt_to_use_camera_to_set_roomscale_height:
 			@warning_ignore("unused_variable")
-			var err = xr_roomscale_controller.set_enabled(false, null, reverse_roomscale_direction, current_camera, roomscale_height_adjustment)
+			var err = xr_roomscale_controller.set_enabled(false, null, reverse_roomscale_direction, current_camera, primary_controller, use_roomscale_controller_directed_movement, roomscale_height_adjustment)
 		else:
 			@warning_ignore("unused_variable")
-			var err = xr_roomscale_controller.set_enabled(false, null, reverse_roomscale_direction, null, roomscale_height_adjustment)
+			var err = xr_roomscale_controller.set_enabled(false, null, reverse_roomscale_direction, null, primary_controller, use_roomscale_controller_directed_movement, roomscale_height_adjustment)
 		xr_roomscale_controller.set_characterbody3D(null)
 		xr_origin_reparented = false
 		backup_xr_origin = xr_origin_3d.duplicate()
@@ -1125,20 +1125,28 @@ func _on_xr_radial_menu_entry_selected(entry : String):
 func set_xr_hands():
 	# If hands are lost, bring them back, since they are just cosmetic anyway
 	
-	# First check if hands somehow floated away (more than 1 relative game unit) unexpectedly
-	# Using length_squared because per docs it is faster than Vector3.length()
-	if (xr_left_hand.global_transform.origin - xr_left_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
-		xr_left_hand.queue_free()
-	if (xr_right_hand.global_transform.origin - xr_right_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
-		xr_right_hand.queue_free()
-	
-	# If left hand or right hand are invalid either because of the above calculation or they are otherwise lost, restore them
+	# First, if left hand or right hand are invalid, restore them
 	if not is_instance_valid(xr_left_hand):
 		xr_left_hand = null
 		var xr_left_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn")
 		xr_left_hand = xr_left_hand_scene.instantiate()
 		xr_left_controller.add_child(xr_left_hand)
 	if not is_instance_valid(xr_right_hand):
+		xr_right_hand = null
+		var xr_right_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn")
+		xr_right_hand = xr_right_hand_scene.instantiate()
+		xr_right_controller.add_child(xr_right_hand)
+	
+	# Second, check if hands somehow floated away (more than 1 relative game unit) unexpectedly
+	# Using length_squared because per docs it is faster than Vector3.length()
+	if (xr_left_hand.global_transform.origin - xr_left_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
+		xr_left_hand.queue_free()
+		xr_left_hand = null
+		var xr_left_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/left_hand_low.tscn")
+		xr_left_hand = xr_left_hand_scene.instantiate()
+		xr_left_controller.add_child(xr_left_hand)
+	if (xr_right_hand.global_transform.origin - xr_right_controller.global_transform.origin).length_squared() > (1.0 * xr_world_scale):
+		xr_right_hand.queue_free()
 		xr_right_hand = null
 		var xr_right_hand_scene = load("res://xr_injector/hands/scenes/lowpoly/right_hand_low.tscn")
 		xr_right_hand = xr_right_hand_scene.instantiate()
@@ -1719,17 +1727,18 @@ func _set_CRUEL_gun(delta: float):
 				var cursor = cursor_3d.duplicate()
 				weapon_node.add_child(cursor)
 				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
+				cursor.transform.origin.y = 0.3
 				cursor.visible = true
 
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
-			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees, Vector3(0,-0.3,0))
+			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees)
 
 			if is_instance_valid(CRUEL_raycast):
-				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees)
+				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees, Vector3(0,0.3,0))
 				CRUEL_raycast.force_raycast_update()
 			if is_instance_valid(CRUEL_bullet_shapecast):
-				handle_node_reparenting(delta, CRUEL_bullet_shapecast, rotate_reparented_node_180_degrees)
+				handle_node_reparenting(delta, CRUEL_bullet_shapecast, rotate_reparented_node_180_degrees, Vector3(0,0.3,0))
 				CRUEL_bullet_shapecast.force_shapecast_update()
 			
 			#Try to cut down stuttering
