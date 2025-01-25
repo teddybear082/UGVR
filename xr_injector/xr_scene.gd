@@ -1693,10 +1693,10 @@ func _set_CRUEL_gun(delta: float):
 		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
 		
 		if weapon_node != null and xr_origin_reparented:
-			weapon_node.transform.origin = Vector3(0,0,0)
 			
 			if first_time_reparenting_CRUEL_gun or not is_instance_valid(CRUEL_camera_node):
 				first_time_reparenting_CRUEL_gun = false
+				weapon_node.transform.origin = Vector3(0,0,0)
 				CRUEL_camera_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera")
 				CRUEL_node3d = CRUEL_camera_node.get_node("Node3D")
 				CRUEL_weapon_container = CRUEL_node3d.get_node("WeaponContainer")
