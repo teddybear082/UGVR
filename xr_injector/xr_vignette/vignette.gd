@@ -176,6 +176,8 @@ func _process(delta):
 	last_location = global_transform.origin
 
 func _setup_vignette() -> void:
+	if not is_instance_valid(XRHelpers):
+		XRHelpers = load("res://xr_injector/xr_helpers.gd").new()
 	origin_node = XRHelpers.get_xr_origin(self)
 	print("origin node from xr vignette: ", origin_node) 
 	_update_mesh()

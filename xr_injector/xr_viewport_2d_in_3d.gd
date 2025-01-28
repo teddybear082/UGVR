@@ -107,14 +107,22 @@ var unshaded : bool = false: set = set_unshaded
 ## Filtering flag (ignored when custom material provided)
 var filter : bool = true: set = set_filter
 
-
 var is_ready : bool = false
 var scene_node : Node
+var scene_properties_keys: PackedStringArray = []
+var scene_properties : Array[Dictionary] = []
+# Needed to apply custom properties of the scene before it is instanced, as these are set on ready,
+# But at this point in time the scene is not instanced yet
+var scene_proxy_configuration: Dictionary = {}
 var viewport_texture : ViewportTexture
 var time_since_last_update : float = 0.0
 var _screen_material : StandardMaterial3D
 var _dirty := _DIRTY_ALL
 
+
+# Add support for is_xr_class on XRTools classes
+func is_xr_class(p_name : String) -> bool:
+	return p_name == "XRToolsViewport2DIn3D"
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -189,6 +197,34 @@ func _property_get_revert(property : StringName): # Variant
 		"filter":
 			return true
 
+# When the scene_node changes, update the property list
+func _update_scene_property_list():
+	scene_properties = []
+	scene_properties_keys = []
+	if is_instance_valid(scene_node):
+
+		# If the scene is queued for deletion, clear the scene proxy configuration
+		if scene_node.is_queued_for_deletion():
+			scene_proxy_configuration = {}
+		else:
+			# Extract relevant properties of the provided scene to display in the editor (forwarded)
+			var node_script: Script = scene_node.get_script() as Script
+			if node_script:
+				var all_properties := node_script.get_script_property_list()
+
+				# Join this with the custom property list of the object created by the script
+				if scene_node.has_method("_get_property_list"):
+					all_properties.append_array(scene_node.call("_get_property_list"))
+
+				for property in all_properties:
+					# Filter out only the properties that are supposed to be stored, or are used for grouping
+					if property["usage"] & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_GROUP \
+					| PROPERTY_USAGE_CATEGORY | PROPERTY_USAGE_SUBGROUP):
+						scene_properties.append(property)
+						scene_properties_keys.append(property["name"])
+
+	notify_property_list_changed()
+
 
 ## Get the 2D scene instance
 func get_scene_instance() -> Node:
@@ -213,7 +249,7 @@ func _input(event):
 		$Viewport.push_input(event)
 		return
 
-	# Map gamepad events to the viewport if enable
+	# Map gamepad events to the viewport if enabled
 	if input_gamepad and (event is InputEventJoypadButton or event is InputEventJoypadMotion):
 		$Viewport.push_input(event)
 		return
@@ -242,6 +278,20 @@ func _process(delta):
 	else:
 		# This is no longer needed
 		set_process(false)
+
+
+# Handle visibility changed
+func _on_visibility_changed() -> void:
+	# Fire visibility changed in scene
+	if scene_node:
+		scene_node.propagate_notification(
+			CanvasItem.NOTIFICATION_VISIBILITY_CHANGED)
+
+	# Update collision and rendering based on visibility
+	_update_enabled()
+	_dirty |= _DIRTY_UPDATE
+	_update_render()
+
 
 
 ## Set screen size property

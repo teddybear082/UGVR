@@ -37,6 +37,7 @@ class XRToolsPointerEvent:
 	var target
 	var position
 	var last_position
+	var button_type
 
 ## Report a pointer entered event
 static func entered(
@@ -58,16 +59,18 @@ static func moved(
 static func pressed(
 		pointer : Node3D,
 		target : Node3D,
-		at : Vector3) -> void:
-	report(Type.PRESSED,pointer,target,at,at)
+		at : Vector3,
+		button_type : MouseButton) -> void:
+	report(Type.PRESSED,pointer,target,at,at,button_type)
 
 
 ## Report pointer released event
 static func released(
 		pointer : Node3D,
 		target : Node3D,
-		at : Vector3) -> void:
-	report(Type.RELEASED,pointer,target,at,at)
+		at : Vector3,
+		button_type : MouseButton) -> void:
+	report(Type.RELEASED,pointer,target,at,at,button_type)
 
 ## Report a pointer exited event
 static func exited(
@@ -78,13 +81,14 @@ static func exited(
 
 
 ## Report a pointer event
-static func report(event_type, pointer, target, position, last_position) -> void:
+static func report(event_type, pointer, target, position, last_position, button_type = null) -> void:
 	var new_event = XRToolsPointerEvent.new()
 	new_event.event_type = event_type
 	new_event.pointer = pointer
 	new_event.target = target
 	new_event.position = position
 	new_event.last_position = last_position
+	new_event.button_type = button_type
 	# Fire event on pointer
 	if is_instance_valid(pointer):
 		if pointer.has_signal("pointing_event"):

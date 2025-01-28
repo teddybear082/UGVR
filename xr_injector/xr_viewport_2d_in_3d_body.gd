@@ -60,9 +60,10 @@ func _on_pointer_event(event) -> void:
 	if not is_instance_valid(_viewport):
 		return
 
-	# Get the pointer and event type
+	# Get the pointer, event type, and button type
 	var pointer = event.pointer
 	var type = event.event_type
+	var button_type = event.button_type
 
 	# Get the touch-index [0..]
 	var index : int = _touches.get(pointer, -1)
@@ -126,10 +127,10 @@ func _on_pointer_event(event) -> void:
 	if pointer == _mouse:
 		match type:
 			XRToolsPointerEvent.Type.PRESSED:
-				_report_mouse_down(at)
+				_report_mouse_down(button_type, at)
 
 			XRToolsPointerEvent.Type.RELEASED:
-				_report_mouse_up( at)
+				_report_mouse_up(button_type, at)
 
 			XRToolsPointerEvent.Type.MOVED:
 				_report_mouse_move(pressed, last, at)
@@ -174,9 +175,12 @@ func _report_touch_move(index : int, pressed : bool, from : Vector2, to : Vector
 
 
 # Report mouse-down event
-func _report_mouse_down(at : Vector2) -> void:
+func _report_mouse_down(button_type: MouseButton, at : Vector2) -> void:
 	var event := InputEventMouseButton.new()
-	event.button_index = 1
+	if button_type == MouseButton.MOUSE_BUTTON_LEFT:
+		event.button_index = 1
+	elif button_type == MouseButton.MOUSE_BUTTON_RIGHT:
+		event.button_index = 2
 	event.pressed = true
 	event.position = at
 	event.global_position = at
@@ -185,9 +189,12 @@ func _report_mouse_down(at : Vector2) -> void:
 
 
 # Report mouse-up event
-func _report_mouse_up(at : Vector2) -> void:
+func _report_mouse_up(button_type: MouseButton, at : Vector2) -> void:
 	var event := InputEventMouseButton.new()
-	event.button_index = 1
+	if button_type == MouseButton.MOUSE_BUTTON_LEFT:
+		event.button_index = 1
+	elif button_type == MouseButton.MOUSE_BUTTON_RIGHT:
+		event.button_index = 2
 	event.pressed = false
 	event.position = at
 	event.global_position = at

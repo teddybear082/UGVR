@@ -38,6 +38,7 @@ const SUPPRESS_MASK := 0b0000_0000_0100_0000_0000_0000_0000_0000
 
 ## Active button action
 @export var active_button_action : String = "trigger_click"
+@export var secondary_button_action : String = "ax_button"
 
 @export_group("Laser")
 
@@ -109,8 +110,12 @@ var _controller  : XRController3D
 # The currently active controller
 var _active_controller : XRController3D
 
+# Type of button press - primary or secondary mouse click
+var button_type : MouseButton
+
 # Reference to XR Helpers script
 var XRHelpers = load("res://xr_injector/xr_helpers.gd").new()
+
 ## Add support for is_xr_class on XRTools classes
 func is_xr_class(name : String) -> bool:
 	return name == "XRToolsFunctionPointer"
@@ -402,36 +407,44 @@ func _update_pointer() -> void:
 
 
 # Pointer-activation button pressed handler
-func _button_pressed() -> void:
+func _button_pressed(button_name : String) -> void:
 	if $RayCast.is_colliding():
 		# Report pressed
 		target = $RayCast.get_collider()
 		last_collided_at = $RayCast.get_collision_point()
-		XRToolsPointerEvent.pressed(self, target, last_collided_at)
+		if button_name == active_button_action:
+			button_type = MouseButton.MOUSE_BUTTON_LEFT
+		elif button_name == secondary_button_action:
+			button_type = MouseButton.MOUSE_BUTTON_RIGHT
+		XRToolsPointerEvent.pressed(self, target, last_collided_at, button_type)
 
 
 # Pointer-activation button released handler
-func _button_released() -> void:
+func _button_released(button_name : String) -> void:
 	if target:
 		# Report release
-		XRToolsPointerEvent.released(self, target, last_collided_at)
+		if button_name == active_button_action:
+			button_type = MouseButton.MOUSE_BUTTON_LEFT
+		elif button_name == secondary_button_action:
+			button_type = MouseButton.MOUSE_BUTTON_RIGHT
+		XRToolsPointerEvent.released(self, target, last_collided_at, button_type)
 		target = null
 		last_collided_at = Vector3(0, 0, 0)
 
 
 # Button pressed handler
 func _on_button_pressed(p_button : String, controller : XRController3D) -> void:
-	if p_button == active_button_action and enabled:
+	if (p_button == active_button_action or p_button == secondary_button_action) and enabled:
 		if controller == _active_controller:
-			_button_pressed()
+			_button_pressed(p_button)
 		else:
 			_active_controller = controller
 
 
 # Button released handler
 func _on_button_released(p_button : String, _controller : XRController3D) -> void:
-	if p_button == active_button_action and target:
-		_button_released()
+	if (p_button == active_button_action or p_button == secondary_button_action) and target:
+		_button_released(p_button)
 
 
 # Update the laser active material
