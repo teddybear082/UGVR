@@ -1627,7 +1627,14 @@ func _set_vostok_gun(delta):
 			if vostok_weapons_node.get_child_count(true) > 0:
 				var vostok_weapon = vostok_weapons_node.get_child(0, true)
 				#print(vostok_weapon)
-				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				# First see if weapon is a firearm
+				var vostok_weapon_mesh = vostok_weapon.get_node_or_null("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				# if that's not valid, try to see if it's a knife instead
+				if not is_instance_valid(vostok_weapon_mesh):
+					vostok_weapon_mesh = vostok_weapon.get_node_or_null("Handling/Sway/Noise/Tilt/Impulse/Knife")
+				# if that's still not valid, try to see if its a instrument instead
+				if not is_instance_valid(vostok_weapon_mesh):
+					vostok_weapon_mesh = vostok_weapon.get_node_or_null("Sway/Noise/Tilt/Impulse/Instrument")
 				#print(vostok_weapon_mesh)
 				if is_instance_valid(vostok_weapon_mesh):
 					var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
@@ -1643,7 +1650,13 @@ func _set_vostok_gun(delta):
 			if vostok_weapons_node.get_child_count(true) > 0:
 				var vostok_weapon = vostok_weapons_node.get_child(0, true)
 				#print(vostok_weapon)
-				var vostok_weapon_mesh = vostok_weapon.get_node("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				var vostok_weapon_mesh = vostok_weapon.get_node_or_null("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
+				# if that's not valid, try to see if it's a knife instead
+				if not is_instance_valid(vostok_weapon_mesh):
+					vostok_weapon_mesh = vostok_weapon.get_node_or_null("Handling/Sway/Noise/Tilt/Impulse/Knife")
+				# if that's still not valid, try to see if its a instrument instead
+				if not is_instance_valid(vostok_weapon_mesh):
+					vostok_weapon_mesh = vostok_weapon.get_node_or_null("Sway/Noise/Tilt/Impulse/Instrument")
 				#print(vostok_weapon_mesh)
 				if is_instance_valid(vostok_weapon_mesh):
 					var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
