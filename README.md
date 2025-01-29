@@ -22,6 +22,8 @@ https://vimeo.com/924331826
 
 -Snap and smooth turn of user camera (right now, default set to snap since no user config yet)
 
+-Allow user to change between HMD-directed and controller-directed movement
+
 -Allow user to map input action map actions to VR Controls (in the alternative of default mapping, for example, for pure keyboard games) (currently via manual config file only, which is created automatically when running game with mod for the first time in a special XRConfigs folder)  - see https://github.com/teddybear082/UGVR/wiki/Remapping-Controls-with-Action-Map-Config for more details.
 
 -Allow user to convert to roomscale mode, intended for FPS games, to reparent the XR elements to the player CharacterBody3D, and walk around in room and turn freely while having in game character reflect those movements (may have unintended effects in third person mode, not tested)
@@ -34,13 +36,17 @@ https://vimeo.com/924331826
 
 -Allow user to use custom hand radial menu with either emulated buttons or emulated game actions 
 
+-Allow user to implement custom code to reparent game object to primary controller and adjust game position relative to hand
+
+-Allow user to print to log current scene tree (scene_tree_pretty) for use in developing game-specific code
+
 ## Presently not working / Roadmap:
 
 -Implement VR options menu GUI
 
 -Allow user to remap controls in interface 
 
--Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element, child nodes to controller locations, change position of hand nodes
+-Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element
 
 ## Use
 
