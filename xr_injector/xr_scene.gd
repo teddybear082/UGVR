@@ -1743,19 +1743,22 @@ func _set_CRUEL_gun(delta: float):
 				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
 				cursor.transform.origin.y = 0.3
 				cursor.visible = true
+				# reparent directly to avoid stuttering
+				weapon_node.reparent(primary_controller, false)
+				# now need a way to stop camera movement from controlling transform.origin of weapon node, must be hard wired somehow in code
 
 			xr_reparenting_active = true
-			var rotate_reparented_node_180_degrees = false
-			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees, Vector3(0,0.3,0)
+			#var rotate_reparented_node_180_degrees = false
+			#handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees, Vector3(0,0.3,0))
 
-			if is_instance_valid(CRUEL_raycast):
-				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees, Vector3(0,0.3,0))
-				CRUEL_raycast.force_raycast_update()
-			if is_instance_valid(CRUEL_bullet_shapecast):
-				handle_node_reparenting(delta, CRUEL_bullet_shapecast, rotate_reparented_node_180_degrees, Vector3(0,0.3,0))
-				CRUEL_bullet_shapecast.force_shapecast_update()
+		if is_instance_valid(CRUEL_raycast):
+			handle_node_reparenting(delta, CRUEL_raycast, false, Vector3(0,0.3,0))
+			CRUEL_raycast.force_raycast_update()
+		if is_instance_valid(CRUEL_bullet_shapecast):
+			handle_node_reparenting(delta, CRUEL_bullet_shapecast, false, Vector3(0,0.3,0))
+			CRUEL_bullet_shapecast.force_shapecast_update()
 			
 			#Try to cut down stuttering
-			CRUEL_pistol.bulletDeviation = 0.0
-			CRUEL_weapon_container.walkBobAmplitude = 0.0
-			CRUEL_weapon_container.bobAmplitude = 0
+			#CRUEL_pistol.bulletDeviation = 0.0
+			#CRUEL_weapon_container.walkBobAmplitude = 0.0
+			#CRUEL_weapon_container.bobAmplitude = 0
