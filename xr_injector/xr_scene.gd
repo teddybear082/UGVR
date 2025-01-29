@@ -818,10 +818,11 @@ func handle_node_reparenting(delta : float, reparented_node : Node3D, rotate_rep
 		else:
 			xr_reparenting_node_holder.rotation_degrees = Vector3(0,0,0)
 
-		handle_reparented_node_smoothing(delta, xr_reparenting_node_holder, reparented_node, rotate_reparented_node_180_degrees, target_offset)
+		xr_reparenting_node_holder.transform.origin = target_offset
+		handle_reparented_node_smoothing(delta, xr_reparenting_node_holder, reparented_node, rotate_reparented_node_180_degrees)
 
 # Try to smooth movement of reparented node to minimize jitter
-func handle_reparented_node_smoothing(delta : float, source_node : Node3D, destination_node : Node3D, rotate_reparented_node_180_degrees : bool, target_offset: Vector3 = Vector3(0,0,0)):
+func handle_reparented_node_smoothing(delta : float, source_node : Node3D, destination_node : Node3D, rotate_reparented_node_180_degrees : bool):
 	if is_instance_valid(source_node) and is_instance_valid(destination_node):
 
 		# Set lerp speed to current FPS
@@ -829,7 +830,7 @@ func handle_reparented_node_smoothing(delta : float, source_node : Node3D, desti
 		var lerp_speed = attach_lerp_speed * delta
 		# Get target rotation and position from source node
 		var new_pose_rotation = source_node.global_transform.basis.get_rotation_quaternion()
-		var new_position = source_node.global_transform.origin + target_offset
+		var new_position = source_node.global_transform.origin
 		# Get current destination node rotation and position
 		var last_pose_rotation = destination_node.global_transform.basis.get_rotation_quaternion()
 		var last_position = destination_node.global_transform.origin
@@ -1642,7 +1643,7 @@ func _set_vostok_gun(delta):
 						vostok_arms.visible = false
 						xr_reparenting_active = true
 						var rotate_reparented_node_180_degrees = true
-						handle_node_reparenting(delta, vostok_weapon_mesh, rotate_reparented_node_180_degrees)
+						handle_node_reparenting(delta, vostok_weapon_mesh, rotate_reparented_node_180_degrees, Vector3(0.0, 0.025, 0.025))
 				
 	elif is_instance_valid(current_camera):
 		var vostok_weapons_node = current_camera.find_child("Weapons", false, false)
@@ -1664,7 +1665,7 @@ func _set_vostok_gun(delta):
 						vostok_arms.visible = false
 						xr_reparenting_active = true
 						var rotate_reparented_node_180_degrees = true
-						handle_node_reparenting(delta, vostok_weapon_mesh, rotate_reparented_node_180_degrees)
+						handle_node_reparenting(delta, vostok_weapon_mesh, rotate_reparented_node_180_degrees, Vector3(0,0.025,0.025))
 
 # Same, just experimental
 func _set_beton_gun(delta : float):
@@ -1745,7 +1746,7 @@ func _set_CRUEL_gun(delta: float):
 
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
-			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees)
+			handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees, Vector3(0,0.3,0)
 
 			if is_instance_valid(CRUEL_raycast):
 				handle_node_reparenting(delta, CRUEL_raycast, rotate_reparented_node_180_degrees, Vector3(0,0.3,0))
