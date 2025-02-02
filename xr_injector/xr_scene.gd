@@ -31,7 +31,7 @@ extends Node3D
 @onready var xr_vignette : Node3D = xr_camera_3d.get_node("Vignette")
 @onready var xr_reparenting_node : Node3D = get_node("XRReparentingNode")
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
-@onready var xr_gui_menu : Node3D = welcome_label_3d.get_node("XRGUIMenu")
+@onready var xr_gui_menu : Node3D = get_node("XRGUIMenu")
 
 # Inrernal variables for xr hands and material (will be set in script)
 var show_xr_hands : bool = true
@@ -231,6 +231,7 @@ func _ready() -> void:
 	xr_config_handler.connect("xr_game_options_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_options_cfg_saved"))
 	xr_config_handler.connect("xr_game_control_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_control_map_cfg_saved"))
 	xr_config_handler.connect("xr_game_action_map_cfg_saved", Callable(self, "_on_xr_config_handler_xr_game_action_map_cfg_saved"))
+	xr_gui_menu.connect("setting_changed", Callable(self, "_on_xr_gui_setting_changed"))
 	
 	# Set up unshaded material for pointers and cursor3D objects
 	unshaded_material.disable_ambient_light = true
@@ -465,6 +466,7 @@ func handle_primary_xr_inputs(button):
 	# Toggle pointers if user holds primary hand over their head and presses toggle button
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(primary_detection_area):
 		xr_pointer.set_enabled(!xr_pointer.enabled)
+		toggle_xr_gui_menu()
 	
 	# (Temporary) Set user height if user presses designated button while doing gesture
 	if button == gesture_set_user_height_button and gesture_area.overlaps_area(primary_detection_area):
@@ -1012,6 +1014,9 @@ func _setup_new_xr_origin(new_origin : XROrigin3D):
 	
 	# Set up XR Hands
 	set_xr_hands()
+	
+	# Set controller for ugvr menu
+	xr_gui_menu.set_xr_controller(primary_controller)
 	
 func setup_viewports():
 	# Turn off FSR
@@ -1570,9 +1575,14 @@ func update_ugvr_gui():
 	var primary_controller_selection_index = 0 if primary_controller_selection == "right" else 1 
 	var xr_gui_settings : Array = [
 		{
-			"setting_name": "primary_controller_selection",
+			"setting_name": "primary_controller",
 			"options": ["right", "left"],
 			"active_index": primary_controller_selection_index
+		},
+		{
+			"setting_name": "use_controller_dir_movement",
+			"options": [false, true],
+			"active_index": int(use_roomscale_controller_directed_movement)
 		},
 		{
 			"setting_name": "turning_type",
@@ -1590,7 +1600,7 @@ func update_ugvr_gui():
 			"active_index": int(use_jog_movement)
 		},
 		{
-			"setting_name": "use_motion_sickness_vignette",
+			"setting_name": "use_motion_vignette",
 			"options": [false, true],
 			"active_index": int(use_motion_sickness_vignette)
 		},
@@ -1600,9 +1610,85 @@ func update_ugvr_gui():
 			"active_index": int(show_welcome_label)
 		},
 	]
-	
+	xr_gui_menu.set_xr_controller(primary_controller)
 	xr_gui_menu.set_settings_to_populate(xr_gui_settings)
 
+# Function to display ugvr options menu
+func toggle_xr_gui_menu():
+	if !is_instance_valid(xr_gui_menu):
+		return
+	
+	#Make menu appear whenever pointer is enabled for now, change later to custom keybind	
+	xr_gui_menu.visible = xr_pointer.enabled
+	
+	if xr_gui_menu.visible:
+		ugvr_menu_showing = true
+		# Get references to the nodes
+		var distance = 1 * xr_world_scale
+		var vertical_offset = 0.25 * xr_camera_3d.global_transform.origin.y
+
+		# Get the camera's global transform
+		var cam_transform = xr_camera_3d.global_transform
+		
+		# Get the camera's forward vector (-z) and remove vertical component
+		var forward = -cam_transform.basis.z
+		forward.y = 0
+		forward = forward.normalized()
+		# Set the menu's position 2 units in front of the camera
+		var menu_position: Vector3 = cam_transform.origin + forward * distance
+		# Offset height
+		menu_position.y -= vertical_offset
+		# Create a rotation so the menu faces the camera.
+		# Compute the yaw angle from the flattened forward vector.
+		var yaw_angle = atan2(forward.x, forward.z)
+		# Add PI radians to flip by 180 degrees
+		var menu_basis = Basis(Vector3.UP, yaw_angle + PI)
+		# Set the global transform of the menu (rotation and position)
+		xr_gui_menu.global_transform = Transform3D(menu_basis, menu_position)
+	
+	else:
+		ugvr_menu_showing = false
+		# Reset position
+		xr_gui_menu.global_transform.origin = Vector3(0,0,0)
+
+# Triggers when gui object indicates user has changed a setting by firing its setting changed signal
+func _on_xr_gui_setting_changed(setting_name: String, setting_value: Variant):
+	match setting_name:
+		"primary_controller":
+			primary_controller_selection = setting_value
+			xr_config_handler.primary_controller_selection = setting_value
+		"use_controller_dir_movement":
+			use_roomscale_controller_directed_movement = setting_value
+			xr_config_handler.use_roomscale_controller_directed_movement = setting_value
+			xr_config_handler.save_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
+		"turning_type":
+			# "snap", "smooth", "none"
+			if setting_value == "snap":
+				setting_value = TurningType.SNAP
+			elif setting_value == "smooth":
+				setting_value = TurningType.SMOOTH
+			elif setting_value == "none":
+				setting_value = TurningType.NONE
+			turning_type = setting_value
+			xr_config_handler.turning_type = setting_value
+			xr_config_handler.save_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
+		"use_arm_swing_jump":
+			use_arm_swing_jump = setting_value
+			xr_config_handler.use_arm_swing_jump = setting_value
+			xr_config_handler.save_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
+		"use_jog_movement":
+			use_jog_movement = setting_value
+			xr_config_handler.use_jog_movement = setting_value
+			xr_config_handler.save_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
+		"use_motion_vignette":
+			use_motion_sickness_vignette = setting_value
+			xr_config_handler.use_motion_sickness_vignette = setting_value
+			xr_config_handler.save_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
+		"show_welcome_label":
+			show_welcome_label = setting_value
+			xr_config_handler.show_welcome_label = setting_value
+			xr_config_handler.save_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
+		
 # -----------------------------------------------------
 # EXPERIMENTAL SECTION - NOT FOR FINAL INJECTOR
 

@@ -2,6 +2,8 @@ extends Node3D
 
 signal setting_changed(setting_name: String, setting_value: Variant)
 
+var active_xr_controller : XRController3D
+
 var interactive_gui_object_scene = preload("res://xr_injector/xr_gui/xr_interactive_gui_object.tscn")
 
 # This should be set by UGVR code
@@ -22,7 +24,15 @@ var settings_to_populate : Array
 
 func _ready():
 	#populate_gui_menu(settings_to_populate) # Test purposes only
-	pass
+	# Set as top level so menu can pop into correct position when required
+	self.set_as_top_level(true)
+	var label_child : Label3D = Label3D.new()
+	label_child.pixel_size = 0.0001
+	label_child.font_size = 256
+	label_child.outline_size = 64
+	label_child.text = "Hold Primary Controller In Box + Trigger To Change Options"
+	add_child(label_child)
+	
 
 # Function to populate the GUI menu
 func populate_gui_menu(settings: Array):
@@ -50,7 +60,10 @@ func populate_gui_menu(settings: Array):
 		
 		# Connect activated signal of each gui object to receiver function which will then connect up with config handler
 		interactive_gui_object.activated.connect(_on_interactive_gui_object_setting_changed)
-
+		
+		# Connect active xr controller to gui onject
+		connect_xr_controller_to_interactive_gui_object(active_xr_controller, interactive_gui_object)
+		
 func set_settings_to_populate(new_settings: Array):
 	settings_to_populate = new_settings
 	await clear_gui_options()
@@ -61,7 +74,22 @@ func set_settings_to_populate(new_settings: Array):
 func clear_gui_options():
 	# Delete all previous settings boxes
 	for child in get_children():
-		child.queue_free()
+		if child is Label3D:
+			continue
+		else:
+			child.queue_free()
 
+func set_xr_controller(xr_controller: XRController3D):
+	active_xr_controller = xr_controller
+	for gui_object in get_children():
+		if gui_object is Label3D:
+			continue
+		else:
+			connect_xr_controller_to_interactive_gui_object(active_xr_controller, gui_object)
+
+func connect_xr_controller_to_interactive_gui_object(xr_controller: XRController3D, xr_gui_object: Node3D):
+	if is_instance_valid(xr_controller):
+		xr_controller.button_pressed.connect(xr_gui_object._on_xr_controller_button_pressed)
+	
 func _on_interactive_gui_object_setting_changed(interactive_gui_object: Node3D, new_setting_value: Variant):
 	emit_signal("setting_changed", interactive_gui_object.setting_name, new_setting_value)

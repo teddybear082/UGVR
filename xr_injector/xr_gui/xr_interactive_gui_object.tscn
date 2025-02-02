@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://xr_injector/xr_gui/xr_interactive_gui_object.gd" id="1_dhj8o"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_i5nja"]
-size = Vector3(0.3, 0.15, 0.15)
+size = Vector3(0.35, 0.15, 0.15)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wef3m"]
 margin = 0.01
@@ -23,15 +23,15 @@ mesh = SubResource("BoxMesh_i5nja")
 shape = SubResource("BoxShape3D_wef3m")
 
 [node name="SettingNameLabel3D" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0.075)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0.08)
 pixel_size = 0.0001
 text = "Setting"
 font_size = 256
-outline_size = 24
+outline_size = 64
 
 [node name="SettingValueLabel3D" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.075)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.08)
 pixel_size = 0.0001
 text = "SettingValue"
 font_size = 256
-outline_size = 24
+outline_size = 64

@@ -77,9 +77,6 @@ shape = SubResource("SphereShape3D_10cyd")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)
 visible = false
 
-[node name="XRGUIMenu" parent="XROrigin3D/XRCamera3D/WelcomeLabel3D" instance=ExtResource("7_ienpi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, -0.3, 1.5)
-
 [node name="Vignette" parent="XROrigin3D/XRCamera3D" instance=ExtResource("6_2wp6c")]
 
 [node name="XRController3D" type="XRController3D" parent="XROrigin3D"]
@@ -155,3 +152,7 @@ script = ExtResource("7_hw5k1")
 [node name="XRReparentingNode" type="Node3D" parent="."]
 
 [node name="XRReparentingNodeHolder" type="Node3D" parent="XRReparentingNode"]
+
+[node name="XRGUIMenu" parent="." instance=ExtResource("7_ienpi")]
+top_level = true
+visible = false
