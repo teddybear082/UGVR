@@ -98,7 +98,7 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 hand_material_override = ExtResource("6_y01lc")
 
 [node name="GUIDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D"]
-collision_layer = 8388608
+collision_layer = 2147483648
 collision_mask = 0
 
 [node name="GUIDetectionShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D/GUIDetectionArea"]
@@ -123,7 +123,7 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 hand_material_override = ExtResource("6_y01lc")
 
 [node name="GUIDetectionArea" type="Area3D" parent="XROrigin3D/XRController3D2"]
-collision_layer = 8388608
+collision_layer = 2147483648
 collision_mask = 0
 
 [node name="GUIDetectionShape" type="CollisionShape3D" parent="XROrigin3D/XRController3D2/GUIDetectionArea"]
@@ -133,6 +133,9 @@ shape = SubResource("SphereShape3D_gr4m3")
 process_mode = 3
 show_target = true
 target_radius = 0.01
+collision_mask = 2152726528
+collide_with_areas = true
+suppress_radius = 0.07
 
 [node name="XRRoomscaleController" type="Node" parent="XROrigin3D"]
 script = ExtResource("5_1018u")

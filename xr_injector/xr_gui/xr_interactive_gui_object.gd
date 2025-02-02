@@ -1,22 +1,29 @@
 extends Node3D
-
 signal activated(node: Node3D, new_value: Variant)
 
 @export var setting_name : String = "SettingName"
 @export var options: Array = []  # List of options
 @export var current_value_index: int = 0  # Tracks the index of the current value
 @export var activation_button: String = "trigger_click"
+@onready var area3D: Area3D = get_node("Area3D")
 var current_value: Variant
 var update_allowed: bool = false
 var active_color_material: StandardMaterial3D = StandardMaterial3D.new()
 var deactivated_color_material: StandardMaterial3D = StandardMaterial3D.new()
 var selected_color_material: StandardMaterial3D = StandardMaterial3D.new()
+var already_activating = false
 
 func _ready():
+	# Subscribe to pointer events
+	area3D.pointer_event.connect(_on_pointer_event)
+	
+	# Set label colors and text
 	update_label()
-	# Setup trigger area sigmals
+	
+	# Setup trigger area signals
 	$Area3D.area_entered.connect(_on_area3d_entered)
 	$Area3D.area_exited.connect(_on_area3d_exited)
+	
 	# Set up materials for different statuses
 	for material in [active_color_material, deactivated_color_material, selected_color_material]:
 		material.disable_ambient_light = true
@@ -43,10 +50,13 @@ func update_color():
 
 # Select next available option
 func activate():
-	if is_valid_index(current_value_index):
-		current_value_index = (current_value_index + 1) % options.size()
-		emit_signal("activated", self, options[current_value_index])
-		update_label()
+	if not already_activating:
+		already_activating = true
+		if is_valid_index(current_value_index):
+			current_value_index = (current_value_index + 1) % options.size()
+			emit_signal("activated", self, options[current_value_index])
+			update_label()
+		already_activating = false
 
 # Check if selection is valid
 func is_valid_index(index: int) -> bool:
@@ -89,5 +99,20 @@ func _on_area3d_exited(area: Area3D):
 	
 # If controller is imside activation zone and button pressed, trigger setting
 func _on_xr_controller_button_pressed(button_name):
-	if button_name == activation_button and update_allowed:
+	# If not visible there's no way we want to trigger a setting change, so don't
+	if !self.visible or !get_parent().visible:
+		return
+	if button_name == activation_button and update_allowed and not already_activating:
 		activate()
+
+# Pointer event handler
+func _on_pointer_event(event) -> void:
+	# Get the pointer, event type, and button type
+	var type = event.event_type
+	if type == 2 and not already_activating: # This is the XRToolsPointerEventType.PRESSED enum value
+		activate()
+	elif type == 0: # This is the XRToolsPointerEventType.ENTERED
+		$Area3D/MeshInstance3D.set_surface_override_material(0, selected_color_material)
+	elif type == 1: # This is the XRToolsPointerEventType.EXITED
+		update_color()
+		

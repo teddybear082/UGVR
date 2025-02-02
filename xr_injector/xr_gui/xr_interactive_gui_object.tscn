@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://usbqxk6a57mm"]
+[gd_scene load_steps=5 format=3 uid="uid://usbqxk6a57mm"]
 
 [ext_resource type="Script" path="res://xr_injector/xr_gui/xr_interactive_gui_object.gd" id="1_dhj8o"]
+[ext_resource type="Script" path="res://xr_injector/xr_gui/xr_area_3d_pointer_receiver.gd" id="2_t07d4"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_i5nja"]
 size = Vector3(0.35, 0.15, 0.15)
@@ -13,8 +14,9 @@ size = Vector3(0.3, 0.15, 0.15)
 script = ExtResource("1_dhj8o")
 
 [node name="Area3D" type="Area3D" parent="."]
-collision_layer = 0
-collision_mask = 8388608
+collision_layer = 2147483648
+collision_mask = 2147483648
+script = ExtResource("2_t07d4")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Area3D"]
 mesh = SubResource("BoxMesh_i5nja")

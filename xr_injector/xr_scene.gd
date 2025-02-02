@@ -1624,9 +1624,9 @@ func toggle_xr_gui_menu():
 	if xr_gui_menu.visible:
 		ugvr_menu_showing = true
 		# Get references to the nodes
-		var distance = 1 * xr_world_scale
-		var vertical_offset = 0.25 * xr_camera_3d.global_transform.origin.y
-
+		var distance = 0.6 * xr_world_scale
+		var vertical_offset = -0.25 * xr_camera_3d.global_transform.origin.y
+		var horizontal_offset = -0.5 * xr_world_scale
 		# Get the camera's global transform
 		var cam_transform = xr_camera_3d.global_transform
 		
@@ -1637,7 +1637,8 @@ func toggle_xr_gui_menu():
 		# Set the menu's position 2 units in front of the camera
 		var menu_position: Vector3 = cam_transform.origin + forward * distance
 		# Offset height
-		menu_position.y -= vertical_offset
+		menu_position.y += vertical_offset
+		menu_position.x += horizontal_offset
 		# Create a rotation so the menu faces the camera.
 		# Compute the yaw angle from the flattened forward vector.
 		var yaw_angle = atan2(forward.x, forward.z)

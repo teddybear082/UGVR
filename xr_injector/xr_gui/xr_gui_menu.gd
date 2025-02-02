@@ -30,9 +30,14 @@ func _ready():
 	label_child.pixel_size = 0.0001
 	label_child.font_size = 256
 	label_child.outline_size = 64
-	label_child.text = "Hold Primary Controller In Box + Trigger To Change Options"
+	label_child.text = """
+					-Welcome to UGVR-
+	Hold Primary Controller In Box + Trigger or Use Primary Pointer + Trigger
+	To Change Options.  For More Options, Use XRConfigs files in .exe directory.
+	"""
 	add_child(label_child)
-	
+	label_child.transform.origin.y = 0.7
+	label_child.transform.origin.x = 0.5
 
 # Function to populate the GUI menu
 func populate_gui_menu(settings: Array):
@@ -92,4 +97,7 @@ func connect_xr_controller_to_interactive_gui_object(xr_controller: XRController
 		xr_controller.button_pressed.connect(xr_gui_object._on_xr_controller_button_pressed)
 	
 func _on_interactive_gui_object_setting_changed(interactive_gui_object: Node3D, new_setting_value: Variant):
+	# If not visible there is no way we want this signal emitted so do not
+	if !self.visible:
+		return
 	emit_signal("setting_changed", interactive_gui_object.setting_name, new_setting_value)

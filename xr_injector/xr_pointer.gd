@@ -421,7 +421,7 @@ func _button_pressed(button_name : String) -> void:
 
 # Pointer-activation button released handler
 func _button_released(button_name : String) -> void:
-	if target:
+	if is_instance_valid(target):
 		# Report release
 		if button_name == active_button_action:
 			button_type = MouseButton.MOUSE_BUTTON_LEFT
