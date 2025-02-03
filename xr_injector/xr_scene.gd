@@ -1793,14 +1793,14 @@ var CRUEL_bullet_shapecast = null
 var CRUEL_nearest_target = null
 func _set_CRUEL_gun(delta: float):
 	if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
-		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
+		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
 		
 		if weapon_node != null and xr_origin_reparented:
 			
 			if first_time_reparenting_CRUEL_gun or not is_instance_valid(CRUEL_camera_node):
 				first_time_reparenting_CRUEL_gun = false
 				weapon_node.transform.origin = Vector3(0,0,0)
-				CRUEL_camera_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/ShakeTarget/CameraShake/Camera")
+				CRUEL_camera_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera")
 				CRUEL_node3d = CRUEL_camera_node.get_node("Node3D")
 				CRUEL_weapon_container = CRUEL_node3d.get_node("WeaponContainer")
 				CRUEL_sway_controller = CRUEL_weapon_container.get_node("SwayController")
