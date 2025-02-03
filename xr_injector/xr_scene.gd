@@ -455,7 +455,9 @@ func map_xr_controllers_to_action_map() -> bool:
 	dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
 	dpad_right.button_index = JOY_BUTTON_DPAD_RIGHT
 	
-	
+	# Set GUI Detection Area Layer on Secondary Controller to 0 to prevent menu issues, set primary to layer 32 (2147483648) in case primary and secondary controllers have changed.
+	secondary_controller.get_node("GUIDetectionArea").collision_layer = 0
+	primary_controller.get_node("GUIDetectionArea").collision_layer = 2147483648
 	# Return true to alert that function is completed
 	return true
 	
