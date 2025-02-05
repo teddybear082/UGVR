@@ -40,11 +40,9 @@ https://vimeo.com/924331826
 
 -Allow user to print to log current scene tree (scene_tree_pretty) for use in developing game-specific code
 
+-Basic in-VR GUI for simple VR options (still testing)
+
 ## Presently not working / Roadmap:
-
--Implement VR options menu GUI
-
--Allow user to remap controls in interface 
 
 -Allow user to modify game (like UEVR) to change camera transform, reparent XR camera to a different game element
 
