@@ -1791,63 +1791,99 @@ var CRUEL_interact_raycast = null
 var CRUEL_melee_shapecast = null
 var CRUEL_bullet_shapecast = null
 var CRUEL_nearest_target = null
+var CRUEL_revolver_mesh = null
+var new_firstperson_shader_code = """
+shader_type spatial;
+
+render_mode blend_mix,
+	depth_prepass_alpha,
+	shadows_disabled,
+	specular_disabled,
+	diffuse_lambert;
+
+uniform sampler2D albedo : source_color, filter_nearest;
+uniform float jitter: hint_range(0, 1) = 0.25;
+const ivec2 resolution = ivec2(300, 200);
+
+void fragment()
+{
+	vec4 color_base = COLOR;
+	vec4 texture_color = texture(albedo, UV);
+	ALBEDO = (color_base * texture_color).rgb;
+	ALPHA = texture_color.a * color_base.a;
+
+}
+
+void light(){
+	DIFFUSE_LIGHT += LIGHT_COLOR * 1.0 * ATTENUATION;
+}
+"""
 func _set_CRUEL_gun(delta: float):
-	if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
-		var weapon_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
-		
-		if weapon_node != null and xr_origin_reparented:
-			
-			if first_time_reparenting_CRUEL_gun or not is_instance_valid(CRUEL_camera_node):
-				first_time_reparenting_CRUEL_gun = false
-				weapon_node.transform.origin = Vector3(0,0,0)
-				CRUEL_camera_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera")
-				CRUEL_node3d = CRUEL_camera_node.get_node("Node3D")
-				CRUEL_weapon_container = CRUEL_node3d.get_node("WeaponContainer")
-				CRUEL_sway_controller = CRUEL_weapon_container.get_node("SwayController")
-				CRUEL_pistol = CRUEL_sway_controller.get_node("Pistol")
-				CRUEL_raycast = CRUEL_camera_node.get_node("RayCast3D")
-				CRUEL_melee_raycast = CRUEL_camera_node.get_node("MeleeRaycast")
-				CRUEL_interact_raycast = CRUEL_camera_node.get_node("InteractRaycast")
-				CRUEL_melee_shapecast = CRUEL_camera_node.get_node("MeleeShapeCast3D")
-				CRUEL_bullet_shapecast = CRUEL_camera_node.get_node("BulletDeflectShapeCast3D")
-				CRUEL_nearest_target = CRUEL_camera_node.get_node("NearestTarget")
-				CRUEL_node3d.transform.origin = Vector3(0,0,0)
-				CRUEL_weapon_container.transform.origin = Vector3(0,0,0)
-				CRUEL_sway_controller.transform.origin = Vector3(0,0,0)
-				CRUEL_pistol.transform.origin = Vector3(0,0,0)
-				CRUEL_raycast.transform.origin = Vector3(0,0,0)
-				CRUEL_melee_raycast.transform.origin = Vector3(0,0,0)
-				CRUEL_interact_raycast.transform.origin = Vector3(0,0,0)
-				CRUEL_melee_shapecast.transform.origin = Vector3(0,0,0)
-				CRUEL_bullet_shapecast.transform.origin = Vector3(0,0,0)
-				CRUEL_nearest_target.transform.origin = Vector3(0,0,0)
-				CRUEL_raycast.force_raycast_update() 
-				CRUEL_melee_raycast.force_raycast_update()
-				CRUEL_interact_raycast.force_raycast_update()
-				CRUEL_melee_shapecast.force_shapecast_update() 
-				CRUEL_bullet_shapecast.force_shapecast_update()
-				# Add 3D cursor to weapon node, should be where raycasts point, for this game the closer distance seems to be more accurate
-				var cursor = cursor_3d.duplicate()
-				weapon_node.add_child(cursor)
-				cursor.transform.origin.z = -roomscale_3d_cursor_distance_from_camera
-				cursor.transform.origin.y = 0.3
-				cursor.visible = true
-				# reparent directly to avoid stuttering
-				weapon_node.reparent(primary_controller, false)
-				# now need a way to stop camera movement from controlling transform.origin of weapon node, must be hard wired somehow in code
+	if is_instance_valid(xr_roomscale_controller):
+		if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
+			var pistol_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
+			if pistol_node != null and xr_origin_reparented:
+				
+				if first_time_reparenting_CRUEL_gun or not is_instance_valid(CRUEL_camera_node):
+					first_time_reparenting_CRUEL_gun = false
+					var shotgun_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/shotgun")
+					var uzi_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/uzi")
+					# Clear prior weapon mesh, if any
+					var controller_children = primary_controller.get_children()
+					for child in controller_children:
+						if "pistol" in child.name.to_lower() or "shotgun" in child.name.to_lower() or "uzi" in child.name.to_lower() or "gun_cursor" in child.name.to_lower():
+							print("CRUELVR: Removed node previously added to controller: ", child)
+							child.queue_free()
+					pistol_node.transform.origin = Vector3(0,0,0)
+					CRUEL_camera_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera")
+					CRUEL_node3d = CRUEL_camera_node.get_node("Node3D")
+					CRUEL_weapon_container = CRUEL_node3d.get_node("WeaponContainer")
+					CRUEL_sway_controller = CRUEL_weapon_container.get_node("SwayController")
+					CRUEL_pistol = CRUEL_sway_controller.get_node("Pistol")
+					CRUEL_raycast = CRUEL_camera_node.get_node("RayCast3D")
+					CRUEL_melee_raycast = CRUEL_camera_node.get_node("MeleeRaycast")
+					CRUEL_interact_raycast = CRUEL_camera_node.get_node("InteractRaycast")
+					CRUEL_melee_shapecast = CRUEL_camera_node.get_node("MeleeShapeCast3D")
+					CRUEL_bullet_shapecast = CRUEL_camera_node.get_node("BulletDeflectShapeCast3D")
+					CRUEL_nearest_target = CRUEL_camera_node.get_node("NearestTarget")
+					CRUEL_revolver_mesh = pistol_node.get_node("Revolver/Plane_001")
+					CRUEL_node3d.transform.origin = Vector3(0,0,0)
+					CRUEL_weapon_container.transform.origin = Vector3(0,0,0)
+					CRUEL_sway_controller.transform.origin = Vector3(0,0,0)
+					CRUEL_pistol.transform.origin = Vector3(0,0,0)
+					CRUEL_raycast.transform.origin = Vector3(0,0,0)
+					CRUEL_melee_raycast.transform.origin = Vector3(0,0,0)
+					CRUEL_interact_raycast.transform.origin = Vector3(0,0,0)
+					CRUEL_melee_shapecast.transform.origin = Vector3(0,0,0)
+					CRUEL_bullet_shapecast.transform.origin = Vector3(0,0,0)
+					CRUEL_nearest_target.transform.origin = Vector3(0,0,0)
+					CRUEL_raycast.force_raycast_update() 
+					CRUEL_melee_raycast.force_raycast_update()
+					CRUEL_interact_raycast.force_raycast_update()
+					CRUEL_melee_shapecast.force_shapecast_update() 
+					CRUEL_bullet_shapecast.force_shapecast_update()
+					# Add 3D cursor to weapon node, should be where raycasts point, for this game the closer distance seems to be more accurate
+					var cursor = cursor_3d.duplicate()
+					cursor.set_name("gun_cursor")
+					primary_controller.add_child(cursor)
+					cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
+					cursor.visible = true
+					# reparent pistol and raycast directly to avoid stuttering
+					pistol_node.reparent(primary_controller, false)
+					pistol_node.set_name("pistol")
+					if is_instance_valid(shotgun_node):
+						shotgun_node.transform.origin = Vector3(0,0,0)
+						shotgun_node.reparent(primary_controller, false)
+						shotgun_node.set_name("shotgun")
+						#shotgun_node.global_transform.origin.x -= 3.0
+					if is_instance_valid(uzi_node):
+						uzi_node.transform.origin = Vector3(0,0,0)
+						uzi_node.reparent(primary_controller, false)
+						uzi_node.set_name("uzi")
+						#uzi_node.global_transform.origin.x -= 3.0
+					#pistol_node.global_transform.origin.x -= 3.0
+					CRUEL_revolver_mesh.get_surface_override_material(0).get_shader().set_code(new_firstperson_shader_code)
+					CRUEL_raycast.reparent(primary_controller, false)
+					CRUEL_raycast.force_raycast_update()
 
-			xr_reparenting_active = true
-			#var rotate_reparented_node_180_degrees = false
-			#handle_node_reparenting(delta, weapon_node, rotate_reparented_node_180_degrees, Vector3(0,0.3,0))
-
-		if is_instance_valid(CRUEL_raycast):
-			handle_node_reparenting(delta, CRUEL_raycast, false, Vector3(0,0.3,0))
-			CRUEL_raycast.force_raycast_update()
-		if is_instance_valid(CRUEL_bullet_shapecast):
-			handle_node_reparenting(delta, CRUEL_bullet_shapecast, false, Vector3(0,0.3,0))
-			CRUEL_bullet_shapecast.force_shapecast_update()
-			
-			#Try to cut down stuttering
-			#CRUEL_pistol.bulletDeviation = 0.0
-			#CRUEL_weapon_container.walkBobAmplitude = 0.0
-			#CRUEL_weapon_container.bobAmplitude = 0
+				xr_reparenting_active = true
