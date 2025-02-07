@@ -293,11 +293,17 @@ func _process(_delta : float) -> void:
 	# If controllers aren't found, skip processing inputs
 	if !is_instance_valid(xr_left_controller) or !is_instance_valid(xr_right_controller) or use_physical_gamepad_only:
 		return
+
 	# Process emulated joypad inputs
 	if !ugvr_menu_showing:
 		process_joystick_inputs()
+	
+	# Process physical melee attacks if enabled
+	_process_melee_attacks(_delta)
+
 	# Process haptics if any
 	_set_haptics(_delta)
+	
 # Constantly checks for current camera 3D, canvaslayers, world environment and roomscale body (if roomscale enabled)
 func _eval_tree() -> void:
 	# Check to make sure main viewport still uses xr; use target_xr_viewport instead of get_viewport directly to account for when roomscale xr origin is reparented under a subviewport in the flat screen game (e.g., retro FPS shooters)
@@ -498,6 +504,7 @@ func handle_primary_xr_inputs(button):
 	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
 	if ugvr_menu_showing:
 		return
+
 	# If user just pressed activation button, activate special combo buttons
 	if button == dpad_activation_button:
 		dpad_toggle_active = true
@@ -1891,15 +1898,44 @@ func _set_CRUEL_gun(delta: float):
 						CRUEL_revolver.visible = false
 
 # Sample code for triggering XR controller haptics based on game actions
+#trigger_haptic_pulse(action_name: String, frequency: float, amplitude: float, duration_sec: float, delay_sec: float)
 func _set_haptics(delta):
 	if is_instance_valid(primary_controller) and is_instance_valid(secondary_controller):
 		if Input.is_action_pressed("fire"):
-			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
-		elif Input.is_action_pressed("shoot"):
-			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
+			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
+		#elif Input.is_action_pressed("shoot"):
+			#primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
 		elif Input.is_action_pressed("reload"):
 			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
 		elif Input.is_action_pressed("kick"):
 			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
 		elif Input.is_action_pressed("melee"):
-			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
+			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
+
+
+# Sample code for implementing melee attacks (velocity based controller actions to trigger in game actions)
+# Here we need a better way to determine the button for melee action, probably needs to be an XRConfig - primary_melee_action, secondary_melee_action, 
+# and then find button that pertains to action in action map and trigger it
+# also should have config variable for trigger threshold and delay
+var melee_attack_processing : bool = false
+var melee_trigger_threshold : float = 15.0
+var melee_cooldown_time_secs : float = .50
+func _process_melee_attacks(delta):
+	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
+		return
+
+	if melee_attack_processing:
+		return
+
+	var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
+	if secondary_velocity > melee_trigger_threshold:
+		melee_attack_processing = true
+		print("Melee attack detected, velocity was: ", secondary_velocity) 
+		var event = InputEventJoypadButton.new()
+		event.button_index = primary_action_map["grip_click"]  
+		event.pressed = true
+		Input.parse_input_event(event)
+		await get_tree().create_timer(melee_cooldown_time_secs).timeout
+		event.pressed = false
+		Input.parse_input_event(event)
+		melee_attack_processing = false
