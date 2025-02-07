@@ -296,8 +296,8 @@ func _process(_delta : float) -> void:
 	# Process emulated joypad inputs
 	if !ugvr_menu_showing:
 		process_joystick_inputs()
-
-
+	# Process haptics if any
+	_set_haptics(_delta)
 # Constantly checks for current camera 3D, canvaslayers, world environment and roomscale body (if roomscale enabled)
 func _eval_tree() -> void:
 	# Check to make sure main viewport still uses xr; use target_xr_viewport instead of get_viewport directly to account for when roomscale xr origin is reparented under a subviewport in the flat screen game (e.g., retro FPS shooters)
@@ -1784,14 +1784,14 @@ var CRUEL_camera_node = null
 var CRUEL_node3d = null
 var CRUEL_weapon_container = null
 var CRUEL_sway_controller = null
-var CRUEL_pistol = null
+var CRUEL_pistol_parent = null
 var CRUEL_raycast = null
-var CRUEL_melee_raycast = null
-var CRUEL_interact_raycast = null
-var CRUEL_melee_shapecast = null
-var CRUEL_bullet_shapecast = null
-var CRUEL_nearest_target = null
+var CRUEL_revolver = null
 var CRUEL_revolver_mesh = null
+var CRUEL_shotgun_parent = null
+var CRUEL_shotgun = null
+var CRUEL_uzi_parent = null
+var CRUEL_uzi = null
 var new_firstperson_shader_code = """
 shader_type spatial;
 
@@ -1821,69 +1821,85 @@ void light(){
 func _set_CRUEL_gun(delta: float):
 	if is_instance_valid(xr_roomscale_controller):
 		if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
-			var pistol_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
-			if pistol_node != null and xr_origin_reparented:
+			CRUEL_pistol_parent = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
+			if CRUEL_pistol_parent != null and xr_origin_reparented:
 				
 				if first_time_reparenting_CRUEL_gun or not is_instance_valid(CRUEL_camera_node):
 					first_time_reparenting_CRUEL_gun = false
-					var shotgun_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/shotgun")
-					var uzi_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/uzi")
 					# Clear prior weapon mesh, if any
 					var controller_children = primary_controller.get_children()
 					for child in controller_children:
-						if "pistol" in child.name.to_lower() or "shotgun" in child.name.to_lower() or "uzi" in child.name.to_lower() or "gun_cursor" in child.name.to_lower():
+						if "revolver" in child.name.to_lower() or "shotgun" in child.name.to_lower() or "uzi" in child.name.to_lower() or "gun_cursor" in child.name.to_lower():
 							print("CRUELVR: Removed node previously added to controller: ", child)
 							child.queue_free()
-					pistol_node.transform.origin = Vector3(0,0,0)
+					CRUEL_shotgun_parent = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/shotgun")
+					CRUEL_shotgun = CRUEL_shotgun_parent.get_node_or_null("shotgun")
+					CRUEL_uzi_parent = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/uzi")
+					CRUEL_uzi = CRUEL_uzi_parent.get_node_or_null("SMG")
 					CRUEL_camera_node = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera")
 					CRUEL_node3d = CRUEL_camera_node.get_node("Node3D")
 					CRUEL_weapon_container = CRUEL_node3d.get_node("WeaponContainer")
 					CRUEL_sway_controller = CRUEL_weapon_container.get_node("SwayController")
-					CRUEL_pistol = CRUEL_sway_controller.get_node("Pistol")
+					CRUEL_revolver = CRUEL_pistol_parent.get_node("Revolver")
+					CRUEL_revolver_mesh = CRUEL_pistol_parent.get_node("Revolver/Plane_001")
+					CRUEL_revolver_mesh.get_surface_override_material(0).get_shader().set_code(new_firstperson_shader_code)
 					CRUEL_raycast = CRUEL_camera_node.get_node("RayCast3D")
-					CRUEL_melee_raycast = CRUEL_camera_node.get_node("MeleeRaycast")
-					CRUEL_interact_raycast = CRUEL_camera_node.get_node("InteractRaycast")
-					CRUEL_melee_shapecast = CRUEL_camera_node.get_node("MeleeShapeCast3D")
-					CRUEL_bullet_shapecast = CRUEL_camera_node.get_node("BulletDeflectShapeCast3D")
-					CRUEL_nearest_target = CRUEL_camera_node.get_node("NearestTarget")
-					CRUEL_revolver_mesh = pistol_node.get_node("Revolver/Plane_001")
 					CRUEL_node3d.transform.origin = Vector3(0,0,0)
 					CRUEL_weapon_container.transform.origin = Vector3(0,0,0)
 					CRUEL_sway_controller.transform.origin = Vector3(0,0,0)
-					CRUEL_pistol.transform.origin = Vector3(0,0,0)
+					CRUEL_pistol_parent.transform.origin = Vector3(0,0,0)
 					CRUEL_raycast.transform.origin = Vector3(0,0,0)
-					CRUEL_melee_raycast.transform.origin = Vector3(0,0,0)
-					CRUEL_interact_raycast.transform.origin = Vector3(0,0,0)
-					CRUEL_melee_shapecast.transform.origin = Vector3(0,0,0)
-					CRUEL_bullet_shapecast.transform.origin = Vector3(0,0,0)
-					CRUEL_nearest_target.transform.origin = Vector3(0,0,0)
 					CRUEL_raycast.force_raycast_update() 
-					CRUEL_melee_raycast.force_raycast_update()
-					CRUEL_interact_raycast.force_raycast_update()
-					CRUEL_melee_shapecast.force_shapecast_update() 
-					CRUEL_bullet_shapecast.force_shapecast_update()
 					# Add 3D cursor to weapon node, should be where raycasts point, for this game the closer distance seems to be more accurate
 					var cursor = cursor_3d.duplicate()
 					cursor.set_name("gun_cursor")
 					primary_controller.add_child(cursor)
-					cursor.transform.origin.z = -roomscale_long_range_3d_cursor_distance_from_camera
+					cursor.transform.origin = Vector3(-0.50,0.25,-10.0)
 					cursor.visible = true
 					# reparent pistol and raycast directly to avoid stuttering
-					pistol_node.reparent(primary_controller, false)
-					pistol_node.set_name("pistol")
-					if is_instance_valid(shotgun_node):
-						shotgun_node.transform.origin = Vector3(0,0,0)
-						shotgun_node.reparent(primary_controller, false)
-						shotgun_node.set_name("shotgun")
-						#shotgun_node.global_transform.origin.x -= 3.0
-					if is_instance_valid(uzi_node):
-						uzi_node.transform.origin = Vector3(0,0,0)
-						uzi_node.reparent(primary_controller, false)
-						uzi_node.set_name("uzi")
-						#uzi_node.global_transform.origin.x -= 3.0
-					#pistol_node.global_transform.origin.x -= 3.0
-					CRUEL_revolver_mesh.get_surface_override_material(0).get_shader().set_code(new_firstperson_shader_code)
+					CRUEL_revolver.reparent(primary_controller, false)
+					CRUEL_revolver.set_name("revolver")
+					if is_instance_valid(CRUEL_shotgun):
+						CRUEL_shotgun.reparent(primary_controller, false)
+						CRUEL_shotgun.set_name("shotgun")
+						CRUEL_shotgun.set_position(Vector3(0,0,0))
+					if is_instance_valid(CRUEL_uzi):
+						CRUEL_uzi.reparent(primary_controller, false)
+						CRUEL_uzi.set_name("uzi")
+						CRUEL_uzi.set_position(Vector3(0,0,0))
 					CRUEL_raycast.reparent(primary_controller, false)
+					CRUEL_raycast.set_position(Vector3(-0.50,0.25,0))
 					CRUEL_raycast.force_raycast_update()
+					CRUEL_revolver.set_position(Vector3(0,-0.2,0))
 
 				xr_reparenting_active = true
+				# Because game logic usually handles visibilty at a higher level than our detatched weapons, replace logic here to hide weapons not in use
+				if is_instance_valid(CRUEL_shotgun_parent):
+					if CRUEL_shotgun_parent.visible == true:
+						CRUEL_shotgun.visible = true
+						CRUEL_uzi.visible = false
+						CRUEL_revolver.visible = false
+				if is_instance_valid(CRUEL_pistol_parent):
+					if CRUEL_pistol_parent.visible == true:
+						CRUEL_shotgun.visible = false
+						CRUEL_uzi.visible = false
+						CRUEL_revolver.visible = true
+				if is_instance_valid(CRUEL_uzi_parent):
+					if CRUEL_uzi_parent.visible == true:
+						CRUEL_shotgun.visible = false
+						CRUEL_uzi.visible = true
+						CRUEL_revolver.visible = false
+
+# Sample code for triggering XR controller haptics based on game actions
+func _set_haptics(delta):
+	if is_instance_valid(primary_controller) and is_instance_valid(secondary_controller):
+		if Input.is_action_pressed("fire"):
+			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
+		elif Input.is_action_pressed("shoot"):
+			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
+		elif Input.is_action_pressed("reload"):
+			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
+		elif Input.is_action_pressed("kick"):
+			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
+		elif Input.is_action_pressed("melee"):
+			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
