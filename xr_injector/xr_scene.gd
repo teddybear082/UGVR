@@ -1799,6 +1799,13 @@ var CRUEL_shotgun_parent = null
 var CRUEL_shotgun = null
 var CRUEL_uzi_parent = null
 var CRUEL_uzi = null
+var CRUEL_hide_container = null
+var CRUEL_chainsaw = null
+var CRUEL_chainsaw_mesh = null
+var CRUEL_pipe = null
+var CRUEL_bat = null
+var CRUEL_axe = null
+var CRUEL_baton = null
 var new_firstperson_shader_code = """
 shader_type spatial;
 
@@ -1839,6 +1846,11 @@ func _set_CRUEL_gun(delta: float):
 						if "revolver" in child.name.to_lower() or "shotgun" in child.name.to_lower() or "uzi" in child.name.to_lower() or "gun_cursor" in child.name.to_lower():
 							print("CRUELVR: Removed node previously added to controller: ", child)
 							child.queue_free()
+					var secondary_controller_children = secondary_controller.get_children()
+					for child in secondary_controller_children:
+						if "chainsaw" in child.name.to_lower() or "pipe" in child.name.to_lower() or "bat" in child.name.to_lower() or "axe" in child.name.to_lower() or "baton" in child.name.to_lower():
+							print("CRUELVR: Removed node previously added to secondary controller: ", child)
+							child.queue_free()
 					CRUEL_shotgun_parent = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/shotgun")
 					CRUEL_shotgun = CRUEL_shotgun_parent.get_node_or_null("shotgun")
 					CRUEL_uzi_parent = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/uzi")
@@ -1856,14 +1868,14 @@ func _set_CRUEL_gun(delta: float):
 					CRUEL_sway_controller.transform.origin = Vector3(0,0,0)
 					CRUEL_pistol_parent.transform.origin = Vector3(0,0,0)
 					CRUEL_raycast.transform.origin = Vector3(0,0,0)
-					CRUEL_raycast.force_raycast_update() 
+					CRUEL_raycast.force_raycast_update()
 					# Add 3D cursor to weapon node, should be where raycasts point, for this game the closer distance seems to be more accurate
 					var cursor = cursor_3d.duplicate()
 					cursor.set_name("gun_cursor")
 					primary_controller.add_child(cursor)
 					cursor.transform.origin = Vector3(-0.50,0.25,-10.0)
 					cursor.visible = true
-					# reparent pistol and raycast directly to avoid stuttering
+					# reparent weapons and raycast directly to avoid stuttering
 					CRUEL_revolver.reparent(primary_controller, false)
 					CRUEL_revolver.set_name("revolver")
 					if is_instance_valid(CRUEL_shotgun):
@@ -1878,7 +1890,26 @@ func _set_CRUEL_gun(delta: float):
 					CRUEL_raycast.set_position(Vector3(-0.50,0.25,0))
 					CRUEL_raycast.force_raycast_update()
 					CRUEL_revolver.set_position(Vector3(0,-0.2,0))
-
+					CRUEL_hide_container = CRUEL_weapon_container.get_node_or_null("MeleeContainer/HideContainer")
+					CRUEL_chainsaw = CRUEL_hide_container.get_node_or_null("Weapon/Chainsaw/ChainsawGraphics/Node3D/chainsaw2")
+					CRUEL_chainsaw.set_name("chainsaw")
+					CRUEL_chainsaw_mesh = CRUEL_chainsaw.get_node_or_null("Cube")
+					CRUEL_chainsaw_mesh.get_surface_override_material(0).get_shader().set_code(new_firstperson_shader_code)
+					CRUEL_chainsaw_mesh.get_surface_override_material(1).get_shader().set_code(new_firstperson_shader_code)
+					CRUEL_pipe = CRUEL_hide_container.get_node_or_null("Weapon/pipe")
+					CRUEL_pipe.set_name("pipe")
+					CRUEL_bat = CRUEL_hide_container.get_node_or_null("Weapon/bat")
+					CRUEL_bat.set_name("bat")
+					CRUEL_axe = CRUEL_hide_container.get_node_or_null("Weapon/Axe")
+					CRUEL_axe.set_name("axe")
+					CRUEL_baton = CRUEL_hide_container.get_node_or_null("Weapon/baton2")
+					CRUEL_baton.set_name("baton")
+					var CRUEL_melee_weapons = [CRUEL_chainsaw, CRUEL_pipe, CRUEL_bat, CRUEL_axe, CRUEL_baton]
+					for melee_weapon in CRUEL_melee_weapons:
+						melee_weapon.reparent(secondary_controller, false)
+						melee_weapon.set_position(Vector3(0,0,0))
+						melee_weapon.hide()
+					CRUEL_chainsaw.set_position(Vector3(0,-1.5,0))
 				xr_reparenting_active = true
 				# Because game logic usually handles visibilty at a higher level than our detatched weapons, replace logic here to hide weapons not in use
 				if is_instance_valid(CRUEL_shotgun_parent):
@@ -1900,6 +1931,7 @@ func _set_CRUEL_gun(delta: float):
 # Sample code for triggering XR controller haptics based on game actions
 #trigger_haptic_pulse(action_name: String, frequency: float, amplitude: float, duration_sec: float, delay_sec: float)
 func _set_haptics(delta):
+	pass # This renders this inactive but sample code below, remove pass and replace with game-specific code
 	if is_instance_valid(primary_controller) and is_instance_valid(secondary_controller):
 		if Input.is_action_pressed("fire"):
 			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
@@ -1919,7 +1951,7 @@ func _set_haptics(delta):
 # also should have config variable for trigger threshold and delay
 var melee_attack_processing : bool = false
 var melee_trigger_threshold : float = 15.0
-var melee_cooldown_time_secs : float = .50
+var melee_cooldown_time_secs : float = .30
 func _process_melee_attacks(delta):
 	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
 		return
@@ -1932,7 +1964,7 @@ func _process_melee_attacks(delta):
 		melee_attack_processing = true
 		print("Melee attack detected, velocity was: ", secondary_velocity) 
 		var event = InputEventJoypadButton.new()
-		event.button_index = primary_action_map["grip_click"]  
+		event.button_index = primary_action_map["by_button"]  
 		event.pressed = true
 		Input.parse_input_event(event)
 		await get_tree().create_timer(melee_cooldown_time_secs).timeout
