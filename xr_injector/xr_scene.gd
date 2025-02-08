@@ -1843,7 +1843,7 @@ func _set_CRUEL_gun(delta: float):
 					# Clear prior weapon mesh, if any
 					var controller_children = primary_controller.get_children()
 					for child in controller_children:
-						if "revolver" in child.name.to_lower() or "shotgun" in child.name.to_lower() or "uzi" in child.name.to_lower() or "gun_cursor" in child.name.to_lower():
+						if "revolver" in child.name.to_lower() or "shotgun" in child.name.to_lower() or "uzi" in child.name.to_lower() or "gun_cursor" in child.name.to_lower() or "raycast" in child.name.to_lower():
 							print("CRUELVR: Removed node previously added to controller: ", child)
 							child.queue_free()
 					var secondary_controller_children = secondary_controller.get_children()
@@ -1889,6 +1889,7 @@ func _set_CRUEL_gun(delta: float):
 					CRUEL_raycast.reparent(primary_controller, false)
 					CRUEL_raycast.set_position(Vector3(-0.50,0.25,0))
 					CRUEL_raycast.force_raycast_update()
+					CRUEL_raycast.set_name("raycast")
 					CRUEL_revolver.set_position(Vector3(0,-0.2,0))
 					CRUEL_hide_container = CRUEL_weapon_container.get_node_or_null("MeleeContainer/HideContainer")
 					CRUEL_chainsaw = CRUEL_hide_container.get_node_or_null("Weapon/Chainsaw/ChainsawGraphics/Node3D/chainsaw2")
