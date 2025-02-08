@@ -159,7 +159,8 @@ var use_arm_swing_jump : bool = false
 var use_jog_movement : bool = false
 var jog_triggers_sprint : bool = false
 
-# Radial menu configs
+# Action map configs
+# Radial menu
 var use_xr_radial_menu : bool = false
 enum XR_RADIAL_TYPE {
 	GAMEPAD = 0,
@@ -169,6 +170,16 @@ enum XR_RADIAL_TYPE {
 var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
 var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
 var open_radial_menu_button : String = "by_button"
+# Haptics
+var game_actions_triggering_primary_haptics = [] # e.g., ['reload', 'fire', 'kick', 'melee']
+var game_actions_triggering_secondary_haptics = []
+# Gesture based commands
+var primary_controller_melee_velocity = 15.0 # set to 0 to disable
+var secondary_controller_melee_velocity = 15.0 # set to 0 to disable
+var primary_controller_melee_cooldown_secs = 0.50
+var secondary_controller_melee_cooldown_secs = 0.50
+var primary_controller_melee_action = ""
+var secondary_controller_melee_action = ""
 
 # Decacis Stick Turning Variables
 enum TurningType {
@@ -1544,6 +1555,15 @@ func set_xr_control_options():
 
 # Function to pull current state of config handler action map variables to set same xr scene variables based on user config	
 func set_xr_action_map_options():
+	game_actions_triggering_primary_haptics = xr_config_handler.game_actions_triggering_primary_haptics
+	game_actions_triggering_secondary_haptics = xr_config_handler.game_actions_triggering_secondary_haptics
+	primary_controller_melee_velocity = xr_config_handler.primary_controller_melee_velocity
+	secondary_controller_melee_velocity = xr_config_handler.secondary_controller_melee_velocity
+	primary_controller_melee_cooldown_secs = xr_config_handler.primary_controller_melee_cooldown_secs
+	secondary_controller_melee_cooldown_secs = xr_config_handler.secondary_controller_melee_cooldown_secs
+	primary_controller_melee_action = xr_config_handler.primary_controller_melee_action
+	secondary_controller_melee_action = xr_config_handler.secondary_controller_melee_action
+	
 	use_xr_radial_menu = xr_config_handler.use_xr_radial_menu
 	xr_radial_menu_mode = xr_config_handler.xr_radial_menu_mode
 	xr_radial_menu_entries = xr_config_handler.xr_radial_menu_entries
@@ -1929,46 +1949,52 @@ func _set_CRUEL_gun(delta: float):
 						CRUEL_uzi.visible = true
 						CRUEL_revolver.visible = false
 
-# Sample code for triggering XR controller haptics based on game actions
-#trigger_haptic_pulse(action_name: String, frequency: float, amplitude: float, duration_sec: float, delay_sec: float)
+# Trigger XR controller haptics based on game actions if configured by user
+# trigger_haptic_pulse(action_name: String, frequency: float, amplitude: float, duration_sec: float, delay_sec: float)
 func _set_haptics(delta):
-	pass # This renders this inactive but sample code below, remove pass and replace with game-specific code
-	if is_instance_valid(primary_controller) and is_instance_valid(secondary_controller):
-		if Input.is_action_pressed("fire"):
+	if not is_instance_valid(primary_controller) and not is_instance_valid(secondary_controller):
+		return
+	for action in game_actions_triggering_primary_haptics:
+		if Input.is_action_pressed(action):
 			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
-		#elif Input.is_action_pressed("shoot"):
-			#primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
-		elif Input.is_action_pressed("reload"):
-			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
-		elif Input.is_action_pressed("kick"):
-			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 1.0, 0.0)
-		elif Input.is_action_pressed("melee"):
+	for action in game_actions_triggering_secondary_haptics:
+		if Input.is_action_pressed(action):
 			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
 
 
-# Sample code for implementing melee attacks (velocity based controller actions to trigger in game actions)
-# Here we need a better way to determine the button for melee action, probably needs to be an XRConfig - primary_melee_action, secondary_melee_action, 
-# and then find button that pertains to action in action map and trigger it
-# also should have config variable for trigger threshold and delay
-var melee_attack_processing : bool = false
-var melee_trigger_threshold : float = 15.0
-var melee_cooldown_time_secs : float = .30
+# Trigger melee attacks specified by the user
+var primary_melee_attack_processing : bool = false
+var secondary_melee_attack_processing : bool = false
 func _process_melee_attacks(delta):
 	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
 		return
-
-	if melee_attack_processing:
+	
+	if primary_controller_melee_velocity == 0.0 and secondary_controller_melee_velocity == 0.0:
 		return
-
-	var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
-	if secondary_velocity > melee_trigger_threshold:
-		melee_attack_processing = true
-		print("Melee attack detected, velocity was: ", secondary_velocity) 
-		var event = InputEventJoypadButton.new()
-		event.button_index = primary_action_map["by_button"]  
-		event.pressed = true
-		Input.parse_input_event(event)
-		await get_tree().create_timer(melee_cooldown_time_secs).timeout
-		event.pressed = false
-		Input.parse_input_event(event)
-		melee_attack_processing = false
+	
+	if primary_controller_melee_action == "" and secondary_controller_melee_action == "":
+		return
+	
+	# Only process if user has configured an action and velocity
+	if primary_controller_melee_action and primary_controller_melee_velocity > 0 and not primary_melee_attack_processing:
+		var primary_velocity = primary_controller.get_pose().get_linear_velocity().length_squared()
+		if primary_velocity > primary_controller_melee_velocity:
+			primary_melee_attack_processing = true
+			print("Primary melee attack detected, velocity was: ", primary_velocity) 
+			Input.action_press(primary_controller_melee_action)
+			await get_tree().create_timer(0.2).timeout
+			Input.action_release(primary_controller_melee_action)
+			await get_tree().create_timer(primary_controller_melee_cooldown_secs).timeout
+			primary_melee_attack_processing = false
+	
+	# Same
+	if secondary_controller_melee_action and secondary_controller_melee_velocity > 0 and not secondary_melee_attack_processing:
+		var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
+		if secondary_velocity > secondary_controller_melee_velocity:
+			secondary_melee_attack_processing = true
+			print("Secondary melee attack detected, velocity was: ", secondary_velocity) 
+			Input.action_press(secondary_controller_melee_action)
+			await get_tree().create_timer(0.2).timeout
+			Input.action_release(secondary_controller_melee_action)
+			await get_tree().create_timer(secondary_controller_melee_cooldown_secs).timeout
+			secondary_melee_attack_processing = false

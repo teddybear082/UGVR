@@ -204,6 +204,17 @@ var xr_radial_menu_mode : XR_RADIAL_TYPE = XR_RADIAL_TYPE.GAMEPAD
 var xr_radial_menu_entries : Array = ["Joypad Y/Triangle", "Joypad B/Circle", "Joypad A/Cross", "Joypad X/Square"]
 var open_radial_menu_button : String = "by_button"
 
+# Haptics options in ACTION MAP options
+var game_actions_triggering_primary_haptics = [] # e.g., ['reload', 'fire', 'kick', 'melee']
+var game_actions_triggering_secondary_haptics = []
+# Gesture based commands in ACTION MAP options
+var primary_controller_melee_velocity = 15.0 # set to 0 to disable
+var secondary_controller_melee_velocity = 15.0 # set to 0 to disable
+var primary_controller_melee_cooldown_secs = 0.50
+var secondary_controller_melee_cooldown_secs = 0.50
+var primary_controller_melee_action = ""
+var secondary_controller_melee_action = ""
+
 ## GAME OPTIONS CONFIG
 # Roomscale menu options in GAME options
 var use_roomscale : bool = false
@@ -467,6 +478,20 @@ func create_action_map_cfg_file(file_path):
 	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_entries", xr_radial_menu_entries)
 	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "open_radial_menu_button", open_radial_menu_button)
 	
+	# Now create haptic and melee options
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "use_xr_radial_menu", use_xr_radial_menu)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_mode", xr_radial_menu_mode)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_entries", xr_radial_menu_entries)
+	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "open_radial_menu_button", open_radial_menu_button)
+	action_map_cfg_file.set_value("HAPTICS", "game_actions_triggering_primary_haptics", game_actions_triggering_primary_haptics)
+	action_map_cfg_file.set_value("HAPTICS", "game_actions_triggering_secondary_haptics", game_actions_triggering_secondary_haptics)
+	action_map_cfg_file.set_value("MELEE", "primary_controller_melee_velocity", primary_controller_melee_velocity)
+	action_map_cfg_file.set_value("MELEE", "secondary_controller_melee_velocity", secondary_controller_melee_velocity)
+	action_map_cfg_file.set_value("MELEE", "primary_controller_melee_cooldown_secs", primary_controller_melee_cooldown_secs)
+	action_map_cfg_file.set_value("MELEE", "secondary_controller_melee_cooldown_secs", secondary_controller_melee_cooldown_secs)
+	action_map_cfg_file.set_value("MELEE", "primary_controller_melee_action", primary_controller_melee_action)
+	action_map_cfg_file.set_value("MELEE", "secondary_controller_melee_action", secondary_controller_melee_action)
+
 	# Save config file
 	err = action_map_cfg_file.save(file_path)
 	
@@ -509,7 +534,15 @@ func save_action_map_cfg_file(file_path):
 	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_mode", xr_radial_menu_mode)
 	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_entries", xr_radial_menu_entries)
 	action_map_cfg_file.set_value("RADIAL_MENU_OPTIONS", "open_radial_menu_button", open_radial_menu_button)
-	
+	action_map_cfg_file.set_value("HAPTICS", "game_actions_triggering_primary_haptics", game_actions_triggering_primary_haptics)
+	action_map_cfg_file.set_value("HAPTICS", "game_actions_triggering_secondary_haptics", game_actions_triggering_secondary_haptics)
+	action_map_cfg_file.set_value("MELEE", "primary_controller_melee_velocity", primary_controller_melee_velocity)
+	action_map_cfg_file.set_value("MELEE", "secondary_controller_melee_velocity", secondary_controller_melee_velocity)
+	action_map_cfg_file.set_value("MELEE", "primary_controller_melee_cooldown_secs", primary_controller_melee_cooldown_secs)
+	action_map_cfg_file.set_value("MELEE", "secondary_controller_melee_cooldown_secs", secondary_controller_melee_cooldown_secs)
+	action_map_cfg_file.set_value("MELEE", "primary_controller_melee_action", primary_controller_melee_action)
+	action_map_cfg_file.set_value("MELEE", "secondary_controller_melee_action", secondary_controller_melee_action)
+
 	# Save config file
 	err = action_map_cfg_file.save(file_path)
 	
@@ -574,6 +607,16 @@ func load_action_map_file(file_path: String) -> bool:
 	xr_radial_menu_entries = action_map_cfg_file.get_value("RADIAL_MENU_OPTIONS", "xr_radial_menu_entries", xr_radial_menu_entries)
 	open_radial_menu_button = action_map_cfg_file.get_value("RADIAL_MENU_OPTIONS", "open_radial_menu_button", open_radial_menu_button)
 	
+	# Now load haptics and melee options
+	game_actions_triggering_primary_haptics = action_map_cfg_file.get_value("HAPTICS", "game_actions_triggering_primary_haptics", game_actions_triggering_primary_haptics)
+	game_actions_triggering_secondary_haptics = action_map_cfg_file.get_value("HAPTICS", "game_actions_triggering_secondary_haptics", game_actions_triggering_secondary_haptics)
+	primary_controller_melee_velocity = action_map_cfg_file.get_value("MELEE", "primary_controller_melee_velocity", primary_controller_melee_velocity)
+	secondary_controller_melee_velocity = action_map_cfg_file.get_value("MELEE", "secondary_controller_melee_velocity", secondary_controller_melee_velocity)
+	primary_controller_melee_cooldown_secs = action_map_cfg_file.get_value("MELEE", "primary_controller_melee_cooldown_secs", primary_controller_melee_cooldown_secs)
+	secondary_controller_melee_cooldown_secs = action_map_cfg_file.get_value("MELEE", "secondary_controller_melee_cooldown_secs", secondary_controller_melee_cooldown_secs)
+	primary_controller_melee_action = action_map_cfg_file.get_value("MELEE", "primary_controller_melee_action", primary_controller_melee_action)
+	secondary_controller_melee_action = action_map_cfg_file.get_value("MELEE", "secondary_controller_melee_action", secondary_controller_melee_action)
+
 	emit_signal("xr_game_action_map_cfg_loaded", file_path)
 	
 	print("finished loading action map")
