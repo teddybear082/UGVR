@@ -40,7 +40,11 @@ https://vimeo.com/924331826
 
 -Allow user to print to log current scene tree (scene_tree_pretty) for use in developing game-specific code
 
--Basic in-VR GUI for simple VR options (still testing)
+-Allow user to bind haptics to game actions
+
+-Allow user to assign a game action to swinging each comtroller in a melee motion with assignable velocity threshold and cooldown
+
+-Basic in-VR GUI for simple VR options (still testing, still buggy, needs more work)
 
 ## Presently not working / Roadmap:
 
