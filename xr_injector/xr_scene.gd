@@ -1806,6 +1806,7 @@ func _set_tar_object_picker(delta : float):
 
 # Same, just experiemental - example of using custom code and variables with UGVR to get a specific game working better in VR after using the print tree functionality to get scene tree
 # Using a game specific prefix like "CRUEL_" helps ensure there can't be conflicts from other variables in UGVR
+var first_time_running_CRUEL : bool = true
 var first_time_reparenting_CRUEL_gun : bool = true
 var CRUEL_camera_node = null
 var CRUEL_node3d = null
@@ -1853,6 +1854,11 @@ void light(){
 }
 """
 func _set_CRUEL_gun(delta: float):
+	# no need for pointer in CRUEL as menus are all handled with joysticks
+	if first_time_running_CRUEL:
+		first_time_running_CRUEL = false
+		xr_pointer.set_enabled(false)
+
 	if is_instance_valid(xr_roomscale_controller):
 		if is_instance_valid(xr_roomscale_controller.current_characterbody3D):
 			CRUEL_pistol_parent = get_tree().get_root().get_node_or_null("Level/Node/Player/Head/CameraRig/ShakeTarget/CameraShake/Camera/Node3D/WeaponContainer/SwayController/Pistol")
@@ -1986,7 +1992,7 @@ func _process_melee_attacks(delta):
 			Input.action_release(primary_controller_melee_action)
 			await get_tree().create_timer(primary_controller_melee_cooldown_secs).timeout
 			primary_melee_attack_processing = false
-	
+
 	# Same
 	if secondary_controller_melee_action and secondary_controller_melee_velocity > 0 and not secondary_melee_attack_processing:
 		var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
