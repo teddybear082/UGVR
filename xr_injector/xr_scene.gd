@@ -1653,7 +1653,7 @@ func toggle_xr_gui_menu():
 	if xr_gui_menu.visible:
 		ugvr_menu_showing = true
 		# Get references to the nodes
-		var distance = 0.6 * xr_world_scale
+		var distance = 1.0 * xr_world_scale
 		var vertical_offset = -0.25 * xr_camera_3d.global_transform.origin.y
 		var horizontal_offset = -0.5 * xr_world_scale
 		# Get the camera's global transform
@@ -1719,6 +1719,56 @@ func _on_xr_gui_setting_changed(setting_name: String, setting_value: Variant):
 			xr_config_handler.show_welcome_label = setting_value
 			xr_config_handler.save_game_options_cfg_file(xr_config_handler.game_options_cfg_path)
 		
+# Trigger XR controller haptics based on game actions if configured by user
+# trigger_haptic_pulse(action_name: String, frequency: float, amplitude: float, duration_sec: float, delay_sec: float)
+func _set_haptics(delta):
+	if not is_instance_valid(primary_controller) and not is_instance_valid(secondary_controller):
+		return
+	for action in game_actions_triggering_primary_haptics:
+		if Input.is_action_pressed(action):
+			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
+	for action in game_actions_triggering_secondary_haptics:
+		if Input.is_action_pressed(action):
+			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
+
+
+# Trigger melee attacks specified by the user
+var primary_melee_attack_processing : bool = false
+var secondary_melee_attack_processing : bool = false
+func _process_melee_attacks(delta):
+	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
+		return
+	
+	if primary_controller_melee_velocity == 0.0 and secondary_controller_melee_velocity == 0.0:
+		return
+	
+	if primary_controller_melee_action == "" and secondary_controller_melee_action == "":
+		return
+	
+	# Only process if user has configured an action and velocity
+	if primary_controller_melee_action and primary_controller_melee_velocity > 0 and not primary_melee_attack_processing:
+		var primary_velocity = primary_controller.get_pose().get_linear_velocity().length_squared()
+		if primary_velocity > primary_controller_melee_velocity:
+			primary_melee_attack_processing = true
+			print("Primary melee attack detected, velocity was: ", primary_velocity) 
+			Input.action_press(primary_controller_melee_action)
+			await get_tree().create_timer(0.2).timeout
+			Input.action_release(primary_controller_melee_action)
+			await get_tree().create_timer(primary_controller_melee_cooldown_secs).timeout
+			primary_melee_attack_processing = false
+
+	# Same
+	if secondary_controller_melee_action and secondary_controller_melee_velocity > 0 and not secondary_melee_attack_processing:
+		var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
+		if secondary_velocity > secondary_controller_melee_velocity:
+			secondary_melee_attack_processing = true
+			print("Secondary melee attack detected, velocity was: ", secondary_velocity) 
+			Input.action_press(secondary_controller_melee_action)
+			await get_tree().create_timer(0.2).timeout
+			Input.action_release(secondary_controller_melee_action)
+			await get_tree().create_timer(secondary_controller_melee_cooldown_secs).timeout
+			secondary_melee_attack_processing = false
+
 # -----------------------------------------------------
 # EXPERIMENTAL SECTION - NOT FOR FINAL INJECTOR
 
@@ -1954,53 +2004,3 @@ func _set_CRUEL_gun(delta: float):
 						CRUEL_shotgun.visible = false
 						CRUEL_uzi.visible = true
 						CRUEL_revolver.visible = false
-
-# Trigger XR controller haptics based on game actions if configured by user
-# trigger_haptic_pulse(action_name: String, frequency: float, amplitude: float, duration_sec: float, delay_sec: float)
-func _set_haptics(delta):
-	if not is_instance_valid(primary_controller) and not is_instance_valid(secondary_controller):
-		return
-	for action in game_actions_triggering_primary_haptics:
-		if Input.is_action_pressed(action):
-			primary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
-	for action in game_actions_triggering_secondary_haptics:
-		if Input.is_action_pressed(action):
-			secondary_controller.trigger_haptic_pulse("haptic", 0.0, 1.0, 0.5, 0.0)
-
-
-# Trigger melee attacks specified by the user
-var primary_melee_attack_processing : bool = false
-var secondary_melee_attack_processing : bool = false
-func _process_melee_attacks(delta):
-	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
-		return
-	
-	if primary_controller_melee_velocity == 0.0 and secondary_controller_melee_velocity == 0.0:
-		return
-	
-	if primary_controller_melee_action == "" and secondary_controller_melee_action == "":
-		return
-	
-	# Only process if user has configured an action and velocity
-	if primary_controller_melee_action and primary_controller_melee_velocity > 0 and not primary_melee_attack_processing:
-		var primary_velocity = primary_controller.get_pose().get_linear_velocity().length_squared()
-		if primary_velocity > primary_controller_melee_velocity:
-			primary_melee_attack_processing = true
-			print("Primary melee attack detected, velocity was: ", primary_velocity) 
-			Input.action_press(primary_controller_melee_action)
-			await get_tree().create_timer(0.2).timeout
-			Input.action_release(primary_controller_melee_action)
-			await get_tree().create_timer(primary_controller_melee_cooldown_secs).timeout
-			primary_melee_attack_processing = false
-
-	# Same
-	if secondary_controller_melee_action and secondary_controller_melee_velocity > 0 and not secondary_melee_attack_processing:
-		var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
-		if secondary_velocity > secondary_controller_melee_velocity:
-			secondary_melee_attack_processing = true
-			print("Secondary melee attack detected, velocity was: ", secondary_velocity) 
-			Input.action_press(secondary_controller_melee_action)
-			await get_tree().create_timer(0.2).timeout
-			Input.action_release(secondary_controller_melee_action)
-			await get_tree().create_timer(secondary_controller_melee_cooldown_secs).timeout
-			secondary_melee_attack_processing = false
