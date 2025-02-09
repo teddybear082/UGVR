@@ -42,7 +42,7 @@ https://vimeo.com/924331826
 
 -Allow user to bind haptics to game actions
 
--Allow user to assign a game action to swinging each comtroller in a melee motion with assignable velocity threshold and cooldown
+-Allow user to assign a game action to swinging each controller in a melee motion with assignable velocity threshold and cooldown
 
 -Basic in-VR GUI for simple VR options (still testing, still buggy, needs more work)
 
