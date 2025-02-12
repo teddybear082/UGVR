@@ -882,10 +882,10 @@ class ReparentedNode:
 	# Try to smooth movement of reparented node to minimize jitter
 	func handle_reparented_node_smoothing():
 		if is_instance_valid(reparenting_node_holder) and is_instance_valid(reparented_node):
-			var delta = xr_scene.get_process_delta_time()
+			#var delta = xr_scene.get_process_delta_time()
 			# Set lerp speed to current FPS
 			var attach_lerp_speed : float = float(Performance.get_monitor(Performance.TIME_FPS))
-			var lerp_speed = attach_lerp_speed * delta
+			var lerp_speed = attach_lerp_speed * xr_scene.get_process_delta_time()
 			# Get target rotation and position from source node
 			var new_pose_rotation = reparenting_node_holder.global_transform.basis.get_rotation_quaternion()
 			var new_position = reparenting_node_holder.global_transform.origin
@@ -1827,10 +1827,10 @@ func _process_melee_attacks(delta):
 
 var reparented_vostok_weapon = ReparentedNode.new()
 var reparented_vostok_interactor = ReparentedNode.new()
-var reparented_vostok_placer = ReparentedNode.new()
 # Tests only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
 func _set_vostok_gun(delta):
 	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
+
 	if is_instance_valid(xr_roomscale_controller) and is_instance_valid(xr_roomscale_controller.camera_3d):
 		var interactor = xr_roomscale_controller.camera_3d.get_node_or_null("Interactor")
 		if is_instance_valid(interactor):
