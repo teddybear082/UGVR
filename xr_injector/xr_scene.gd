@@ -806,76 +806,112 @@ func _handle_rotation(angle : float) -> void:
 	rot = rot.rotated(Vector3(0.0, -1.0, 0.0), angle) ## <-- this is the rotation around the camera
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
 # ---------------------END OF DECASIS STICK TURNING CODE -----------------------------------------------
-
-# Handle reparenting game elements
-# Reparented node is the node passed to the function to be attached to the primary controller, use rotate if the model has z going the wrong direction, use target offset to better place the object in the XR hand
-func handle_node_reparenting(delta : float, reparented_node : Node3D, rotate_reparented_node_180_degrees : bool, target_offset: Vector3 = Vector3(0,0,0)):
-
-	if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
-		return
+class ReparentedNode: 
+	var xr_scene : Node3D
+	var reparented_node : Node3D
+	var target_node : Node3D
+	var rotate_180 : bool = false
+	var primary_controller: Node3D
+	var secondary_controller: Node3D
+	var target_offset : Vector3
+	var active : bool = true
+	var reparenting_node : Node3D
+	var reparenting_node_holder : Node3D
 	
-	if xr_reparenting_active and is_instance_valid(reparented_node):
+	func _init():
+		self.xr_scene = null
+		self.reparented_node = null
+		self.target_node = null
+		self.rotate_180 = false
+		self.primary_controller = null
+		self.secondary_controller = null
+		self.target_offset = Vector3.ZERO
+		self.reparenting_node = null
+		self.reparenting_node_holder = null
 	
-		reparented_node.set_as_top_level(true)
+	func set_variables(xr_scene: Node3D, reparented_node: Node3D, target_node: Node3D, rotate_180 : bool, primary_controller : XRController3D, secondary_controller : XRController3D, target_offset : Vector3 = Vector3.ZERO, active : bool = true):
+		self.xr_scene = xr_scene
+		self.reparented_node = reparented_node
+		self.target_node = target_node
+		self.rotate_180 = rotate_180
+		self.primary_controller = primary_controller
+		self.secondary_controller = secondary_controller
+		self.target_offset = target_offset
+		self.reparenting_node = Node3D.new()
+		self.reparenting_node_holder = Node3D.new()
+		xr_scene.add_child(reparenting_node)
+		reparenting_node.add_child(reparenting_node_holder)
 	
-		if secondary_controller.is_button_pressed("grip"):
-			if (secondary_controller.global_transform.origin - primary_controller.global_transform.origin).length() <= 0.35:
-				xr_two_handed_aim = true
+	func set_active(value):
+		active = value
+		
+	func handle_node_reparenting():
+		var xr_two_handed_aim = false
+		if not is_instance_valid(primary_controller) or not is_instance_valid(secondary_controller):
+			return
+		
+		if active and is_instance_valid(reparented_node):
+		
+			reparented_node.set_as_top_level(true)
+		
+			if secondary_controller.is_button_pressed("grip"):
+				if (secondary_controller.global_transform.origin - primary_controller.global_transform.origin).length() <= 0.35:
+					xr_two_handed_aim = true
+				else:
+					xr_two_handed_aim = false
 			else:
 				xr_two_handed_aim = false
-		else:
-			xr_two_handed_aim = false
-	
-		if xr_two_handed_aim == true:
-			xr_reparenting_node.global_transform.origin = primary_controller.global_transform.origin
-			var dir = (primary_controller.global_position - secondary_controller.global_position).normalized()
-			if rotate_reparented_node_180_degrees:
-				dir = (secondary_controller.global_position - primary_controller.global_position).normalized()
-			xr_reparenting_node.global_transform.basis = xr_reparenting_node.global_transform.basis.looking_at(dir, Vector3.UP, true)
-		else:
-			xr_reparenting_node.global_transform = primary_controller.global_transform
-			
-		if rotate_reparented_node_180_degrees and not xr_two_handed_aim:
-			xr_reparenting_node_holder.rotation_degrees = Vector3(0,180,0)
-		else:
-			xr_reparenting_node_holder.rotation_degrees = Vector3(0,0,0)
-
-		xr_reparenting_node_holder.transform.origin = target_offset
-		handle_reparented_node_smoothing(delta, xr_reparenting_node_holder, reparented_node, rotate_reparented_node_180_degrees)
-
-# Try to smooth movement of reparented node to minimize jitter
-func handle_reparented_node_smoothing(delta : float, source_node : Node3D, destination_node : Node3D, rotate_reparented_node_180_degrees : bool):
-	if is_instance_valid(source_node) and is_instance_valid(destination_node):
-
-		# Set lerp speed to current FPS
-		var attach_lerp_speed : float = float(Performance.get_monitor(Performance.TIME_FPS))
-		var lerp_speed = attach_lerp_speed * delta
-		# Get target rotation and position from source node
-		var new_pose_rotation = source_node.global_transform.basis.get_rotation_quaternion()
-		var new_position = source_node.global_transform.origin
-		# Get current destination node rotation and position
-		var last_pose_rotation = destination_node.global_transform.basis.get_rotation_quaternion()
-		var last_position = destination_node.global_transform.origin
-
-		# Get dot product of destination node's rotation and source node's rotation
-		# If the dot product is close to 1, it means the orientations are very similar, while if it's closer to -1, they are nearly opposite.
-		var spherical_distance = new_pose_rotation.dot(last_pose_rotation)
-
-		if (spherical_distance  < 0.0):
-			spherical_distance = -spherical_distance
-
-		# Get distance between source and destination node and scale smoothing to distance
-		var lenr = maxf(1.0, (new_position - last_position).length())
 		
-		# Lerp destination node's rotation and postion to source node's values, scaled by amount of difference between the two
-		# For some reason this does not work when we have to rotate the object by 180 degrees, so disabling for now in that circumstance
-		if rotate_reparented_node_180_degrees:
-			last_pose_rotation = source_node.global_transform.basis
-		else:	
-			last_pose_rotation = Basis(last_pose_rotation.slerp(new_pose_rotation, lerp_speed * spherical_distance))
-		last_position = last_position.lerp(new_position, minf(1.0, lerp_speed * lenr))
-		destination_node.global_transform.basis = last_pose_rotation
-		destination_node.global_transform.origin = last_position
+			if xr_two_handed_aim == true:
+				reparenting_node.global_transform.origin = primary_controller.global_transform.origin
+				var dir = (primary_controller.global_position - secondary_controller.global_position).normalized()
+				if rotate_180:
+					dir = (secondary_controller.global_position - primary_controller.global_position).normalized()
+				reparenting_node.global_transform.basis = reparenting_node.global_transform.basis.looking_at(dir, Vector3.UP, true)
+			else:
+				reparenting_node.global_transform = target_node.global_transform
+				
+			if rotate_180 and not xr_two_handed_aim:
+				reparenting_node_holder.rotation_degrees = Vector3(0,180,0)
+			else:
+				reparenting_node_holder.rotation_degrees = Vector3(0,0,0)
+
+			reparenting_node_holder.transform.origin = target_offset
+			handle_reparented_node_smoothing()
+
+	# Try to smooth movement of reparented node to minimize jitter
+	func handle_reparented_node_smoothing():
+		if is_instance_valid(reparenting_node_holder) and is_instance_valid(reparented_node):
+			var delta = xr_scene.get_process_delta_time()
+			# Set lerp speed to current FPS
+			var attach_lerp_speed : float = float(Performance.get_monitor(Performance.TIME_FPS))
+			var lerp_speed = attach_lerp_speed * delta
+			# Get target rotation and position from source node
+			var new_pose_rotation = reparenting_node_holder.global_transform.basis.get_rotation_quaternion()
+			var new_position = reparenting_node_holder.global_transform.origin
+			# Get current destination node rotation and position
+			var last_pose_rotation = reparented_node.global_transform.basis.get_rotation_quaternion()
+			var last_position = reparented_node.global_transform.origin
+
+			# Get dot product of destination node's rotation and source node's rotation
+			# If the dot product is close to 1, it means the orientations are very similar, while if it's closer to -1, they are nearly opposite.
+			var spherical_distance = new_pose_rotation.dot(last_pose_rotation)
+
+			if (spherical_distance  < 0.0):
+				spherical_distance = -spherical_distance
+
+			# Get distance between source and destination node and scale smoothing to distance
+			var lenr = maxf(1.0, (new_position - last_position).length())
+			
+			# Lerp destination node's rotation and postion to source node's values, scaled by amount of difference between the two
+			# For some reason this does not work when we have to rotate the object by 180 degrees, so disabling for now in that circumstance
+			if rotate_180:
+				last_pose_rotation = reparenting_node_holder.global_transform.basis
+			else:	
+				last_pose_rotation = Basis(last_pose_rotation.slerp(new_pose_rotation, lerp_speed * spherical_distance))
+			last_position = last_position.lerp(new_position, minf(1.0, lerp_speed * lenr))
+			reparented_node.global_transform.basis = last_pose_rotation
+			reparented_node.global_transform.origin = last_position
 
 # Handle initiation of xr
 func _on_xr_started():
@@ -1471,6 +1507,9 @@ func set_xr_game_options():
 	# Enable arm swing jog or jump movement if enabled by the user
 	xr_physical_movement_controller.set_enabled(use_jog_movement, use_arm_swing_jump, primary_controller, secondary_controller, jog_triggers_sprint)
 
+	# Set xr roomscale controller for hmd or controller directed movement
+	xr_roomscale_controller.roomscale_controller_directed_movement = use_roomscale_controller_directed_movement
+	
 	# Show or Clear Welcome label / Splash Screen
 	if show_welcome_label and not welcome_label_already_shown:
 		welcome_label_3d.show()
@@ -1687,6 +1726,7 @@ func _on_xr_gui_setting_changed(setting_name: String, setting_value: Variant):
 		"primary_controller":
 			primary_controller_selection = setting_value
 			xr_config_handler.primary_controller_selection = setting_value
+			xr_config_handler.save_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
 		"use_controller_dir_movement":
 			use_roomscale_controller_directed_movement = setting_value
 			xr_config_handler.use_roomscale_controller_directed_movement = setting_value
@@ -1785,10 +1825,20 @@ func _process_melee_attacks(delta):
 	#print("node name: ", node.name)
 	#print("node_path: ", node.get_path())
 
+var reparented_vostok_weapon = ReparentedNode.new()
+var reparented_vostok_interactor = ReparentedNode.new()
+var reparented_vostok_placer = ReparentedNode.new()
 # Tests only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
 func _set_vostok_gun(delta):
 	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
 	if is_instance_valid(xr_roomscale_controller) and is_instance_valid(xr_roomscale_controller.camera_3d):
+		var interactor = xr_roomscale_controller.camera_3d.get_node_or_null("Interactor")
+		if is_instance_valid(interactor):
+			reparented_vostok_interactor.set_variables(self, interactor, secondary_controller, false, primary_controller, secondary_controller, Vector3.ZERO, true)
+			reparented_vostok_interactor.handle_node_reparenting()
+			reparented_vostok_interactor.set_target_position(Vector3(0,0,-2))
+			reparented_vostok_interactor.force_raycast_update()
+
 		var vostok_weapons_node = xr_roomscale_controller.camera_3d.find_child("Weapons", false, false)
 		if vostok_weapons_node != null:
 			if vostok_weapons_node.get_child_count(true) > 0:
@@ -1809,30 +1859,10 @@ func _set_vostok_gun(delta):
 						vostok_arms.visible = false
 						xr_reparenting_active = true
 						var rotate_reparented_node_180_degrees = true
-						handle_node_reparenting(delta, vostok_weapon_mesh, rotate_reparented_node_180_degrees, Vector3(0.0, 0.025, 0.025))
-				
-	elif is_instance_valid(current_camera):
-		var vostok_weapons_node = current_camera.find_child("Weapons", false, false)
-		if vostok_weapons_node != null:
-			if vostok_weapons_node.get_child_count(true) > 0:
-				var vostok_weapon = vostok_weapons_node.get_child(0, true)
-				#print(vostok_weapon)
-				var vostok_weapon_mesh = vostok_weapon.get_node_or_null("Handling/Sway/Noise/Tilt/Impulse/Recoil/Weapon")
-				# if that's not valid, try to see if it's a knife instead
-				if not is_instance_valid(vostok_weapon_mesh):
-					vostok_weapon_mesh = vostok_weapon.get_node_or_null("Handling/Sway/Noise/Tilt/Impulse/Knife")
-				# if that's still not valid, try to see if its a instrument instead
-				if not is_instance_valid(vostok_weapon_mesh):
-					vostok_weapon_mesh = vostok_weapon.get_node_or_null("Sway/Noise/Tilt/Impulse/Instrument")
-				#print(vostok_weapon_mesh)
-				if is_instance_valid(vostok_weapon_mesh):
-					var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
-					if vostok_arms:
-						vostok_arms.visible = false
-						xr_reparenting_active = true
-						var rotate_reparented_node_180_degrees = true
-						handle_node_reparenting(delta, vostok_weapon_mesh, rotate_reparented_node_180_degrees, Vector3(0,0.025,0.025))
+						reparented_vostok_weapon.set_variables(self, vostok_weapon_mesh, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3(0.0, 0.025, 0.025), true)
+						reparented_vostok_weapon.handle_node_reparenting()
 
+var reparented_beton_gun = ReparentedNode.new()	
 # Same, just experimental
 func _set_beton_gun(delta : float):
 	var gun_node = get_tree().get_root().get_node_or_null("LowresRoot/LowResViewport/Player/RotPoint")
@@ -1840,8 +1870,10 @@ func _set_beton_gun(delta : float):
 		gun_node.get_node("GunHold").transform.origin = Vector3(0,0,0)
 		xr_reparenting_active = true
 		var rotate_reparented_node_180_degrees = false
-		handle_node_reparenting(delta, gun_node, rotate_reparented_node_180_degrees)
+		reparented_beton_gun.set_variables(self, gun_node, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3.ZERO, true)
+		reparented_beton_gun.handle_node_reparenting()
 
+var reparented_tar_object_picker = ReparentedNode.new()
 # Same, just experimental
 func _set_tar_object_picker(delta : float):
 	
@@ -1851,7 +1883,8 @@ func _set_tar_object_picker(delta : float):
 			object_picker_point.get_node("PlayerEyes/obj_picker_point").transform.origin = Vector3(0,0,0)
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
-			handle_node_reparenting(delta, object_picker_point, rotate_reparented_node_180_degrees)
+			reparented_tar_object_picker.set_variables(self, object_picker_point, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3.ZERO, true)
+			reparented_tar_object_picker.handle_node_reparenting()
 
 
 # Same, just experiemental - example of using custom code and variables with UGVR to get a specific game working better in VR after using the print tree functionality to get scene tree
