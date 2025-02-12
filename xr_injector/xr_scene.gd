@@ -1787,27 +1787,29 @@ func _process_melee_attacks(delta):
 	
 	# Only process if user has configured an action and velocity
 	if primary_controller_melee_action and primary_controller_melee_velocity > 0 and not primary_melee_attack_processing:
-		var primary_velocity = primary_controller.get_pose().get_linear_velocity().length_squared()
-		if primary_velocity > primary_controller_melee_velocity:
-			primary_melee_attack_processing = true
-			print("Primary melee attack detected, velocity was: ", primary_velocity) 
-			Input.action_press(primary_controller_melee_action)
-			await get_tree().create_timer(0.2).timeout
-			Input.action_release(primary_controller_melee_action)
-			await get_tree().create_timer(primary_controller_melee_cooldown_secs).timeout
-			primary_melee_attack_processing = false
+		if primary_controller.get_pose():
+			var primary_velocity = primary_controller.get_pose().get_linear_velocity().length_squared()
+			if primary_velocity > primary_controller_melee_velocity:
+				primary_melee_attack_processing = true
+				print("Primary melee attack detected, velocity was: ", primary_velocity) 
+				Input.action_press(primary_controller_melee_action)
+				await get_tree().create_timer(0.2).timeout
+				Input.action_release(primary_controller_melee_action)
+				await get_tree().create_timer(primary_controller_melee_cooldown_secs).timeout
+				primary_melee_attack_processing = false
 
 	# Same
 	if secondary_controller_melee_action and secondary_controller_melee_velocity > 0 and not secondary_melee_attack_processing:
-		var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
-		if secondary_velocity > secondary_controller_melee_velocity:
-			secondary_melee_attack_processing = true
-			print("Secondary melee attack detected, velocity was: ", secondary_velocity) 
-			Input.action_press(secondary_controller_melee_action)
-			await get_tree().create_timer(0.2).timeout
-			Input.action_release(secondary_controller_melee_action)
-			await get_tree().create_timer(secondary_controller_melee_cooldown_secs).timeout
-			secondary_melee_attack_processing = false
+		if secondary_controller.get_pose():
+			var secondary_velocity = secondary_controller.get_pose().get_linear_velocity().length_squared()
+			if secondary_velocity > secondary_controller_melee_velocity:
+				secondary_melee_attack_processing = true
+				print("Secondary melee attack detected, velocity was: ", secondary_velocity) 
+				Input.action_press(secondary_controller_melee_action)
+				await get_tree().create_timer(0.2).timeout
+				Input.action_release(secondary_controller_melee_action)
+				await get_tree().create_timer(secondary_controller_melee_cooldown_secs).timeout
+				secondary_melee_attack_processing = false
 
 # -----------------------------------------------------
 # EXPERIMENTAL SECTION - NOT FOR FINAL INJECTOR
@@ -1836,8 +1838,8 @@ func _set_vostok_gun(delta):
 		if is_instance_valid(interactor):
 			reparented_vostok_interactor.set_variables(self, interactor, secondary_controller, false, primary_controller, secondary_controller, Vector3.ZERO, true)
 			reparented_vostok_interactor.handle_node_reparenting()
-			reparented_vostok_interactor.set_target_position(Vector3(0,0,-2))
-			reparented_vostok_interactor.force_raycast_update()
+			interactor.set_target_position(Vector3(0,0,-2))
+			interactor.force_raycast_update()
 
 		var vostok_weapons_node = xr_roomscale_controller.camera_3d.find_child("Weapons", false, false)
 		if vostok_weapons_node != null:
