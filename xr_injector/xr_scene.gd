@@ -1829,15 +1829,71 @@ func _process_melee_attacks(delta):
 
 var reparented_vostok_weapon = ReparentedNode.new()
 var reparented_vostok_interactor = ReparentedNode.new()
+var first_vostok_run : bool = true
 # Tests only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
 func _set_vostok_gun(delta):
 	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
+	
+	# Example code to show controls configured by mod defaults in game
+	if first_vostok_run and show_welcome_label:
+		if is_instance_valid(primary_controller) and is_instance_valid(secondary_controller):
+			first_vostok_run = false
+			var primary_label_child : Label3D = Label3D.new()
+			primary_label_child.pixel_size = 0.0001
+			primary_label_child.font_size = 128
+			primary_label_child.outline_size = 32
+			primary_label_child.text = """
+			-Primary Controller-
+			
+			Crouch: STICK DOWN
+			Ready gun for firing: GRIP
+			Ready knife for throwing: GRIP
+			Shoot: Trigger (while ready)
+			Throw Knife: Trigger (while ready)
+			Stab Knife: Trigger
+			Jump: Swing arms up or A / LOWER FACE BUTTON
+			Open Radial Menu: CLICK AND HOLD STICK
+			Hotkey: PLACE THUMB ON STICK
+			VR Options Menu: Controller to head / TRIGGER
+			Pointer Toggle for Menus: Controller to head / TRIGGER
+			Right Click in Menus: A / LOWER FACE BUTTON
+			
+			"""
+			primary_controller.add_child(primary_label_child)
+			primary_label_child.transform.origin.y = 0.2
+			
+			var secondary_label_child : Label3D = Label3D.new()
+			secondary_label_child.pixel_size = 0.0001
+			secondary_label_child.font_size = 128
+			secondary_label_child.outline_size = 32
+			secondary_label_child.text = """
+			-Secondary Controller-
+			
+			IMPORTANT!! Once in game, TO ACTIVATE VR CONTROLS, 
+			put hand over head, and press B/Y TOP FACE BUTTON Once
+			
+			Inventory: CLICK STICK + Hotkey
+			Pause Menu: B/Y TOP FACE BUTTON + Hotkey
+			Interact: GRIP
+			Grab / Place Item: HOLD Trigger
+			Prone: B/Y TOP FACE Button
+			Sprint: Swing arms or CLICK / HOLD Stick
+			Slash Knife: TRIGGER
+			"""
+			secondary_controller.add_child(secondary_label_child)
+			secondary_label_child.transform.origin.y = 0.2
+			await get_tree().create_timer(60.0).timeout
+			primary_label_child.hide()
+			secondary_label_child.hide()
+
 
 	if is_instance_valid(xr_roomscale_controller) and is_instance_valid(xr_roomscale_controller.camera_3d):
 		var interactor = xr_roomscale_controller.camera_3d.get_node_or_null("Interactor")
 		if is_instance_valid(interactor):
 			reparented_vostok_interactor.set_variables(self, interactor, secondary_controller, false, primary_controller, secondary_controller, Vector3.ZERO, true)
 			reparented_vostok_interactor.handle_node_reparenting()
+			#reparented_vostok_interactor.set_target_position(Vector3(0,0,-2))
+			#reparented_vostok_interactor.force_raycast_update()
 			interactor.set_target_position(Vector3(0,0,-2))
 			interactor.force_raycast_update()
 
