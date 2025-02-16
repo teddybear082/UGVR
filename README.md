@@ -1,5 +1,7 @@
 # UGVR
- A mod to transform Godot 4 games from 3D to VR
+ A mod to transform Godot 4 games from 3D to VR.
+
+ Find ready-made configs/profiles for certain games that have been manually tested here: https://github.com/teddybear082/UGVR_game_profiles.
 
 ## IN DEVELOPMENT.
 ![thumb](https://github.com/teddybear082/UGVR/assets/87204721/2a7b55f6-605f-47ab-9964-d838c543f3a6)
