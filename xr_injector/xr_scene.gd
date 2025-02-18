@@ -429,6 +429,19 @@ func map_xr_controllers_to_action_map() -> bool:
 			if event is InputEventJoypadButton:
 				print(event)
 	
+	# Check if wrong signals connected to controllers (checking one being wrong should be enough since we always handle together;
+	# if so, disconnect controller signals before proceeding, this means user changed their primary controller in the XR GUI
+	if primary_controller.button_pressed.is_connected(handle_secondary_xr_inputs):
+		print("Previous conflicting xr controller signal connections found, user must have changed input hands. Disconnecting old signals...")
+		primary_controller.button_pressed.disconnect(handle_secondary_xr_inputs)
+		primary_controller.button_released.disconnect(handle_secondary_xr_release)
+		primary_controller.input_float_changed.disconnect(handle_secondary_xr_float)
+		primary_controller.input_vector2_changed.disconnect(secondary_stick_moved)
+		secondary_controller.button_pressed.disconnect(handle_primary_xr_inputs)
+		secondary_controller.button_released.disconnect(handle_primary_xr_release)
+		secondary_controller.input_float_changed.disconnect(handle_primary_xr_float)
+		secondary_controller.input_vector2_changed.disconnect(primary_stick_moved)
+	
 	# Connect controller button and joystick signals to handlers
 	secondary_controller.connect("button_pressed", Callable(self, "handle_secondary_xr_inputs"))
 	primary_controller.connect("button_pressed", Callable(self,"handle_primary_xr_inputs"))
@@ -1692,7 +1705,7 @@ func toggle_xr_gui_menu():
 	if xr_gui_menu.visible:
 		ugvr_menu_showing = true
 		# Get references to the nodes
-		var distance = 1.0 * xr_world_scale
+		var distance = 1.5 * xr_world_scale
 		var vertical_offset = -0.25 * xr_camera_3d.global_transform.origin.y
 		var horizontal_offset = -0.5 * xr_world_scale
 		# Get the camera's global transform
@@ -1702,7 +1715,7 @@ func toggle_xr_gui_menu():
 		var forward = -cam_transform.basis.z
 		forward.y = 0
 		forward = forward.normalized()
-		# Set the menu's position 2 units in front of the camera
+		# Set the menu's position in front of the camera
 		var menu_position: Vector3 = cam_transform.origin + forward * distance
 		# Offset height
 		menu_position.y += vertical_offset
