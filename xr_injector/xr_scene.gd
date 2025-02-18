@@ -488,6 +488,11 @@ func map_xr_controllers_to_action_map() -> bool:
 	# Set GUI Detection Area Layer on Secondary Controller to 0 to prevent menu issues, set primary to layer 32 (2147483648) in case primary and secondary controllers have changed.
 	secondary_controller.get_node("GUIDetectionArea").collision_layer = 0
 	primary_controller.get_node("GUIDetectionArea").collision_layer = 2147483648
+	
+	# Make sure radial menu controller is set properly
+	if is_instance_valid(xr_radial_menu):
+		xr_radial_menu.set_controller(primary_controller)
+	
 	# Return true to alert that function is completed
 	return true
 	
