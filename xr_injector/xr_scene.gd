@@ -570,12 +570,12 @@ func handle_secondary_xr_inputs(button):
 	#print("secondary button pressed: ", button)
 
 	# If pressing pointer activation button and making gesture, toggle UGVR menu - next step make this the chord defined in UGVR config option
-	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
+	#if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(secondary_detection_area):
 		# Hold for future use - Insert code here to make new UGVR menu or scene pop up
-		if ugvr_menu_showing:
-			xr_pointer.collision_mask = 4194304 # layer 23 - layer ugvr menu is now on
-		else:
-			xr_pointer.collision_mask = 1048576 #  layer 21 - layer the other two viewports are now on
+		#if ugvr_menu_showing:
+			#xr_pointer.collision_mask = 4194304 # layer 23 - layer ugvr menu is now on
+		#else:
+			#xr_pointer.collision_mask = 1048576 #  layer 21 - layer the other two viewports are now on
 
 	# If button is assigned to load action map (temporary,this should be a GUI option) and making gesture, load action map
 	if button == gesture_load_action_map_button and gesture_area.overlaps_area(secondary_detection_area):
