@@ -551,10 +551,6 @@ func handle_primary_xr_inputs(button):
 	
 # Handle release of buttons on primary controller
 func handle_primary_xr_release(button):
-	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
-	if ugvr_menu_showing:
-		return
-	
 	#print("primary button released: ", button)
 	if button == dpad_activation_button:
 		dpad_toggle_active = false
@@ -617,9 +613,6 @@ func handle_secondary_xr_inputs(button):
 	
 # Handle release of buttons on VR Controller assigned as secondary	
 func handle_secondary_xr_release(button):
-	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
-	if ugvr_menu_showing:
-		return
 	#print("secondary button released: ", button)
 	if button == start_button:
 		var event = InputEventJoypadButton.new()
