@@ -489,9 +489,13 @@ func map_xr_controllers_to_action_map() -> bool:
 	secondary_controller.get_node("GUIDetectionArea").collision_layer = 0
 	primary_controller.get_node("GUIDetectionArea").collision_layer = 2147483648
 	
-	# Make sure radial menu controller is set properly
+	# Make sure radial menu controller is set properly after possible switch of primary controller
 	if is_instance_valid(xr_radial_menu):
 		xr_radial_menu.set_controller(primary_controller)
+	
+	# Place viewports at proper location based on user config after possible switch of primary controller
+	reparent_viewport(xr_main_viewport2d_in_3d, xr_main_viewport_location)
+	reparent_viewport(xr_secondary_viewport2d_in_3d, xr_secondary_viewport_location)
 	
 	# Return true to alert that function is completed
 	return true
@@ -1738,6 +1742,7 @@ func _on_xr_gui_setting_changed(setting_name: String, setting_value: Variant):
 			primary_controller_selection = setting_value
 			xr_config_handler.primary_controller_selection = setting_value
 			xr_config_handler.save_game_control_map_cfg_file(xr_config_handler.game_control_map_cfg_path)
+			
 		"use_controller_dir_movement":
 			use_roomscale_controller_directed_movement = setting_value
 			xr_config_handler.use_roomscale_controller_directed_movement = setting_value
