@@ -219,6 +219,7 @@ var secondary_viewport_offset : Vector3 = Vector3(0,0,0)
 var autosave_action_map_duration_in_secs : int = 0
 
 # Experimental variables only - not for final mod - use to test reparenting nodes to VR controllers
+var use_test_object_reparenting_code : bool = false
 var use_vostok_gun_finding_code : bool = false
 var use_beton_gun_finding_code : bool = false
 var use_tar_object_picker_finding_code : bool = false
@@ -281,6 +282,9 @@ func _ready() -> void:
 
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
+	if use_test_object_reparenting_code:
+		_reparent_test_object(_delta)
+
 	if use_vostok_gun_finding_code:
 		_set_vostok_gun(_delta)
 	
@@ -822,7 +826,7 @@ func _handle_rotation(angle : float) -> void:
 	xr_origin_3d.transform = (xr_origin_3d.transform * t2 * rot * t1).orthonormalized()
 # ---------------------END OF DECASIS STICK TURNING CODE -----------------------------------------------
 class ReparentedNode: 
-	var xr_scene : Node3D
+	var xr_scene
 	var reparented_node : Node3D
 	var target_node : Node3D
 	var rotate_180 : bool = false
@@ -833,8 +837,8 @@ class ReparentedNode:
 	var reparenting_node : Node3D
 	var reparenting_node_holder : Node3D
 	
-	func _init():
-		self.xr_scene = null
+	func _init(new_xr_scene):
+		self.xr_scene = new_xr_scene
 		self.reparented_node = null
 		self.target_node = null
 		self.rotate_180 = false
@@ -843,19 +847,18 @@ class ReparentedNode:
 		self.target_offset = Vector3.ZERO
 		self.reparenting_node = null
 		self.reparenting_node_holder = null
-	
-	func set_variables(xr_scene: Node3D, reparented_node: Node3D, target_node: Node3D, rotate_180 : bool, primary_controller : XRController3D, secondary_controller : XRController3D, target_offset : Vector3 = Vector3.ZERO, active : bool = true):
-		self.xr_scene = xr_scene
+		self.reparenting_node = Node3D.new()
+		self.reparenting_node_holder = Node3D.new()
+		self.xr_scene.add_child(self.reparenting_node)
+		reparenting_node.add_child(self.reparenting_node_holder)
+
+	func set_variables(reparented_node: Node3D, target_node: Node3D, rotate_180 : bool, primary_controller : XRController3D, secondary_controller : XRController3D, target_offset : Vector3 = Vector3.ZERO, active : bool = true):
 		self.reparented_node = reparented_node
 		self.target_node = target_node
 		self.rotate_180 = rotate_180
 		self.primary_controller = primary_controller
 		self.secondary_controller = secondary_controller
 		self.target_offset = target_offset
-		self.reparenting_node = Node3D.new()
-		self.reparenting_node_holder = Node3D.new()
-		xr_scene.add_child(reparenting_node)
-		reparenting_node.add_child(reparenting_node_holder)
 	
 	func set_active(value):
 		active = value
@@ -1842,18 +1845,32 @@ func _process_melee_attacks(delta):
 #for node in get_nodes_in_scene(get_tree().current_scene):
 	#print("node name: ", node.name)
 	#print("node_path: ", node.get_path())
+var debug_first_run: bool = true
+var reparented_test_object
+@onready var debug_test_object = get_node_or_null("TestObject")
+func _reparent_test_object(delta):
+	if use_test_object_reparenting_code:
+		if debug_first_run:
+			if is_instance_valid(primary_controller) and is_instance_valid(secondary_controller):
+				debug_first_run = false
+				reparented_test_object = ReparentedNode.new(self)
+		if is_instance_valid(reparented_test_object) and is_instance_valid(debug_test_object):
+			reparented_test_object.set_variables(debug_test_object, primary_controller, false, primary_controller, secondary_controller, Vector3.ZERO, true)
+			reparented_test_object.handle_node_reparenting()
 
-var reparented_vostok_weapon = ReparentedNode.new()
-var reparented_vostok_interactor = ReparentedNode.new()
+var reparented_vostok_weapon
+var reparented_vostok_interactor
 var first_vostok_run : bool = true
 # Tests only for new reparenting weapon code; in the future the specific node will be set by menu or a modder could use the function above in another script
 func _set_vostok_gun(delta):
 	RenderingServer.viewport_set_scaling_3d_mode(currentRID, RenderingServer.VIEWPORT_SCALING_3D_MODE_BILINEAR)
 	
 	# Example code to show controls configured by mod defaults in game
-	if first_vostok_run and show_welcome_label:
+	if first_vostok_run:
 		if is_instance_valid(primary_controller) and is_instance_valid(secondary_controller):
 			first_vostok_run = false
+			reparented_vostok_interactor = ReparentedNode.new(self)
+			reparented_vostok_weapon = ReparentedNode.new(self)
 			var primary_label_child : Label3D = Label3D.new()
 			primary_label_child.pixel_size = 0.0001
 			primary_label_child.font_size = 128
@@ -1902,14 +1919,11 @@ func _set_vostok_gun(delta):
 			primary_label_child.hide()
 			secondary_label_child.hide()
 
-
 	if is_instance_valid(xr_roomscale_controller) and is_instance_valid(xr_roomscale_controller.camera_3d):
 		var interactor = xr_roomscale_controller.camera_3d.get_node_or_null("Interactor")
-		if is_instance_valid(interactor):
-			reparented_vostok_interactor.set_variables(self, interactor, secondary_controller, false, primary_controller, secondary_controller, Vector3.ZERO, true)
+		if is_instance_valid(interactor) and is_instance_valid(reparented_vostok_interactor):
+			reparented_vostok_interactor.set_variables(interactor, secondary_controller, false, primary_controller, secondary_controller, Vector3.ZERO, true)
 			reparented_vostok_interactor.handle_node_reparenting()
-			#reparented_vostok_interactor.set_target_position(Vector3(0,0,-2))
-			#reparented_vostok_interactor.force_raycast_update()
 			interactor.set_target_position(Vector3(0,0,-2))
 			interactor.force_raycast_update()
 
@@ -1927,16 +1941,16 @@ func _set_vostok_gun(delta):
 				if not is_instance_valid(vostok_weapon_mesh):
 					vostok_weapon_mesh = vostok_weapon.get_node_or_null("Sway/Noise/Tilt/Impulse/Instrument")
 				#print(vostok_weapon_mesh)
-				if is_instance_valid(vostok_weapon_mesh):
+				if is_instance_valid(vostok_weapon_mesh) and is_instance_valid(reparented_vostok_weapon):
 					var vostok_arms = vostok_weapon_mesh.find_child("MS_Arms", true, false)
 					if vostok_arms:
 						vostok_arms.visible = false
 						xr_reparenting_active = true
 						var rotate_reparented_node_180_degrees = true
-						reparented_vostok_weapon.set_variables(self, vostok_weapon_mesh, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3(0.0, 0.025, 0.025), true)
+						reparented_vostok_weapon.set_variables(vostok_weapon_mesh, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3(0.0, 0.025, 0.025), true)
 						reparented_vostok_weapon.handle_node_reparenting()
 
-var reparented_beton_gun = ReparentedNode.new()	
+var reparented_beton_gun = ReparentedNode.new(self)	
 # Same, just experimental
 func _set_beton_gun(delta : float):
 	var gun_node = get_tree().get_root().get_node_or_null("LowresRoot/LowResViewport/Player/RotPoint")
@@ -1944,10 +1958,10 @@ func _set_beton_gun(delta : float):
 		gun_node.get_node("GunHold").transform.origin = Vector3(0,0,0)
 		xr_reparenting_active = true
 		var rotate_reparented_node_180_degrees = false
-		reparented_beton_gun.set_variables(self, gun_node, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3.ZERO, true)
+		reparented_beton_gun.set_variables(gun_node, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3.ZERO, true)
 		reparented_beton_gun.handle_node_reparenting()
 
-var reparented_tar_object_picker = ReparentedNode.new()
+var reparented_tar_object_picker = ReparentedNode.new(self)
 # Same, just experimental
 func _set_tar_object_picker(delta : float):
 	
@@ -1957,7 +1971,7 @@ func _set_tar_object_picker(delta : float):
 			object_picker_point.get_node("PlayerEyes/obj_picker_point").transform.origin = Vector3(0,0,0)
 			xr_reparenting_active = true
 			var rotate_reparented_node_180_degrees = false
-			reparented_tar_object_picker.set_variables(self, object_picker_point, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3.ZERO, true)
+			reparented_tar_object_picker.set_variables(object_picker_point, primary_controller, rotate_reparented_node_180_degrees, primary_controller, secondary_controller, Vector3.ZERO, true)
 			reparented_tar_object_picker.handle_node_reparenting()
 
 
