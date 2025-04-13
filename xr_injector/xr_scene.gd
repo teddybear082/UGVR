@@ -1307,15 +1307,19 @@ func find_and_set_active_camera_3d():
 				print("Camera's window is: ", camera.get_window())
 				remote_t = RemoteTransform3D.new()
 				remote_t.name = "XRRemoteTransform"
-				if xr_use_vehicle_mode:
-					remote_t.update_rotation = true
-				else:
-					remote_t.update_rotation = false
 				remote_t.update_scale = false
 				remote_t.remote_path = ""
 				camera.add_child(remote_t)
-				# If user has already set height at some point in session, adjust height by same for any new cameras that enter scene later
-				remote_t.transform.origin.y -= (user_height * xr_world_scale)
+				if xr_use_vehicle_mode:
+					remote_t.update_rotation = true
+					print("Now adjusting found camera3D height automatically due to vehicle mode...")
+					var vehicle_height_adjustment = xr_camera_3d.transform.origin.y
+					print("User height: ", vehicle_height_adjustment)
+					remote_t.transform.origin.y -= (vehicle_height_adjustment * xr_world_scale)
+				else:
+					remote_t.update_rotation = false
+					# If user has already set height at some point in session, adjust height by same for any new cameras that enter scene later
+					remote_t.transform.origin.y -= (user_height * xr_world_scale)
 				# Add cursor mesh
 				var cursor = cursor_3d.duplicate()
 				camera.add_child(cursor)
