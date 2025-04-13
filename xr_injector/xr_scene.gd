@@ -33,10 +33,13 @@ extends Node3D
 @onready var xr_reparenting_node_holder : Node3D = xr_reparenting_node.get_node("XRReparentingNodeHolder")
 @onready var xr_gui_menu : Node3D = get_node("XRGUIMenu")
 
-# Inrernal variables for xr hands and material (will be set in script)
+# Internal variables for xr hands and material (will be set in script)
 var show_xr_hands : bool = true
 var xr_hand_material = preload("res://xr_injector/hands/materials/labglove_transparent.tres")
 var xr_hand_material_choice : int = 0
+
+# Internal variable for custom game script
+var custom_game_script : Node
 
 # Internal variables to hold emulated gamepad/joypad events that are triggered by motion controllers
 var secondary_x_axis : InputEventJoypadMotion = InputEventJoypadMotion.new()
@@ -279,6 +282,11 @@ func _ready() -> void:
 	# Set up XR hand materials
 	xr_left_hand.hand_material_override = xr_hand_material
 	xr_right_hand.hand_material_override = xr_hand_material
+	
+	# Set up custom game script node
+	custom_game_script = load("res://xr_injector/custom_scripts/custom_game_script.gd").new()
+	add_child(custom_game_script)
+	custom_game_script.set_xr_scene(self)
 
 func _process(_delta : float) -> void:
 	# Experimental for time being, later will have handle_node_reparenting function here and any function to assign node passing its value to it
@@ -512,6 +520,8 @@ func handle_primary_xr_inputs(button):
 	if button == pointer_gesture_toggle_button and gesture_area.overlaps_area(primary_detection_area):
 		xr_pointer.set_enabled(!xr_pointer.enabled)
 		toggle_xr_gui_menu()
+		# If we're using a special gesture, don't trigger the underlying game action
+		return
 	
 	# (Temporary) Set user height if user presses designated button while doing gesture
 	if button == gesture_set_user_height_button and gesture_area.overlaps_area(primary_detection_area):
@@ -519,6 +529,8 @@ func handle_primary_xr_inputs(button):
 		user_height = xr_camera_3d.transform.origin.y
 		print("User height: ", user_height)
 		apply_user_height(user_height)
+		# If we're using a special gesture, don't trigger the underlying game action
+		return
 	
 	# Temporary : Try toggling active camera for xr camera to follow manually	
 	if button == gesture_toggle_active_camera_button and gesture_area.overlaps_area(primary_detection_area):
@@ -537,6 +549,8 @@ func handle_primary_xr_inputs(button):
 			set_camera_as_current(selected_camera)
 		# Increase index for next time button is pressed
 		manual_set_possible_xr_cameras_idx -=1
+		# If we're using a special gesture, don't trigger the underlying game action
+		return
 	
 	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
 	if ugvr_menu_showing:
@@ -595,6 +609,8 @@ func handle_secondary_xr_inputs(button):
 
 		# Print scene tree to game log for modding / debug purposes - this is better than doing it constantly, and makes sense since this button combo will only be used intentionally
 		get_tree().current_scene.print_tree_pretty()
+		# If we're using a special gesture, don't trigger the underlying game action
+		return
 
 	
 	# Block other inputs if ugvr menu is up to prevent game actions while using ugvr menu
