@@ -1405,7 +1405,9 @@ func find_active_world_environment_or_null():
 	var world_environment = get_node("/root").find_child("*Environment*", true, false)
 	# If found node is not actually the WorldEnvironment, check its children, and use the first one:
 	if world_environment and not world_environment.is_class("WorldEnvironment"):
-		world_environment = world_environment.find_children("*", "WorldEnvironment", true, false)[0]
+		var possible_environments = world_environment.find_children("*", "WorldEnvironment", true, false)
+		if possible_environments:
+			world_environment = possible_environments[0]
 	# If no node found or node is still not the WorldEnvironment, try running a search of lower case environment
 	if world_environment == null or not world_environment.is_class("WorldEnvironment"):
 		world_environment = get_node("/root").find_child("*environment*", true, false)

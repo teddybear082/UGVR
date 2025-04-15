@@ -6,16 +6,20 @@ var left_controller : XRController3D
 var right_controller : XRController3D
 # Convenience VR Camera / HMD reference, do not modify, will be set in xr_scene.gd automatically
 var hmd : XRCamera3D
-# Convenience Primary (weapon/turning hand) controller set by user, do not modify, will be set in xr_scene.gd automatically
+# Convenience reference to Primary (weapon/turning hand) controller set by user, do not modify, will be set in xr_scene.gd automatically
 var primary_controller : XRController3D
-# Convenience Secondary (movement/off-hand) controller set by user, do not modify, will be set in xr_scene.gd automatically
+# Convenience reference to Secondary (movement/off-hand) controller set by user, do not modify, will be set in xr_scene.gd automatically
 var secondary_controller : XRController3D
 # Convenience XR Scene reference (the parent node of all of UGVR), do not modify, will be set in xr_scene.gd
 var xr_scene : Node3D = null
 # Convenience reference to the node at the top of the scene tree in any game, allows finding or getting other nodes in game scene tree
 var scene_root = null
+# Convenience reference to active flat screen game camera
+var active_flat_screen_camera3D = null
 # Track whether single use function has already been called
 var on_xr_setup_already_run : bool = false
+# Put game specific custom variables here for your code, e.g., var game_name_important_node = null
+
 
 # Called when the node enters the scene tree for the first time.  Can't use controller references yet as they will not be set up yet.
 func _ready():
@@ -38,6 +42,7 @@ func _process(delta):
 	hmd = xr_scene.xr_camera_3d
 	primary_controller = xr_scene.primary_controller
 	secondary_controller = xr_scene.secondary_controller
+	active_flat_screen_camera3D = xr_scene.current_camera
 	
 	# If any of the references are invalid, return (may have to use not is_instance_valid() here instead)
 	if not (left_controller and right_controller and hmd and primary_controller and secondary_controller):
@@ -63,6 +68,12 @@ func _physics_process(delta):
 	
 	# Put any code you want to run each physics tick here
 	
+
+
+
+## Built in UGVR Convenience Functions for Your Potential Use
+# But remember you have full access to all Godot GDSCript scripting for Godot 4 - just be mindful of game's Godot version.
+# To be on the safe side, aim to use Godot 4.2 documentation when finding potential methods, properties and signals
 
 # Convenience function to get node reference by absolute path to node
 func get_node_reference_by_absolute_path(absolute_node_path : NodePath) -> Node:
@@ -106,6 +117,7 @@ func reparent_game_node_to_controller(game_node : Node3D, controller : XRControl
 	controller.add_child(node_holder)
 	node_holder.transform.origin = offset
 	node_holder.add_child(remote_transform)
+	remote_transform.update_scale = false
 	remote_transform.remote_path = game_node.get_path()
 
 # Convenience function to move game node to track HMD, may not work in all instances, offset is x, y, z relative to HMD
@@ -115,7 +127,44 @@ func reparent_game_node_to_hmd(game_node : Node3D, hmd : XRCamera3D, offset: Vec
 	hmd.add_child(node_holder)
 	node_holder.transform.origin = offset
 	node_holder.add_child(remote_transform)
+	remote_transform.update_scale = false
 	remote_transform.remote_path = game_node.get_path()
+
+# Convenience function to try to delete a problematic shader from a 3D mesh, may cause game crashes if game code depends on setting variables in the shader
+func remove_shader_from_mesh(mesh_node : MeshInstance3D)-> void :
+	var surface_material = mesh_node.get_surface_override_material(0)
+	if surface_material:
+		if surface_material.is_class("ShaderMaterial"):
+			surface_material.get_shader().set_code("")
+
+# Convenience funcrion to try to delete a problematic shader from a 2D canvas object (like a rectangle on the screen), may cause game crashes if game code depends on setting variables in the shader
+func remove_shader_from_UI_object(canvas_item : CanvasItem)-> void :
+	var surface_material = canvas_item.material
+	if surface_material:
+		if surface_material.is_class("ShaderMaterial"):
+			surface_material.get_shader().set_code("")
+
+# Convenience function to hide a node.  May need to be run in _process if other game code may dynamically hide and show the element
+func hide_node(node : Node) -> void:
+	if node.has_method("hide"):
+		node.hide()
+	else:
+		for property_dictionary in node.get_property_list():
+			if "visible" in property_dictionary.name:
+				node.visible = false
+				break
+
+# Convenience function to show a hidden node. May need to be run in _process if other game code may dynamically hide and show the element
+func show_node(node : Node) -> void:
+	node.show()
+	node.visible = true
+	if node.has_method("show"):
+		node.show()
+	else:
+		for property_dictionary in node.get_property_list():
+			if "visible" in property_dictionary.name:
+				node.visible = true
+				break
 
 # Setter function for xr_scene reference, called in xr_scene.gd automatically
 func set_xr_scene(new_xr_scene) -> void:
