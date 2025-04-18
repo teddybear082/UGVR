@@ -16,6 +16,10 @@ var xr_scene : Node3D = null
 var scene_root = null
 # Convenience reference to active flat screen game camera
 var active_flat_screen_camera3D = null
+# Variables to hold control map 3D label objects
+var xr_primary_control_mapping_label3D : Label3D = null
+var xr_secondary_control_mapping_label3D : Label3D = null
+var xr_hmd_control_mapping_label3D : Label3D = null
 # Track whether single use function has already been called
 var on_xr_setup_already_run : bool = false
 # Basic clear 2D shader (for use in trying to replace problematic canvas item shaders)
@@ -47,7 +51,8 @@ func _ready():
 # Called only once after xr scene and all convenience variables are set, insert any code you want to run then here
 # Note that you can now access any of the xr scene variables directly at this point, example: xr_scene.xr_pointer.enabled=false
 func _on_xr_setup_run_once():
-	pass
+	# Example: This automatically shows the game controls for 30 seconds once xr is set up
+	show_vr_control_mapping(30.0)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -213,6 +218,166 @@ func print_scene_tree_pretty_to_text_file(full_file_path : String = "", clear_pr
 	var file = FileAccess.open(text_file, FileAccess.WRITE)
 	var node_tree_string = get_tree().current_scene.get_tree_string_pretty() + "\n\n"
 	file.store_string(node_tree_string)
+
+# Convenience function to show a text message to the user for a designated time period at the location of a controller or the camera, with a designated offset
+func show_text_in_vr(text_to_show : String, location : Node3D, offset : Vector3 = Vector3.ZERO, time_to_show : float = 15.0) -> void:
+	var label = Label3D.new()
+	location.add_child(label)
+	label.transform.origin = offset
+	label.set_width(800.0)
+	label.render_priority = 2
+	label.font_size = 24
+	label.pixel_size = 0.0005
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.set_draw_flag(Label3D.DrawFlags.FLAG_DISABLE_DEPTH_TEST, true)
+	label.set_draw_flag(Label3D.DrawFlags.FLAG_SHADED, false)
+	label.text = text_to_show
+	await get_tree().create_timer(time_to_show).timeout
+	label.visible = false
+	
+# Convenience function to show VR control mapping (optionally for a designated time period)
+func show_vr_control_mapping(time_to_show: float = 0.0) -> void:
+	if not xr_scene:
+		return
+
+	# Only build the labels once
+	if not is_instance_valid(xr_primary_control_mapping_label3D) and not is_instance_valid(xr_secondary_control_mapping_label3D) and not is_instance_valid(xr_hmd_control_mapping_label3D):
+		if not is_instance_valid(xr_scene.xr_config_handler):
+			return
+
+		# Load the action map config
+		var cfg = ConfigFile.new()
+		var err = cfg.load(xr_scene.xr_config_handler.game_action_map_cfg_path)
+		if err != OK:
+			print("Failed to load VR control mapping config in custom_game_script show vr control mapping function: %s" % xr_scene.xr_config_handler.game_action_map_cfg_path)
+			return
+
+		# Prepare grouped control strings
+		var primary_vr_controls = ""
+		var secondary_vr_controls = ""
+		var miscellaneous_controls = ""
+
+		# Iterate each game action mapping
+		for action_key in cfg.get_section_keys("GAME_ACTIONS"):
+			var raw_value = cfg.get_value("GAME_ACTIONS", action_key)
+			print("raw_value: ", raw_value)
+			var mapping_str = ""
+			var mapping_str_direction = ""
+			if typeof(raw_value) == TYPE_ARRAY:
+				mapping_str = str(raw_value[0])
+				mapping_str_direction = str(raw_value[1])
+			else:
+				mapping_str = str(raw_value)
+			var display_mapping = ""
+
+			# Override stick & trigger mappings
+			if mapping_str.contains("LeftStick"):
+				display_mapping = "Secondary VR Controller Thumbstick Move"
+			elif mapping_str.contains("LeftTrigger"):
+				display_mapping = "Secondary VR Controller Trigger"
+			elif mapping_str.contains("RightStick"):
+				display_mapping = "Primary VR Controller Thumbstick Move"
+				if mapping_str_direction:
+					if mapping_str.contains("X"):
+						display_mapping += " Left" if mapping_str_direction.contains("-1.0") else " Right"
+					if mapping_str.contains("Y"):
+						display_mapping += " Up" if mapping_str_direction.contains("-1.0") else " Down"
+						
+			elif mapping_str.contains("RightTrigger"):
+				display_mapping = "Primary VR Controller Trigger"
+
+			# Handle unmapped entries
+			elif mapping_str == "needs_joypad_mapping":
+				display_mapping = "Not Mapped"
+
+			# All other joypad buttons
+			else:
+				display_mapping = mapping_str.replace("Joypad", "")
+				display_mapping = display_mapping.replace("A/Cross", "Primary VR Controller A/X")
+				display_mapping = display_mapping.replace("B/Circle", "Secondary VR Controller A/X")
+				display_mapping = display_mapping.replace("X/Square", "Primary VR Controller B/Y")
+				display_mapping = display_mapping.replace("Y/Triangle", "Secondary VR Controller B/Y")
+				display_mapping = display_mapping.replace("RB", "Primary VR Controller Grip")
+				display_mapping = display_mapping.replace("LB", "Secondary VR Controller Grip")
+				display_mapping = display_mapping.replace("L3", "Secondary VR Controller Thumbstick Click")
+				display_mapping = display_mapping.replace("R3", "Primary VR Controller Thumbstick Click")
+
+			# Prepare a line for this action
+			var line = "%s: %s\n" % [action_key, display_mapping]
+
+			# Append into the appropriate group
+			if display_mapping == "Not Mapped":
+				miscellaneous_controls += line
+			elif display_mapping.contains("Secondary VR Controller Thumbstick Move"):
+				continue
+			elif display_mapping.contains("Primary VR Controller"):
+				primary_vr_controls += line
+			elif display_mapping.contains("Secondary VR Controller"):
+				secondary_vr_controls += line
+			else:
+				miscellaneous_controls += line
+
+		# Add extra instructions to misc
+		var added_control_info = """
+
+Activate radial menu: Hold primary thumbstick down, hover over option and release
+Start/Select: HOTKEY plus bound start / select key
+DPad: HOTKEY plus directions on secondary thumbstick
+Toggle VR pointer: Primary controller near head, press trigger
+Reload controls: Secondary controller near head, press B/Y
+
+**You can activate arm swing movement and jump, 
+physical melee, and motion sickness vignette in config files**
+
+		"""
+		miscellaneous_controls += added_control_info
+
+		# Create and configure the 3D labels
+		xr_primary_control_mapping_label3D = Label3D.new()
+		xr_secondary_control_mapping_label3D = Label3D.new()
+		xr_hmd_control_mapping_label3D = Label3D.new()
+		primary_controller.add_child(xr_primary_control_mapping_label3D)
+		secondary_controller.add_child(xr_secondary_control_mapping_label3D)
+		hmd.add_child(xr_hmd_control_mapping_label3D)
+		
+		for xr_control_mapping_label3D in [xr_primary_control_mapping_label3D, xr_secondary_control_mapping_label3D, xr_hmd_control_mapping_label3D]:
+			xr_control_mapping_label3D.set_width(800.0)
+			xr_control_mapping_label3D.render_priority = 2
+			xr_control_mapping_label3D.font_size = 16
+			xr_control_mapping_label3D.pixel_size = 0.0005
+			xr_control_mapping_label3D.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			xr_control_mapping_label3D.set_draw_flag(Label3D.DrawFlags.FLAG_DISABLE_DEPTH_TEST, true)
+			xr_control_mapping_label3D.set_draw_flag(Label3D.DrawFlags.FLAG_SHADED, false)
+		xr_primary_control_mapping_label3D.transform.origin = Vector3(0, 0.1, 0.1)
+		xr_secondary_control_mapping_label3D.transform.origin = Vector3(0, 0.1, 0.1)
+		xr_hmd_control_mapping_label3D.transform.origin = Vector3(0,-0.2,-0.8)
+
+		# Set text for each respective Label3D
+		xr_primary_control_mapping_label3D.text = primary_vr_controls
+		xr_secondary_control_mapping_label3D.text = secondary_vr_controls
+		xr_hmd_control_mapping_label3D.font_size = 24
+		xr_hmd_control_mapping_label3D.text = miscellaneous_controls
+
+	else:
+		xr_primary_control_mapping_label3D.visible = true
+		xr_secondary_control_mapping_label3D.visible = true
+		xr_hmd_control_mapping_label3D.visible = true
+	
+	# Optionally hide after a delay
+	if time_to_show > 0.0:
+		await get_tree().create_timer(time_to_show).timeout
+		xr_primary_control_mapping_label3D.visible = false
+		xr_secondary_control_mapping_label3D.visible = false
+		xr_hmd_control_mapping_label3D.visible = false
+
+# Convenience function to hide VR control mapping display if its visible
+func hide_vr_control_mapping() -> void:
+	if is_instance_valid(xr_primary_control_mapping_label3D) and is_instance_valid(xr_secondary_control_mapping_label3D) and is_instance_valid(xr_hmd_control_mapping_label3D):
+		xr_primary_control_mapping_label3D.visible = false
+		xr_secondary_control_mapping_label3D.visible = false
+		xr_hmd_control_mapping_label3D.visible = false
+
+
 	
 # Setter function for xr_scene reference, called in xr_scene.gd automatically
 func set_xr_scene(new_xr_scene) -> void:
