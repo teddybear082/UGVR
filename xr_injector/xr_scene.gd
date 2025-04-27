@@ -565,6 +565,8 @@ func handle_primary_xr_inputs(button):
 		
 	# Finally pass through remaining gamepad emulation input
 	if primary_action_map.has(button):
+		if button == "grip_click":
+			return
 		var event = InputEventJoypadButton.new()
 		event.button_index = primary_action_map[button]
 		event.pressed = true
@@ -630,6 +632,8 @@ func handle_secondary_xr_inputs(button):
 		Input.parse_input_event(event)
 	
 	if secondary_action_map.has(button):
+		if button == "grip_click":
+			return
 		var event = InputEventJoypadButton.new()
 		event.button_index = secondary_action_map[button]
 		event.pressed = true
@@ -673,6 +677,8 @@ func handle_primary_xr_float(button, value):
 		var event = InputEventJoypadButton.new()
 		event.button_index = primary_action_map["grip_click"]
 		if value >= grip_deadzone:
+			print("Primary Grip deadzone: ", grip_deadzone)
+			print("Primary Grip value: ", value)
 			event.pressed = true
 		else:
 			event.pressed=false
@@ -695,6 +701,8 @@ func handle_secondary_xr_float(button, value):
 		var event = InputEventJoypadButton.new()
 		event.button_index = secondary_action_map["grip_click"]
 		if value >= grip_deadzone:
+			print("Secondary Grip deadzone: ", grip_deadzone)
+			print("Secondary Grip value: ", value)
 			event.pressed = true
 		else:
 			event.pressed=false
